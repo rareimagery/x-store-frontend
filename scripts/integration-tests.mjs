@@ -29,7 +29,7 @@ const PROJECT_ROOT = path.join(__dirname, "..");
 const CONFIG = {
   baseUrl: process.env.TEST_BASE_URL || "http://localhost:3000",
   adminBaseUrl: process.env.ADMIN_BASE_URL || "http://localhost:3001",
-  drupalUrl: process.env.DRUPAL_URL || "http://72.62.80.155",
+  drupalUrl: process.env.DRUPAL_URL || process.env.DRUPAL_API_URL || "http://72.62.80.155:32778",
   apiTimeout: 10000,
   verbose: process.argv.includes("--verbose"),
   failFast: process.argv.includes("--fail-fast"),

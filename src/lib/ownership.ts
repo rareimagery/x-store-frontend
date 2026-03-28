@@ -14,7 +14,6 @@ export function isValidUUID(s: string): boolean {
 /** Allowed hostnames for image URL fetching (SSRF protection). */
 const ALLOWED_IMAGE_HOSTS = [
   "pbs.twimg.com",
-  "localhost",
   "72.62.80.155",
   "rareimagery.net",
   "api.printful.com",

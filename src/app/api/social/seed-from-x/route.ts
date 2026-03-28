@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // Mark X seed as imported on the user's store
     try {
-      const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://localhost:8081";
+      const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155:32778";
       const { drupalWriteHeaders } = await import("@/lib/drupal");
       const writeHeaders = await drupalWriteHeaders();
       await fetch(

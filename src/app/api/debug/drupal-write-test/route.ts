@@ -7,7 +7,7 @@ import { saveBuildsDetailed } from "@/lib/drupalBuilds";
  */
 
 export async function GET() {
-  const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://localhost:8081";
+  const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155:32778";
   const DRUPAL_API_USER = process.env.DRUPAL_API_USER;
   const DRUPAL_API_PASS = process.env.DRUPAL_API_PASS;
 

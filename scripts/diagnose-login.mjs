@@ -4,8 +4,6 @@
  * Checks environment variables and connectivity to ensure login is likely to work.
  */
 
-import http from 'http';
-
 const checkEnv = () => {
   const vars = [
     'X_CLIENT_ID',
@@ -16,50 +14,50 @@ const checkEnv = () => {
   ];
 
   console.log('--- Environment Check ---');
+  let allPass = true;
   vars.forEach(v => {
     const val = process.env[v];
-    if (val) {
+    if (val && val.trim() !== '') {
       if (v.includes('SECRET') || v.includes('ID')) {
-        console.log(`[PASS] ${v} is set (hidden)`);
+        console.log(`[PASS] ${v} is set (length: ${val.length})`);
       } else {
         console.log(`[PASS] ${v} is set to: ${val}`);
       }
     } else {
-      console.log(`[FAIL] ${v} is NOT set`);
+      console.log(`[FAIL] ${v} is NOT set or empty`);
+      allPass = false;
     }
   });
+
+  if (process.env.X_CLIENT_ID && process.env.X_CLIENT_ID === process.env.X_CLIENT_SECRET) {
+    console.log('[FAIL] X_CLIENT_ID and X_CLIENT_SECRET are identical! This is a common misconfiguration.');
+    allPass = false;
+  }
+
   console.log('');
+  return allPass;
 };
 
 const checkDrupal = async (url) => {
   console.log(`--- Drupal Connectivity Check (${url}) ---`);
-  return new Promise((resolve) => {
-    try {
-      const req = http.get(url, (res) => {
-        console.log(`[PASS] Drupal is reachable (HTTP ${res.statusCode})`);
-        resolve(true);
-      });
-
-      req.on('error', (err) => {
-        console.log(`[FAIL] Drupal unreachable: ${err.message}`);
-        resolve(false);
-      });
-
-      req.setTimeout(5000, () => {
-        console.log('[FAIL] Drupal connection timed out');
-        req.destroy();
-        resolve(false);
-      });
-    } catch (err) {
-      console.log(`[FAIL] Error during Drupal check: ${err.message}`);
-      resolve(false);
+  try {
+    const res = await fetch(url + '/user/login?_format=json', {
+      method: 'GET',
+    });
+    console.log(`[PASS] Drupal is reachable (HTTP ${res.status})`);
+    if (res.status === 404) {
+      console.log('[WARN] /user/login?_format=json returned 404. Is the REST UI/JSON:API enabled?');
     }
-  });
+    return true;
+  } catch (err) {
+    console.log(`[FAIL] Drupal unreachable: ${err.message}`);
+    return false;
+  }
 };
 
 const run = async () => {
   checkEnv();
-  const drupalUrl = process.env.DRUPAL_API_URL || 'http://localhost:8081';
+  const drupalUrl = process.env.DRUPAL_API_URL || 'http://72.62.80.155:32778';
   await checkDrupal(drupalUrl);
 
   console.log('\n--- Next Steps ---');
