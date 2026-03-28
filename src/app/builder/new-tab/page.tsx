@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Send, X, MessageCircle } from 'lucide-react';
 
-export default function Builder() {
+function BuilderContent() {
   const searchParams = useSearchParams();
   const handle = searchParams.get('handle') || '@rareimagery';
   const pfp = searchParams.get('pfp') || '';
@@ -133,5 +133,13 @@ export default function Builder() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Builder() {
+  return (
+    <Suspense fallback={<div className="flex h-screen bg-zinc-950 text-white items-center justify-center">Loading Builder...</div>}>
+      <BuilderContent />
+    </Suspense>
   );
 }
