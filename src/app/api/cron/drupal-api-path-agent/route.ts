@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+import { runDrupalApiPathAgent } from "@/lib/drupal-api-path-agent";
+
+export const maxDuration = 120;
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  // Verify CRON_SECRET (Vercel sends Authorization: Bearer <secret> for cron jobs)
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const report = await runDrupalApiPathAgent();
+
+  return NextResponse.json(report, {
+    status: report.status === "critical" ? 503 : 200,
+  });
+}

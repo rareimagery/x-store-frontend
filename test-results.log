@@ -1,0 +1,92 @@
+
+> frontend@0.1.0 test
+> node scripts/test-all.mjs --fast
+
+[01:23:34] █ ══════════════════════════════════════════════════════════════════════
+[01:23:34] █ 🧪 PERFECT_STORE_ON_X: Complete Test Suite
+[01:23:34] █ ══════════════════════════════════════════════════════════════════════
+[01:23:34] █ 
+🔗 PHASE 2: Integration Testing
+[01:23:34] ℹ Tests all 13 subsystems against running server
+[01:23:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:34] ⚠ ⚠️  Ensure server is running: npm run dev (in another terminal)
+[01:23:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:34] ℹ 
+Checking test environment...
+[01:23:34] ▶ Running: Environment Validation
+(node:312308) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+file:///C:/rare/frontend/scripts/setup-test-env.mjs:153
+  log("\nTo fix:
+      ^^^^^^^^^^
+
+SyntaxError: Invalid or unexpected token
+    at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:99:18)
+    at #translate (node:internal/modules/esm/loader:473:20)
+    at afterLoad (node:internal/modules/esm/loader:529:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:534:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:577:36)
+    at afterResolve (node:internal/modules/esm/loader:625:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:631:12)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:650:32)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+
+Node.js v24.14.0
+[01:23:34] ✗ ✗ Environment Validation (exit code: 1)
+[01:23:34] ⚠ Environment setup failed: Environment Validation failed with code 1
+[01:23:34] ⚠ Continuing anyway (some tests may fail)...
+[01:23:34] ▶ Running: Integration Tests: 2.1-auth
+[01:23:34] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:23:34] ℹ Base URL: http://localhost:3000
+[01:23:34] ℹ Test Suite: 2.1-auth
+[01:23:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:34] ℹ 
+📋 Suite: Authentication Flow
+[01:23:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:44] ✗ FAIL: 2.1.1 X OAuth redirect endpoint — Request failed: This operation was aborted
+[01:23:44] ✓ PASS: 2.1.2 Session endpoint available
+[01:23:45] ✗ FAIL: 2.1.3 NextAuth CSRF protection — Auth should require CSRF or proper auth
+[01:23:45] ✓ PASS: 2.1.4 Session persists across requests
+[01:23:45] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:23:45] ℹ 📊 TEST SUMMARY
+[01:23:45] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:45] ⚠ ✗ Authentication Flow: 2/4 passed
+[01:23:45] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:45] ✗ Total: 2/4 tests passed (50%)
+[01:23:45] ℹ Duration: 11.25s
+[01:23:45] ✗ ✗ Integration Tests: 2.1-auth (exit code: 1)
+[01:23:45] ✗ Suite 2.1-auth failed: Integration Tests: 2.1-auth failed with code 1
+[01:23:45] ▶ Running: Integration Tests: 2.2-stores
+[01:23:45] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:23:45] ℹ Base URL: http://localhost:3000
+[01:23:45] ℹ Test Suite: 2.2-stores
+[01:23:45] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:45] ℹ 
+📋 Suite: Store Creation Flow
+[01:23:45] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:53] ✓ PASS: 2.2.1 Store creation endpoint available
+[01:23:53] ✓ PASS: 2.2.2 Store creation requires auth
+[01:23:53] ✓ PASS: 2.2.3 Store name validation
+[01:23:53] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:23:53] ℹ 📊 TEST SUMMARY
+[01:23:53] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:53] ✓ ✓ Store Creation Flow: 3/3 passed
+[01:23:53] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:53] ✓ Total: 3/3 tests passed (100%)
+[01:23:53] ℹ Duration: 7.90s
+[01:23:53] ✓ ✓ Integration Tests: 2.2-stores
+[01:23:53] ▶ Running: Integration Tests: 2.3-approval
+[01:23:53] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:23:53] ℹ Base URL: http://localhost:3000
+[01:23:53] ℹ Test Suite: 2.3-approval
+[01:23:53] ℹ ──────────────────────────────────────────────────────────────────────
+[01:23:53] ℹ 
+📋 Suite: Store Approval Flow
+[01:23:53] ℹ ──────────────────────────────────────────────────────────────────────
+^C[01:23:56] ✗ ✗ Integration Tests: 2.3-approval (exit code: 3221225786)
+[01:23:56] ✗ Suite 2.3-approval failed: Integration Tests: 2.3-approval failed with code 3221225786
+[01:23:56] ▶ Running: Integration Tests: 2.4-provisioning
+^C

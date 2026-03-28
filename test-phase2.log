@@ -1,0 +1,347 @@
+
+> frontend@0.1.0 test
+> node scripts/test-all.mjs --fast
+
+[01:24:06] █ ══════════════════════════════════════════════════════════════════════
+[01:24:06] █ 🧪 PERFECT_STORE_ON_X: Complete Test Suite
+[01:24:06] █ ══════════════════════════════════════════════════════════════════════
+[01:24:06] █ 
+🔗 PHASE 2: Integration Testing
+[01:24:06] ℹ Tests all 13 subsystems against running server
+[01:24:06] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:06] ⚠ ⚠️  Ensure server is running: npm run dev (in another terminal)
+[01:24:06] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:06] ℹ 
+Checking test environment...
+[01:24:06] ▶ Running: Environment Validation
+(node:62160) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ℹ 
+📋 Environment Configuration
+ℹ ────────────────────────────────────────────────────────────
+✓ .env.local found
+ℹ 
+Server Setup:
+✓   ✓ NEXTAUTH_URL
+✓   ✓ NEXTAUTH_SECRET
+⚠   ○ NEXT_PUBLIC_API_URL
+ℹ     Example: NEXT_PUBLIC_API_URL="http://localhost:3000"
+ℹ 
+X Integration:
+✓   ✓ X_CLIENT_ID
+✓   ✓ X_CLIENT_SECRET
+⚠   ○ X_BEARER_TOKEN
+ℹ     Example: X_BEARER_TOKEN="your-x-bearer-token"
+✓   ✓ X_API_KEY
+ℹ 
+AI Services:
+✓   ✓ XAI_API_KEY
+✓   ✓ ANTHROPIC_API_KEY
+ℹ 
+Payment (Optional):
+⚠   ○ STRIPE_SECRET_KEY
+ℹ     Example: STRIPE_SECRET_KEY="sk_test_... (for Stripe)"
+⚠   ○ STRIPE_PUBLISHABLE_KEY
+ℹ     Example: STRIPE_PUBLISHABLE_KEY="pk_test_..."
+⚠   ○ STRIPE_WEBHOOK_SECRET
+ℹ     Example: STRIPE_WEBHOOK_SECRET="whsec_... (for webhooks)"
+ℹ 
+Drupal Backend:
+⚠   ○ DRUPAL_URL
+ℹ     Example: DRUPAL_URL="http://72.62.80.155"
+⚠   ○ DRUPAL_USERNAME
+ℹ     Example: DRUPAL_USERNAME="admin"
+⚠   ○ DRUPAL_PASSWORD
+ℹ     Example: DRUPAL_PASSWORD="your-drupal-password"
+ℹ 
+Testing:
+✓   ✓ CRON_SECRET
+⚠   ○ TEST_BASE_URL
+ℹ     Example: TEST_BASE_URL="http://localhost:3000 (or production URL)"
+ℹ 
+🔌 Service Connectivity
+ℹ ────────────────────────────────────────────────────────────
+ℹ Checking services (this may take a moment)...
+✓ ✓ Frontend Server: http://localhost:3000/api/auth/session
+⚠ ⚠ Drupal Backend: http://72.62.80.155/jsonapi/node/store (404)
+⚠ ⚠ Stripe API: https://api.stripe.com/v1/charges (401)
+ℹ 
+💾 Test Database
+ℹ ────────────────────────────────────────────────────────────
+⚠ Database URL not configured (using Drupal remote)
+ℹ 
+════════════════════════════════════════════════════════════
+ℹ Setup Summary
+ℹ ────────────────────────────────────────────────────────────
+✓ ✓ Passed: 10
+⚠ ⚠ Warnings: 12
+✗ ✗ Failed: 0
+⚠ 
+⚠️ Some configuration is missing. Tests may fail if services are unavailable.
+✓ 
+✅ Environment setup validated!
+ℹ 
+Next step: npm run test:integration
+[01:24:07] ✓ ✓ Environment Validation
+[01:24:07] ▶ Running: Integration Tests: 2.1-auth
+[01:24:07] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:07] ℹ Base URL: http://localhost:3000
+[01:24:07] ℹ Test Suite: 2.1-auth
+[01:24:07] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:07] ℹ 
+📋 Suite: Authentication Flow
+[01:24:07] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ✗ FAIL: 2.1.1 X OAuth redirect endpoint — Expected redirect, got 200
+[01:24:08] ✓ PASS: 2.1.2 Session endpoint available
+[01:24:08] ✗ FAIL: 2.1.3 NextAuth CSRF protection — Auth should require CSRF or proper auth
+[01:24:08] ✓ PASS: 2.1.4 Session persists across requests
+[01:24:08] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:08] ℹ 📊 TEST SUMMARY
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ⚠ ✗ Authentication Flow: 2/4 passed
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ✗ Total: 2/4 tests passed (50%)
+[01:24:08] ℹ Duration: 0.62s
+[01:24:08] ✗ ✗ Integration Tests: 2.1-auth (exit code: 1)
+[01:24:08] ✗ Suite 2.1-auth failed: Integration Tests: 2.1-auth failed with code 1
+[01:24:08] ▶ Running: Integration Tests: 2.2-stores
+[01:24:08] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:08] ℹ Base URL: http://localhost:3000
+[01:24:08] ℹ Test Suite: 2.2-stores
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ℹ 
+📋 Suite: Store Creation Flow
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ✓ PASS: 2.2.1 Store creation endpoint available
+[01:24:08] ✓ PASS: 2.2.2 Store creation requires auth
+[01:24:08] ✓ PASS: 2.2.3 Store name validation
+[01:24:08] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:08] ℹ 📊 TEST SUMMARY
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ✓ ✓ Store Creation Flow: 3/3 passed
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ✓ Total: 3/3 tests passed (100%)
+[01:24:08] ℹ Duration: 0.12s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:08] ✗ ✗ Integration Tests: 2.2-stores (exit code: 3221226505)
+[01:24:08] ✗ Suite 2.2-stores failed: Integration Tests: 2.2-stores failed with code 3221226505
+[01:24:08] ▶ Running: Integration Tests: 2.3-approval
+[01:24:08] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:08] ℹ Base URL: http://localhost:3000
+[01:24:08] ℹ Test Suite: 2.3-approval
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:08] ℹ 
+📋 Suite: Store Approval Flow
+[01:24:08] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:09] ✗ FAIL: 2.3.1 Store approval endpoint available — Store approval endpoint should exist
+[01:24:09] ✗ FAIL: 2.3.2 Store approval requires admin role — Store approval should require admin role
+[01:24:09] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:09] ℹ 📊 TEST SUMMARY
+[01:24:09] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:09] ⚠ ✗ Store Approval Flow: 0/2 passed
+[01:24:09] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:09] ✗ Total: 0/2 tests passed (0%)
+[01:24:09] ℹ Duration: 0.17s
+[01:24:09] ✗ ✗ Integration Tests: 2.3-approval (exit code: 1)
+[01:24:09] ✗ Suite 2.3-approval failed: Integration Tests: 2.3-approval failed with code 1
+[01:24:09] ▶ Running: Integration Tests: 2.4-provisioning
+[01:24:09] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:09] ℹ Base URL: http://localhost:3000
+[01:24:09] ℹ Test Suite: 2.4-provisioning
+[01:24:09] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:09] ℹ 
+📋 Suite: Store Provisioning & AI Generation
+[01:24:09] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:12] ✓ PASS: 2.4.1 Store provisioning endpoint available
+[01:24:13] ✓ PASS: 2.4.2 AI generation endpoint available
+[01:24:13] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:13] ℹ 📊 TEST SUMMARY
+[01:24:13] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:13] ✓ ✓ Store Provisioning & AI Generation: 2/2 passed
+[01:24:13] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:13] ✓ Total: 2/2 tests passed (100%)
+[01:24:13] ℹ Duration: 4.03s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:13] ✗ ✗ Integration Tests: 2.4-provisioning (exit code: 3221226505)
+[01:24:13] ✗ Suite 2.4-provisioning failed: Integration Tests: 2.4-provisioning failed with code 3221226505
+[01:24:13] ▶ Running: Integration Tests: 2.5-6-checkout
+[01:24:13] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:13] ℹ Base URL: http://localhost:3000
+[01:24:13] ℹ Test Suite: 2.5-6-checkout
+[01:24:13] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:13] ℹ 
+📋 Suite: Checkout Flow
+[01:24:13] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:19] ✓ PASS: 2.5.1 Store setup checkout available
+[01:24:20] ✓ PASS: 2.5.2 Product checkout available
+[01:24:21] ✓ PASS: 2.5.3 Stripe webhook handler available
+[01:24:21] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:21] ℹ 📊 TEST SUMMARY
+[01:24:21] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:21] ✓ ✓ Checkout Flow: 3/3 passed
+[01:24:21] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:21] ✓ Total: 3/3 tests passed (100%)
+[01:24:21] ℹ Duration: 8.07s
+[01:24:21] ✓ ✓ Integration Tests: 2.5-6-checkout
+[01:24:21] ▶ Running: Integration Tests: 2.7-x-import
+[01:24:21] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:21] ℹ Base URL: http://localhost:3000
+[01:24:21] ℹ Test Suite: 2.7-x-import
+[01:24:21] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:21] ℹ 
+📋 Suite: X Profile Import
+[01:24:21] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:21] ✗ FAIL: 2.7.1 X profile import available — X import endpoint should exist
+[01:24:27] ✓ PASS: 2.7.2 X feed proxy available
+[01:24:27] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:27] ℹ 📊 TEST SUMMARY
+[01:24:27] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:27] ⚠ ✗ X Profile Import: 1/2 passed
+[01:24:27] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:27] ✗ Total: 1/2 tests passed (50%)
+[01:24:27] ℹ Duration: 5.95s
+[01:24:27] ✗ ✗ Integration Tests: 2.7-x-import (exit code: 1)
+[01:24:27] ✗ Suite 2.7-x-import failed: Integration Tests: 2.7-x-import failed with code 1
+[01:24:27] ▶ Running: Integration Tests: 2.8-webhooks
+[01:24:27] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:27] ℹ Base URL: http://localhost:3000
+[01:24:27] ℹ Test Suite: 2.8-webhooks
+[01:24:27] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:27] ℹ 
+📋 Suite: X Webhooks
+[01:24:27] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:28] ✗ FAIL: 2.8.1 X webhook CRC endpoint available — X webhook CRC should respond
+[01:24:28] ✓ PASS: 2.8.2 X webhook event delivery available
+[01:24:28] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:28] ℹ 📊 TEST SUMMARY
+[01:24:28] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:28] ⚠ ✗ X Webhooks: 1/2 passed
+[01:24:28] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:28] ✗ Total: 1/2 tests passed (50%)
+[01:24:28] ℹ Duration: 0.96s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:28] ✗ ✗ Integration Tests: 2.8-webhooks (exit code: 3221226505)
+[01:24:28] ✗ Suite 2.8-webhooks failed: Integration Tests: 2.8-webhooks failed with code 3221226505
+[01:24:28] ▶ Running: Integration Tests: 2.9-ai
+[01:24:28] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:28] ℹ Base URL: http://localhost:3000
+[01:24:28] ℹ Test Suite: 2.9-ai
+[01:24:28] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:28] ℹ 
+📋 Suite: AI Theme Customization
+[01:24:28] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:29] ✓ PASS: 2.9.1 Theme generation endpoint available
+[01:24:30] ✓ PASS: 2.9.2 Chat endpoint available
+[01:24:30] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:30] ℹ 📊 TEST SUMMARY
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ✓ ✓ AI Theme Customization: 2/2 passed
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ✓ Total: 2/2 tests passed (100%)
+[01:24:30] ℹ Duration: 1.62s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:30] ✗ ✗ Integration Tests: 2.9-ai (exit code: 3221226505)
+[01:24:30] ✗ Suite 2.9-ai failed: Integration Tests: 2.9-ai failed with code 3221226505
+[01:24:30] ▶ Running: Integration Tests: 2.10-fulfillment
+[01:24:30] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:30] ℹ Base URL: http://localhost:3000
+[01:24:30] ℹ Test Suite: 2.10-fulfillment
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ℹ 
+📋 Suite: Fulfillment (Printful)
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ✗ FAIL: 2.10.1 Printful webhook handler available — Printful webhook endpoint should exist
+[01:24:30] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:30] ℹ 📊 TEST SUMMARY
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ⚠ ✗ Fulfillment (Printful): 0/1 passed
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ✗ Total: 0/1 tests passed (0%)
+[01:24:30] ℹ Duration: 0.08s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:30] ✗ ✗ Integration Tests: 2.10-fulfillment (exit code: 3221226505)
+[01:24:30] ✗ Suite 2.10-fulfillment failed: Integration Tests: 2.10-fulfillment failed with code 3221226505
+[01:24:30] ▶ Running: Integration Tests: 2.11-cron
+[01:24:30] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:30] ℹ Base URL: http://localhost:3000
+[01:24:30] ℹ Test Suite: 2.11-cron
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:30] ℹ 
+📋 Suite: Cron Agents
+[01:24:30] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:32] ✓ PASS: 2.11.1 Frontend cron agent available
+[01:24:33] ✓ PASS: 2.11.2 API cron agent available
+[01:24:33] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:33] ℹ 📊 TEST SUMMARY
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ✓ ✓ Cron Agents: 2/2 passed
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ✓ Total: 2/2 tests passed (100%)
+[01:24:33] ℹ Duration: 2.66s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:33] ✗ ✗ Integration Tests: 2.11-cron (exit code: 3221226505)
+[01:24:33] ✗ Suite 2.11-cron failed: Integration Tests: 2.11-cron failed with code 3221226505
+[01:24:33] ▶ Running: Integration Tests: 2.12-rate-limiting
+[01:24:33] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:33] ℹ Base URL: http://localhost:3000
+[01:24:33] ℹ Test Suite: 2.12-rate-limiting
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ℹ 
+📋 Suite: Rate Limiting
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ✓ PASS: 2.12.1 Rate limit headers present
+[01:24:33] ✓ PASS: 2.12.2 Chat rate limiting enforced
+[01:24:33] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:33] ℹ 📊 TEST SUMMARY
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ✓ ✓ Rate Limiting: 2/2 passed
+[01:24:33] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:33] ✓ Total: 2/2 tests passed (100%)
+[01:24:33] ℹ Duration: 0.07s
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+[01:24:34] ✗ ✗ Integration Tests: 2.12-rate-limiting (exit code: 3221226505)
+[01:24:34] ✗ Suite 2.12-rate-limiting failed: Integration Tests: 2.12-rate-limiting failed with code 3221226505
+[01:24:34] ▶ Running: Integration Tests: 2.13-security
+[01:24:34] ℹ 🧪 PERFECT_STORE_ON_X Phase 2: Integration Tests
+[01:24:34] ℹ Base URL: http://localhost:3000
+[01:24:34] ℹ Test Suite: 2.13-security
+[01:24:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:34] ℹ 
+📋 Suite: Security Headers
+[01:24:34] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:38] ✓ PASS: 2.13.1 Security headers present
+[01:24:39] ✗ FAIL: 2.13.2 No sensitive headers exposed — X-Powered-By should not be exposed
+[01:24:39] ℹ 
+══════════════════════════════════════════════════════════════════════
+[01:24:39] ℹ 📊 TEST SUMMARY
+[01:24:39] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:39] ⚠ ✗ Security Headers: 1/2 passed
+[01:24:39] ℹ ──────────────────────────────────────────────────────────────────────
+[01:24:39] ✗ Total: 1/2 tests passed (50%)
+[01:24:39] ℹ Duration: 4.91s
+[01:24:39] ✗ ✗ Integration Tests: 2.13-security (exit code: 1)
+[01:24:39] ✗ Suite 2.13-security failed: Integration Tests: 2.13-security failed with code 1
+[01:24:39] ✓ 
+✅ Phase 2 Passed: All integration tests completed
+[01:24:39] █ 
+══════════════════════════════════════════════════════════════════════
+[01:24:39] ✓ 🎉 ALL TESTS PASSED!
+[01:24:39] █ ══════════════════════════════════════════════════════════════════════
+[01:24:39] ℹ 
+📊 Next Steps:
+[01:24:39] ℹ 1. Review test results above
+[01:24:39] ℹ 2. Fix any failing tests
+[01:24:39] ℹ 3. Run production deployment checks
+[01:24:39] ℹ 
+For more details, see PERFECT_STORE_VALIDATION_CHECKLIST.md
