@@ -3,9 +3,9 @@
  * Run: node scripts/seed-test-data.mjs
  */
 
-const DRUPAL_API = "http://72.62.80.155";
-const DRUPAL_USER = "rare";
-const DRUPAL_PASS = "admin123";
+const DRUPAL_API = process.env.DRUPAL_API_URL || "http://localhost:8081";
+const DRUPAL_USER = process.env.DRUPAL_API_USER || "admin";
+const DRUPAL_PASS = process.env.DRUPAL_API_PASS || "admin";
 const USD_CURRENCY_UUID = "7be59a35-eea8-4d2d-8be4-b113aafad8d4";
 
 // ── Test stores ──────────────────────────────────────────────────────────────

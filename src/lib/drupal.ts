@@ -1,4 +1,4 @@
-export const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
+export const DRUPAL_API_URL = process.env.DRUPAL_API_URL || process.env.NEXT_PUBLIC_DRUPAL_URL || "http://localhost:8081";
 
 const DRUPAL_PUBLIC_ASSET_BASE =
   process.env.DRUPAL_PUBLIC_URL || null;

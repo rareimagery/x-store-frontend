@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { drupalWriteHeaders, drupalAuthHeaders } from "@/lib/drupal";
 import { getStoreByXUsername } from "@/lib/social";
 
-const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
+const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://localhost:8081";
 
 /**
  * GET /api/social/shoutouts?storeId=xxx

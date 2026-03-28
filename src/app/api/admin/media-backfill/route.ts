@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isSafeImageUrl } from "@/lib/ownership";
 import { drupalWriteHeaders } from "@/lib/drupal";
 
-const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
+const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://localhost:8081";
 
 type ProfileNode = {
   id: string;

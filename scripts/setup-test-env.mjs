@@ -62,7 +62,7 @@ const required = {
     { name: "STRIPE_WEBHOOK_SECRET", example: "whsec_... (for webhooks)" },
   ],
   "Drupal Backend": [
-    { name: "DRUPAL_URL", example: "http://72.62.80.155" },
+    { name: "DRUPAL_URL", example: "http://localhost:8081" },
     { name: "DRUPAL_USERNAME", example: "admin" },
     { name: "DRUPAL_PASSWORD", example: "your-drupal-password" },
   ],
@@ -125,7 +125,8 @@ const checkService = async (name, url, timeout = 5000) => {
 
 log("Checking services (this may take a moment)...", "info");
 await checkService("Frontend Server", "http://localhost:3000/api/auth/session", 3000);
-await checkService("Drupal Backend", "http://72.62.80.155/jsonapi/node/store", 5000);
+const currentDrupalUrl = process.env.DRUPAL_URL || process.env.DRUPAL_API_URL || "http://localhost:8081";
+await checkService("Drupal Backend", `${currentDrupalUrl}/jsonapi/node/store`, 5000);
 await checkService("Stripe API", "https://api.stripe.com/v1/charges", 3000);
 
 // Test database
