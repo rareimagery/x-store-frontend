@@ -236,6 +236,53 @@ export const authOptions: NextAuthOptions = {
           scope: "tweet.read users.read follows.read offline.access",
         },
       },
+      token: {
+        url: "https://api.twitter.com/2/oauth2/token",
+        async request({ client, params, checks, provider }) {
+          // X OAuth 2.0 requires Basic Auth header for confidential clients.
+          // openid-client may not send it by default, so we do a raw fetch.
+          const basicAuth = Buffer.from(
+            `${X_OAUTH_CLIENT_ID}:${X_OAUTH_CLIENT_SECRET}`
+          ).toString("base64");
+
+          const body = new URLSearchParams({
+            code: params.code as string,
+            grant_type: "authorization_code",
+            client_id: X_OAUTH_CLIENT_ID,
+            redirect_uri: provider.callbackUrl,
+            code_verifier: (checks as Record<string, string>).code_verifier,
+          });
+
+          const response = await fetch(
+            "https://api.twitter.com/2/oauth2/token",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                Authorization: `Basic ${basicAuth}`,
+              },
+              body: body.toString(),
+            }
+          );
+
+          const tokens = await response.json();
+          if (!response.ok) {
+            console.error("[auth] X token exchange failed:", tokens);
+            throw new Error(
+              `X token exchange failed: ${tokens.error} - ${tokens.error_description}`
+            );
+          }
+
+          return { tokens };
+        },
+      },
+      userinfo: {
+        url: "https://api.twitter.com/2/users/me",
+        params: {
+          "user.fields":
+            "profile_image_url,description,public_metrics,verified,created_at",
+        },
+      },
     }),
     CredentialsProvider({
       name: "credentials",
