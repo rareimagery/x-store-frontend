@@ -11,6 +11,9 @@ export async function GET() {
   const clientSecret = process.env.X_CLIENT_SECRET || process.env.X_CONSUMER_SECRET || "";
   const drupalUrl = process.env.DRUPAL_API_URL;
 
+  const adminXUsernames = process.env.ADMIN_X_USERNAMES || "";
+  const consoleAdminEmail = process.env.CONSOLE_ADMIN_EMAIL || "";
+
   return NextResponse.json({
     NEXTAUTH_URL: nextAuthUrl || "(NOT SET)",
     NEXTAUTH_SECRET_set: hasSecret,
@@ -27,6 +30,13 @@ export async function GET() {
     DRUPAL_API_URL: drupalUrl || "(NOT SET)",
     DRUPAL_API_USER_set: !!process.env.DRUPAL_API_USER,
     DRUPAL_API_PASS_set: !!process.env.DRUPAL_API_PASS,
+    ADMIN_X_USERNAMES_set: !!adminXUsernames,
+    ADMIN_X_USERNAMES_value: adminXUsernames || "(NOT SET)",
+    CONSOLE_ADMIN_EMAIL_set: !!consoleAdminEmail,
+    CONSOLE_ADMIN_EMAIL_preview: consoleAdminEmail
+      ? `${consoleAdminEmail.slice(0, 4)}...`
+      : "(NOT SET)",
+    CONSOLE_ADMIN_PASSWORD_set: !!process.env.CONSOLE_ADMIN_PASSWORD,
     NODE_ENV: process.env.NODE_ENV,
   });
 }
