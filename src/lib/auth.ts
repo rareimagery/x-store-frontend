@@ -243,19 +243,28 @@ export const authOptions: NextAuthOptions = {
       },
       token: {
         url: "https://api.twitter.com/2/oauth2/token",
-        async request({ client, params, checks, provider }) {
-          // X OAuth 2.0 requires Basic Auth header for confidential clients.
-          // openid-client may not send it by default, so we do a raw fetch.
+        async request({ params, checks, provider }) {
+          // X OAuth 2.0 requires HTTP Basic Auth for confidential clients.
           const basicAuth = Buffer.from(
-            `${X_OAUTH_CLIENT_ID}:${X_OAUTH_CLIENT_SECRET}`
+            `${encodeURIComponent(X_OAUTH_CLIENT_ID)}:${encodeURIComponent(X_OAUTH_CLIENT_SECRET)}`
           ).toString("base64");
+
+          const redirectUri = provider.callbackUrl;
+          const codeVerifier = (checks as Record<string, string>).code_verifier;
+
+          console.log("[auth] Token exchange →", {
+            redirect_uri: redirectUri,
+            has_code: !!params.code,
+            has_code_verifier: !!codeVerifier,
+            client_id_len: X_OAUTH_CLIENT_ID.length,
+            client_secret_len: X_OAUTH_CLIENT_SECRET.length,
+          });
 
           const body = new URLSearchParams({
             code: params.code as string,
             grant_type: "authorization_code",
-            client_id: X_OAUTH_CLIENT_ID,
-            redirect_uri: provider.callbackUrl,
-            code_verifier: (checks as Record<string, string>).code_verifier,
+            redirect_uri: redirectUri,
+            code_verifier: codeVerifier,
           });
 
           const response = await fetch(
@@ -272,12 +281,18 @@ export const authOptions: NextAuthOptions = {
 
           const tokens = await response.json();
           if (!response.ok) {
-            console.error("[auth] X token exchange failed:", tokens);
+            console.error("[auth] X token exchange failed:", {
+              status: response.status,
+              error: tokens.error,
+              description: tokens.error_description,
+              redirect_uri: redirectUri,
+            });
             throw new Error(
               `X token exchange failed: ${tokens.error} - ${tokens.error_description}`
             );
           }
 
+          console.log("[auth] Token exchange success, got:", Object.keys(tokens));
           return { tokens };
         },
       },
