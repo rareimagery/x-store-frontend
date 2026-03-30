@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCreatorProfile, getCreatorStoreBySlug } from "@/lib/drupal";
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net";
-const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155:32778";
+const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
 
 export async function GET(
   _req: NextRequest,

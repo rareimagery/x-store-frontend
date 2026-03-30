@@ -57,7 +57,7 @@ const checkDrupal = async (url) => {
 
 const run = async () => {
   checkEnv();
-  const drupalUrl = process.env.DRUPAL_API_URL || 'http://72.62.80.155:32778';
+  const drupalUrl = process.env.DRUPAL_API_URL || 'http://72.62.80.155';
   await checkDrupal(drupalUrl);
 
   console.log('\n--- Next Steps ---');
