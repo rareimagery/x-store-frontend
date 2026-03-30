@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import ThemeSelector from "./ThemeSelector";
 import ProductManager from "./ProductManager";
+import WireframeBuilder from "./builder/WireframeBuilder";
+import type { WireframeLayout, PlacedBlock } from "./builder/WireframeBuilder";
 import type { XImportData } from "@/lib/x-import";
 import type { GrokEnhancements } from "@/lib/grok";
 
@@ -140,6 +141,95 @@ export default function StoreBuilderWizard({
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeDrupalId, setStoreDrupalId] = useState<string | null>(null);
   const [profileNodeId, setProfileNodeId] = useState<string | null>(null);
+  const [wireframeLayout, setWireframeLayout] = useState<WireframeLayout | null>(null);
+
+  /** Build a default wireframe layout from the creator's imported X profile data. */
+  function buildDefaultWireframe(): WireframeLayout {
+    let order = 0;
+    const uid = () => `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+
+    const left: PlacedBlock[] = [];
+    const center: PlacedBlock[] = [];
+    const right: PlacedBlock[] = [];
+
+    // Hero banner with their background image
+    center.push({
+      instanceId: uid(),
+      type: "hero_banner",
+      column: "center",
+      order: order++,
+      props: {
+        heading: storeName || `${xUser}'s Store`,
+        subheading: bioDescription || "Welcome to my store",
+        background_image_url: backgroundBannerUrl || "",
+        cta_text: "Shop Now",
+        cta_url: `/${slug}/store`,
+      },
+    });
+
+    // Social feed in left sidebar
+    if (xImportData?.topPosts?.length) {
+      left.push({
+        instanceId: uid(),
+        type: "social_feed",
+        column: "left",
+        order: 0,
+        props: { heading: "Latest Posts", max_items: 5 },
+      });
+    }
+
+    // Text block with their bio
+    if (bioDescription) {
+      left.push({
+        instanceId: uid(),
+        type: "text_block",
+        column: "left",
+        order: left.length,
+        props: {
+          heading: "About",
+          body_text: bioDescription,
+        },
+      });
+    }
+
+    // Product grid in center
+    center.push({
+      instanceId: uid(),
+      type: "product_grid",
+      column: "center",
+      order: order++,
+      props: { heading: "Shop", max_items: 6, gallery_columns: 2 },
+    });
+
+    // CTA in right sidebar
+    right.push({
+      instanceId: uid(),
+      type: "cta_section",
+      column: "right",
+      order: 0,
+      props: {
+        heading: "Follow Me",
+        body_text: `Stay up to date with @${xUser}`,
+        cta_text: "Follow on X",
+        cta_url: `https://x.com/${xUser}`,
+      },
+    });
+
+    // Newsletter in right sidebar
+    right.push({
+      instanceId: uid(),
+      type: "newsletter",
+      column: "right",
+      order: 1,
+      props: {
+        heading: "Stay in the Loop",
+        body_text: "Get notified about new drops and exclusives.",
+        cta_text: "Subscribe",
+      },
+    });
+
+    return { left, center, right };
+  }
 
   function autoSlug(name: string): string {
     return name
@@ -217,8 +307,12 @@ export default function StoreBuilderWizard({
       setStoreId(data?.storeId || null);
       setStoreDrupalId(data?.storeDrupalId || "");
       setProfileNodeId(data?.profileNodeId || "");
+
+      // Build default wireframe layout from imported profile data
+      setWireframeLayout(buildDefaultWireframe());
+
       clearDraft();  // Draft fulfilled — remove so retry doesn't loop
-      setStep(2); // Jump to theme step
+      setStep(2); // Jump to wireframe builder step
     } catch (err) {
       const message = err instanceof Error ? err.message : "Network error — please try again";
       setError(message);
@@ -513,26 +607,32 @@ export default function StoreBuilderWizard({
         </div>
       )}
 
-      {/* Step 2: Choose Template */}
+      {/* Step 2: Build Your Page */}
       {step === 2 && (
-        <div className={sectionClass}>
-          <h2 className="mb-2 text-xl font-bold">Choose Your Template</h2>
-          <p className="mb-6 text-sm text-zinc-400">
-            The builder is now the canonical place to pick a template and shape the layout.
-          </p>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+          <div className="px-8 pt-8 pb-4">
+            <h2 className="mb-1 text-xl font-bold">Build Your Page</h2>
+            <p className="mb-4 text-sm text-zinc-400">
+              Drag components into the 3-column wireframe to design your landing page.
+              We&apos;ve pre-filled blocks from your X profile — rearrange or edit them.
+            </p>
+          </div>
 
-          {profileNodeId ? (
-            <ThemeSelector
-              currentTheme={recommendedTheme}
-              sellerHandle={xUsernameField}
+          {slug ? (
+            <WireframeBuilder
+              storeSlug={slug}
+              initialLayout={wireframeLayout || undefined}
+              onChange={(layout) => setWireframeLayout(layout)}
             />
           ) : (
-            <p className="text-sm text-zinc-500">
-              Template selection will be available once your X profile is linked.
-            </p>
+            <div className="px-8 pb-8">
+              <p className="text-sm text-zinc-500">
+                Page builder will be available once your store is created.
+              </p>
+            </div>
           )}
 
-          <div className="mt-6 flex gap-3">
+          <div className="px-8 pb-8 pt-4 flex gap-3">
             <button
               onClick={() => setStep(3)}
               className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
@@ -596,13 +696,13 @@ export default function StoreBuilderWizard({
           <p className="mb-2 text-zinc-400">
             Your store at{" "}
             <span className="font-semibold text-white">
-              {slug}.{BASE_DOMAIN}
+              {BASE_DOMAIN}/{slug}
             </span>{" "}
             has been created and is pending admin approval.
           </p>
           <p className="mb-6 text-sm text-zinc-500">
-            We&apos;ll review your store shortly. Once approved, it will go live
-            on your subdomain.
+            We&apos;ll review your store shortly. Once approved, your landing
+            page and store will go live.
           </p>
 
           <div className="flex justify-center gap-3">
