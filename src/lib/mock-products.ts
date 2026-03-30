@@ -35,14 +35,6 @@ const mockProducts: Record<string, MockProduct[]> = {
     { id: "mock-ks-5", title: "Sticker Pack Vol. 1", description: "10 die-cut holographic stickers featuring original character designs.", price: "8.99", currency: "USD", sku: "ksjcreative-stickers", image_url: null },
     { id: "mock-ks-6", title: "Artist Sketchbook", description: "160-page hardcover sketchbook with my cover art. Thick 120gsm paper.", price: "24.99", currency: "USD", sku: "ksjcreative-sketchbook", image_url: null },
   ],
-  rareimagery: [
-    { id: "mock-ri-1", title: "Urban Decay Photo Print", description: "Limited edition 16x20 fine art print. Abandoned factory in golden hour.", price: "39.99", currency: "USD", sku: "rareimagery-urban", image_url: null },
-    { id: "mock-ri-2", title: "Street Photography Zine", description: "32-page saddle-stitched zine. Raw street photography from 5 cities.", price: "15.99", currency: "USD", sku: "rareimagery-zine", image_url: null },
-    { id: "mock-ri-3", title: "Rare Shots Lightroom Presets", description: "12 custom Lightroom presets that give your photos the RareImagery look.", price: "19.99", currency: "USD", sku: "rareimagery-presets", image_url: null },
-    { id: "mock-ri-4", title: "Neon Nights Poster Set", description: "Set of 3 neon-lit urban landscape posters. 12x18 each.", price: "29.99", currency: "USD", sku: "rareimagery-neon", image_url: null },
-    { id: "mock-ri-5", title: "Photography Masterclass", description: "4-hour video course covering composition, lighting, and post-processing.", price: "59.99", currency: "USD", sku: "rareimagery-masterclass", image_url: null },
-    { id: "mock-ri-6", title: "Rare Tee - Logo Edition", description: "Heavyweight cotton tee with embossed RareImagery wordmark. Limited run.", price: "27.99", currency: "USD", sku: "rareimagery-tee", image_url: null },
-  ],
 };
 
 export function getMockProducts(slug: string): Product[] {

@@ -168,7 +168,7 @@ function renderBlock(
             <span className="text-xs" style={{ color: theme.textSecondary }}>{Math.min(block.maxItems, data.friends.length)} shown</span>
           </div>
           <div className="mt-4 space-y-3">
-            {(data.friends.length ? data.friends : [{ id: "placeholder", username: "rareimagery", displayName: "RareImagery" }])
+            {(data.friends.length ? data.friends : [{ id: "placeholder", username: "creator", displayName: "Creator" }])
               .slice(0, block.maxItems)
               .map((friend) => (
                 <div key={friend.id} className="flex items-center gap-3 rounded-2xl border px-3 py-3" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
