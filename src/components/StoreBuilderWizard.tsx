@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { signOut } from "next-auth/react";
 import ProductManager from "./ProductManager";
 import WireframeBuilder from "./builder/WireframeBuilder";
 import type { WireframeLayout, PlacedBlock } from "./builder/WireframeBuilder";
@@ -66,7 +67,13 @@ export default function StoreBuilderWizard({
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
-      if (draft.step !== undefined) setStep(draft.step);
+      // If draft is past store creation (step >= 2) but we don't have a
+      // storeId, the store was deleted or the draft is stale — reset.
+      if (draft.step >= 2 && !draft.storeId) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      if (draft.step !== undefined && draft.step < 2) setStep(draft.step);
       if (draft.storeName) setStoreName(draft.storeName);
       if (draft.slug) { setSlug(draft.slug); setSlugEdited(true); }
       if (draft.ownerEmail) setOwnerEmail(draft.ownerEmail);
@@ -78,6 +85,7 @@ export default function StoreBuilderWizard({
       if (draft.backgroundBannerUrl) setBackgroundBannerUrl(draft.backgroundBannerUrl);
     } catch {
       // Corrupt draft — ignore
+      localStorage.removeItem(DRAFT_KEY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -327,6 +335,16 @@ export default function StoreBuilderWizard({
 
   return (
     <div className="mx-auto max-w-3xl">
+      {/* Sign out link */}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="text-xs text-zinc-500 hover:text-zinc-300 transition"
+        >
+          Sign Out
+        </button>
+      </div>
+
       {/* Step indicator */}
       <div className="mb-8 flex items-center justify-between">
         {STEPS.map((label, i) => (
