@@ -123,10 +123,10 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
               Get Started
             </p>
             <Link
-              href="/console/setup"
+              href={isAdmin ? "/console/stores/new" : "/console/setup"}
               onClick={onNavigate}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                isActive("/console/setup")
+                isActive("/console/setup") || isActive("/console/stores/new")
                   ? "bg-indigo-600/20 text-indigo-400"
                   : "bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20"
               }`}
@@ -134,8 +134,25 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Create Your Store
+              Create Store
             </Link>
+            {isAdmin && storeLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  isActive(link.href)
+                    ? "bg-indigo-600/20 text-indigo-400"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                }`}
+              >
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
+                </svg>
+                {link.label}
+              </Link>
+            ))}
           </>
         )}
 
