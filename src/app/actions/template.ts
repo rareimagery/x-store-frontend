@@ -12,10 +12,10 @@ async function findCreatorProfileUuidByHandle(handle: string): Promise<string | 
   for (const candidate of candidates) {
     const params = new URLSearchParams({
       'filter[field_x_username]': candidate,
-      'fields[node--creator_x_profile]': 'drupal_internal__nid',
+      'fields[node--x_user_profile]': 'drupal_internal__nid',
     });
 
-    const url = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params.toString()}`;
+    const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
     const res = await fetch(url, {
       headers: {
         Accept: 'application/vnd.api+json',
@@ -63,7 +63,7 @@ export async function updateTemplate(sellerHandle: string, templateId: TemplateI
     const theme = TEMPLATE_TO_THEME[templateId];
     const writeHeaders = await drupalWriteHeaders();
 
-    const endpoint = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileUuid}`;
+    const endpoint = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileUuid}`;
     const commonHeaders = {
       ...writeHeaders,
       'Content-Type': 'application/vnd.api+json',
@@ -78,7 +78,7 @@ export async function updateTemplate(sellerHandle: string, templateId: TemplateI
       headers: commonHeaders,
       body: JSON.stringify({
         data: {
-          type: 'node--creator_x_profile',
+          type: 'node--x_user_profile',
           id: profileUuid,
           attributes: {
             field_store_theme: theme,
@@ -97,7 +97,7 @@ export async function updateTemplate(sellerHandle: string, templateId: TemplateI
         headers: commonHeaders,
         body: JSON.stringify({
           data: {
-            type: 'node--creator_x_profile',
+            type: 'node--x_user_profile',
             id: profileUuid,
             attributes: {
               field_store_theme: theme,

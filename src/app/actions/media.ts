@@ -24,10 +24,10 @@ function safeFilename(name: string): string {
 async function findCreatorProfileUuidByHandle(handle: string): Promise<string | null> {
   const params = new URLSearchParams({
     'filter[field_x_username]': handle,
-    'fields[node--creator_x_profile]': 'drupal_internal__nid',
+    'fields[node--x_user_profile]': 'drupal_internal__nid',
   });
 
-  const url = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params.toString()}`;
+  const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
   const res = await fetch(url, {
     headers: {
       Accept: 'application/vnd.api+json',
@@ -71,7 +71,7 @@ export async function uploadVideoToDrupal(file: File, sellerHandle: string): Pro
   const filename = safeFilename(file.name || `${sellerHandle}-video.mp4`);
 
   for (const fieldName of VIDEO_FIELD_CANDIDATES) {
-    const endpoint = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileUuid}/${fieldName}`;
+    const endpoint = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileUuid}/${fieldName}`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {

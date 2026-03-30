@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${xUsername}&fields[node--creator_x_profile]=field_x_subscription_tier,field_x_subscriber_since`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${xUsername}&fields[node--x_user_profile]=field_x_subscription_tier,field_x_subscriber_since`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
     if (!res.ok) {
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Find their profile
     const profileRes = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${xUsername}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${xUsername}`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
     if (!profileRes.ok) {
@@ -86,13 +86,13 @@ export async function POST(req: NextRequest) {
     // Set to pending_claim — admin will approve with the actual tier
     const writeHeaders = await drupalWriteHeaders();
     const patchRes = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile/${profile.id}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile/${profile.id}`,
       {
         method: "PATCH",
         headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
         body: JSON.stringify({
           data: {
-            type: "node--creator_x_profile",
+            type: "node--x_user_profile",
             id: profile.id,
             attributes: {
               field_x_subscription_tier: "rare_supporter",
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     }
 
     const profileRes = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${xUsername}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${xUsername}`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
     const profileData = await profileRes.json();
@@ -149,13 +149,13 @@ export async function POST(req: NextRequest) {
 
     const writeHeaders = await drupalWriteHeaders();
     const patchRes = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile/${profile.id}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile/${profile.id}`,
       {
         method: "PATCH",
         headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
         body: JSON.stringify({
           data: {
-            type: "node--creator_x_profile",
+            type: "node--x_user_profile",
             id: profile.id,
             attributes: attrs,
           },

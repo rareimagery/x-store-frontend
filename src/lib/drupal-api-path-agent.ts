@@ -98,7 +98,7 @@ export async function runDrupalApiPathAgent(): Promise<DrupalApiPathAgentReport>
 
   const drupalCreatorRead = await checkEndpoint(
     "Drupal creator profile list",
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?page[limit]=1`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?page[limit]=1`,
     "GET",
     { headers: { ...drupalAuthHeaders() } }
   );

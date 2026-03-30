@@ -19,10 +19,10 @@ const VIDEO_URL_FIELD_CANDIDATES = [
 async function findCreatorProfileUuidByHandle(handle: string): Promise<string | null> {
   const params = new URLSearchParams({
     'filter[field_x_username]': handle,
-    'fields[node--creator_x_profile]': 'drupal_internal__nid',
+    'fields[node--x_user_profile]': 'drupal_internal__nid',
   });
 
-  const url = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params.toString()}`;
+  const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
   const res = await fetch(url, {
     headers: {
       Accept: 'application/vnd.api+json',
@@ -72,7 +72,7 @@ export async function saveLinkedVideo(videoUrl: string, sellerHandle: string): P
   const writeHeaders = await drupalWriteHeaders();
 
   for (const fieldName of VIDEO_URL_FIELD_CANDIDATES) {
-    const res = await fetch(`${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileUuid}`, {
+    const res = await fetch(`${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileUuid}`, {
       method: 'PATCH',
       headers: {
         ...writeHeaders,
@@ -80,7 +80,7 @@ export async function saveLinkedVideo(videoUrl: string, sellerHandle: string): P
       },
       body: JSON.stringify({
         data: {
-          type: 'node--creator_x_profile',
+          type: 'node--x_user_profile',
           id: profileUuid,
           attributes: {
             [fieldName]: normalizedUrl,

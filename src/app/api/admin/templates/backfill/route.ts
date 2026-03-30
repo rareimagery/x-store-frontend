@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   const dryRun = body?.dryRun !== false;
 
   try {
-    const baseUrl = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?page[limit]=200`;
+    const baseUrl = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?page[limit]=200`;
     let url: string | null = baseUrl;
     const allProfiles: ProfileNode[] = [];
 
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         migrationSource: "admin-backfill",
       };
 
-      const patchRes = await fetch(`${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${row.id}`, {
+      const patchRes = await fetch(`${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${row.id}`, {
         method: "PATCH",
         headers: {
           ...writeHeaders,
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           data: {
-            type: "node--creator_x_profile",
+            type: "node--x_user_profile",
             id: row.id,
             attributes: {
               field_store_theme_config: JSON.stringify(nextConfig),

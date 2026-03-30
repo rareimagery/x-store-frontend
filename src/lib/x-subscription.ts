@@ -44,7 +44,7 @@ async function resolveRequiredCreatorStoreId(requiredUsername: string): Promise<
       "filter[field_x_username]": candidate,
     });
 
-    const endpoint = `${DRUPAL_API}/jsonapi/node/creator_x_profile?${params.toString()}`;
+    const endpoint = `${DRUPAL_API}/jsonapi/node/x_user_profile?${params.toString()}`;
     const res: Response = await fetch(
       endpoint,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }

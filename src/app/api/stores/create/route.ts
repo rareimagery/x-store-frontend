@@ -62,7 +62,7 @@ function maxStoresPerOwner(): number {
 async function getStoreCountForXUsername(xUsername: string): Promise<number> {
   try {
     const res: Response = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
 
@@ -220,7 +220,7 @@ async function createXProfile(storeId: string | null, fields: XProfileFields) {
   }
 
   const profileWriteHeaders = await drupalWriteHeaders();
-  const res = await fetch(`${DRUPAL_API}/jsonapi/node/creator_x_profile`, {
+  const res = await fetch(`${DRUPAL_API}/jsonapi/node/x_user_profile`, {
     method: "POST",
     headers: {
       ...profileWriteHeaders,
@@ -228,7 +228,7 @@ async function createXProfile(storeId: string | null, fields: XProfileFields) {
     },
     body: JSON.stringify({
       data: {
-        type: "node--creator_x_profile",
+        type: "node--x_user_profile",
         attributes,
         ...(storeId
           ? {

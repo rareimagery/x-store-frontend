@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         include: "field_profile_picture",
       });
       const profileRes = await fetch(
-        `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${profileParams}`,
+        `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${profileParams}`,
         { cache: "no-store" }
       );
       if (profileRes.ok) {

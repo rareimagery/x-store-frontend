@@ -58,7 +58,7 @@ async function findXProfile(xUsername: string): Promise<string | null> {
   });
 
   const res = await fetch(
-    `${DRUPAL_API}/jsonapi/node/creator_x_profile?${params.toString()}`,
+    `${DRUPAL_API}/jsonapi/node/x_user_profile?${params.toString()}`,
     { headers: { ...drupalAuthHeaders() } }
   );
 
@@ -72,7 +72,7 @@ async function findXProfile(xUsername: string): Promise<string | null> {
 async function linkProfileToStore(profileId: string, storeId: string) {
   const writeHeaders = await drupalWriteHeaders();
   const res = await fetch(
-    `${DRUPAL_API}/jsonapi/node/creator_x_profile/${profileId}`,
+    `${DRUPAL_API}/jsonapi/node/x_user_profile/${profileId}`,
     {
       method: "PATCH",
       headers: {
@@ -81,7 +81,7 @@ async function linkProfileToStore(profileId: string, storeId: string) {
       },
       body: JSON.stringify({
         data: {
-          type: "node--creator_x_profile",
+          type: "node--x_user_profile",
           id: profileId,
           relationships: {
             field_linked_store: {

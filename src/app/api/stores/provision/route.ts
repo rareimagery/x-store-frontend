@@ -20,7 +20,7 @@ const DRUPAL_API = process.env.DRUPAL_API_URL;
 
 async function profileExists(username: string): Promise<string | null> {
   const res = await fetch(
-    `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${username}`,
+    `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${username}`,
     { headers: { ...drupalAuthHeaders() } }
   );
   if (!res.ok) return null;
@@ -58,11 +58,11 @@ async function createProfile(
     attributes.field_metrics = JSON.stringify(xData.metrics);
   }
 
-  const res = await fetch(`${DRUPAL_API}/jsonapi/node/creator_x_profile`, {
+  const res = await fetch(`${DRUPAL_API}/jsonapi/node/x_user_profile`, {
     method: "POST",
     headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
     body: JSON.stringify({
-      data: { type: "node--creator_x_profile", attributes },
+      data: { type: "node--x_user_profile", attributes },
     }),
   });
 

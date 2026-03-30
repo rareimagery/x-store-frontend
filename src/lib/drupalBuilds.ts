@@ -281,7 +281,7 @@ async function fetchRawBuildFieldByUuid(uuid: string): Promise<string | null> {
 
 async function resolveProfileUuidBySlug(slug: string): Promise<string | null> {
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?filter[field_x_username]=${encodeURIComponent(slug)}&fields[node--creator_x_profile]=field_store_theme_config`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(slug)}&fields[node--x_user_profile]=field_store_theme_config`,
     {
       headers: {
         ...drupalAuthHeaders(),
@@ -298,7 +298,7 @@ async function resolveProfileUuidBySlug(slug: string): Promise<string | null> {
 
 async function fetchProfileThemeConfigRawByUuid(uuid: string): Promise<unknown> {
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${uuid}?fields[node--creator_x_profile]=field_store_theme_config,field_x_username`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${uuid}?fields[node--x_user_profile]=field_store_theme_config,field_x_username`,
     {
       headers: {
         ...drupalAuthHeaders(),
@@ -352,10 +352,10 @@ async function saveBuildsToProfileConfig(storeSlug: string, builds: Build[]): Pr
   const config = parseProfileConfigObject(existingRaw);
   config[PROFILE_BUILDS_KEY] = serializeBuildDocument(builds);
 
-  const endpoint = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileUuid}`;
+  const endpoint = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileUuid}`;
   const payload = JSON.stringify({
     data: {
-      type: "node--creator_x_profile",
+      type: "node--x_user_profile",
       id: profileUuid,
       attributes: {
         field_store_theme_config: JSON.stringify(config),

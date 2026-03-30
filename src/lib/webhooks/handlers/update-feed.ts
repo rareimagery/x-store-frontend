@@ -12,7 +12,7 @@ export async function updateStorefrontFeed(
 ) {
   // Find the store/profile node by X user ID
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?filter[field_x_user_id]=${encodeURIComponent(xUserId)}&fields[node--creator_x_profile]=id,field_top_posts`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_user_id]=${encodeURIComponent(xUserId)}&fields[node--x_user_profile]=id,field_top_posts`,
     { headers: { ...drupalAuthHeaders() } }
   );
 
@@ -59,7 +59,7 @@ export async function updateStorefrontFeed(
 
   const writeHeaders = await drupalWriteHeaders();
   const patchRes = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${nodeId}`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${nodeId}`,
     {
       method: "PATCH",
       headers: {
@@ -68,7 +68,7 @@ export async function updateStorefrontFeed(
       },
       body: JSON.stringify({
         data: {
-          type: "node--creator_x_profile",
+          type: "node--x_user_profile",
           id: nodeId,
           attributes: {
             field_top_posts: updated.map((p) => JSON.stringify(p)),

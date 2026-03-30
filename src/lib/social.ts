@@ -75,7 +75,7 @@ export async function getStoreByXUsername(
   });
 
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params}`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params}`,
     { cache: "no-store" }
   );
 
@@ -456,7 +456,7 @@ export async function seedFromX(
     });
 
     const res = await fetch(
-      `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params}`,
+      `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params}`,
       { cache: "no-store" }
     );
 

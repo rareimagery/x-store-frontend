@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest) {
     let ownerPhone: string | null = null;
     try {
       const profileRes = await fetch(
-        `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_linked_store.id]=${storeId}&include=uid`,
+        `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_linked_store.id]=${storeId}&include=uid`,
         { headers: { ...drupalAuthHeaders() } }
       );
       if (profileRes.ok) {

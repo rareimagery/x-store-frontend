@@ -43,7 +43,7 @@ function buildBasicAuthHeader(): string {
 async function findProfileByHandle(handle: string): Promise<ProfileNode | null> {
   const auth = buildBasicAuthHeader();
   const url =
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?` +
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?` +
     `filter[field_x_username]=${encodeURIComponent(handle)}`;
 
   const res = await fetch(url, {
@@ -131,7 +131,7 @@ async function uploadImageToProfileField(
   const bytes = Buffer.from(await imageRes.arrayBuffer());
 
   const uploadRes = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileId}/${fieldName}`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileId}/${fieldName}`,
     {
       method: "POST",
       headers: {
@@ -171,7 +171,7 @@ async function patchProfileSourceUrls(
     return { ok: true };
   }
 
-  const res = await fetch(`${DRUPAL_API_URL}/jsonapi/node/creator_x_profile/${profileId}`, {
+  const res = await fetch(`${DRUPAL_API_URL}/jsonapi/node/x_user_profile/${profileId}`, {
     method: "PATCH",
     headers: {
       ...writeHeaders,
@@ -180,7 +180,7 @@ async function patchProfileSourceUrls(
     },
     body: JSON.stringify({
       data: {
-        type: "node--creator_x_profile",
+        type: "node--x_user_profile",
         id: profileId,
         attributes,
       },

@@ -112,7 +112,7 @@ export async function verifyProfileOwnership(
 
   try {
     const res = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile/${profileNodeId}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile/${profileNodeId}`,
       {
         headers: { ...drupalAuthHeaders() },
         next: { revalidate: 0 },
