@@ -215,6 +215,17 @@ async function authenticateDrupalUser(
 }
 
 export const authOptions: NextAuthOptions = {
+  logger: {
+    error(code, metadata) {
+      console.error(`[NextAuth][error] ${code}`, JSON.stringify(metadata, null, 2));
+    },
+    warn(code) {
+      console.warn(`[NextAuth][warn] ${code}`);
+    },
+    debug(code, metadata) {
+      console.log(`[NextAuth][debug] ${code}`, JSON.stringify(metadata, null, 2));
+    },
+  },
   providers: [
     TwitterProvider({
       clientId: X_OAUTH_CLIENT_ID,
