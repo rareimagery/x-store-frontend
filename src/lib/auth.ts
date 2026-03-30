@@ -232,8 +232,31 @@ export const authOptions: NextAuthOptions = {
       clientSecret: X_OAUTH_CLIENT_SECRET,
       version: "2.0",
       authorization: {
+        url: "https://twitter.com/i/oauth2/authorize",
         params: {
           scope: "tweet.read users.read follows.read offline.access",
+        },
+      },
+      token: {
+        url: "https://api.x.com/2/oauth2/token",
+        async request({ client, params, checks, provider }) {
+          const response = await client.oauthCallback(
+            provider.callbackUrl,
+            params,
+            checks,
+            {
+              exchangeBody: {
+                client_id: X_OAUTH_CLIENT_ID,
+              },
+            }
+          );
+          return { tokens: response };
+        },
+      },
+      userinfo: {
+        url: "https://api.x.com/2/users/me",
+        params: {
+          "user.fields": "profile_image_url,description,public_metrics,verified,created_at,location,entities",
         },
       },
     }),
