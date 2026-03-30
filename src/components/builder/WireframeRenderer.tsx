@@ -1,0 +1,283 @@
+import type { PlacedBlock, WireframeLayout } from "./WireframeBuilder";
+import type { CreatorProfile, Product } from "@/lib/drupal";
+
+interface WireframeRendererProps {
+  layout: WireframeLayout;
+  profile: CreatorProfile;
+  products: Product[];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Block Renderers                                                    */
+/* ------------------------------------------------------------------ */
+
+function HeroBanner({ block }: { block: PlacedBlock }) {
+  const { heading, subheading, background_image_url, cta_text, cta_url } = block.props;
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden bg-zinc-800 p-8 sm:p-12 text-center"
+      style={
+        background_image_url
+          ? { backgroundImage: `url(${background_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+          : undefined
+      }
+    >
+      {background_image_url && <div className="absolute inset-0 bg-black/50" />}
+      <div className="relative z-10">
+        {heading && <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{String(heading)}</h2>}
+        {subheading && <p className="text-sm sm:text-base text-zinc-300 mb-6">{String(subheading)}</p>}
+        {cta_text && cta_url && (
+          <a
+            href={String(cta_url)}
+            className="inline-block rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition"
+          >
+            {String(cta_text)}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TextBlock({ block }: { block: PlacedBlock }) {
+  const { heading, body_text } = block.props;
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      {heading && <h3 className="text-lg font-semibold text-white mb-2">{String(heading)}</h3>}
+      {body_text && (
+        <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{String(body_text)}</div>
+      )}
+    </div>
+  );
+}
+
+function CtaSection({ block }: { block: PlacedBlock }) {
+  const { heading, body_text, cta_text, cta_url, background_color } = block.props;
+  return (
+    <div
+      className="rounded-xl p-6 text-center"
+      style={{ backgroundColor: (background_color as string) || "#1e1b4b" }}
+    >
+      {heading && <h3 className="text-lg font-bold text-white mb-2">{String(heading)}</h3>}
+      {body_text && <p className="text-sm text-zinc-300 mb-4">{String(body_text)}</p>}
+      {cta_text && (
+        <a
+          href={String(cta_url || "#")}
+          className="inline-block rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 transition"
+        >
+          {String(cta_text)}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function VideoEmbed({ block }: { block: PlacedBlock }) {
+  const { video_url, heading } = block.props;
+  let embedUrl = String(video_url || "");
+  const ytMatch = embedUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-zinc-800">
+      {heading && <p className="px-4 pt-3 text-sm font-medium text-zinc-300">{String(heading)}</p>}
+      <div className="aspect-video">
+        {embedUrl ? (
+          <iframe
+            src={embedUrl}
+            className="h-full w-full"
+            allowFullScreen
+            title={String(heading || "Video")}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-zinc-800 text-zinc-600 text-sm">
+            No video URL set
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Testimonial({ block }: { block: PlacedBlock }) {
+  const { quote_text, author_name, author_handle } = block.props;
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      {quote_text && (
+        <blockquote className="text-sm text-zinc-300 italic leading-relaxed mb-3">
+          &ldquo;{String(quote_text)}&rdquo;
+        </blockquote>
+      )}
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-indigo-600/20 flex items-center justify-center text-xs font-bold text-indigo-400">
+          {String(author_name || "?")[0]?.toUpperCase()}
+        </div>
+        <div>
+          {author_name && <p className="text-xs font-medium text-white">{String(author_name)}</p>}
+          {author_handle && <p className="text-[10px] text-zinc-500">@{String(author_handle)}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductGrid({ block, products }: { block: PlacedBlock; products: Product[] }) {
+  const maxItems = Number(block.props.max_items) || 6;
+  const cols = Number(block.props.gallery_columns) || 2;
+  const heading = block.props.heading;
+  const shown = products.slice(0, maxItems);
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className={`grid gap-3 ${cols === 3 ? "grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        {shown.map((p) => (
+          <div key={p.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+            {p.image_url && (
+              <div className="aspect-square bg-zinc-800">
+                <img src={p.image_url} alt={p.title} className="h-full w-full object-cover" />
+              </div>
+            )}
+            <div className="p-3">
+              <p className="text-xs font-medium text-zinc-200 truncate">{p.title}</p>
+              <p className="text-xs text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+  const maxItems = Number(block.props.max_items) || 5;
+  const heading = block.props.heading;
+  const posts = (profile.top_posts || []).slice(0, maxItems);
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="space-y-2">
+        {posts.map((post) => (
+          <div key={post.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.text}</p>
+          </div>
+        ))}
+        {posts.length === 0 && (
+          <p className="text-xs text-zinc-600">No posts yet</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Spacer({ block }: { block: PlacedBlock }) {
+  const height = Number(block.props.spacer_height) || 40;
+  return <div style={{ height }} />;
+}
+
+function Newsletter({ block }: { block: PlacedBlock }) {
+  const { heading, body_text, cta_text } = block.props;
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
+      {heading && <h3 className="text-lg font-semibold text-white mb-1">{String(heading)}</h3>}
+      {body_text && <p className="text-xs text-zinc-400 mb-3">{String(body_text)}</p>}
+      <div className="flex gap-2 max-w-xs mx-auto">
+        <input
+          type="email"
+          placeholder="you@email.com"
+          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white placeholder-zinc-500"
+          readOnly
+        />
+        <button className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white">
+          {String(cta_text || "Subscribe")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ImageGallery({ block }: { block: PlacedBlock }) {
+  const { heading } = block.props;
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="flex items-center justify-center h-32 text-xs text-zinc-600">
+        Image gallery — upload images in Drupal
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Block Router                                                       */
+/* ------------------------------------------------------------------ */
+
+function RenderBlock({
+  block,
+  profile,
+  products,
+}: {
+  block: PlacedBlock;
+  profile: CreatorProfile;
+  products: Product[];
+}) {
+  switch (block.type) {
+    case "hero_banner": return <HeroBanner block={block} />;
+    case "text_block": return <TextBlock block={block} />;
+    case "cta_section": return <CtaSection block={block} />;
+    case "video_embed": return <VideoEmbed block={block} />;
+    case "testimonial": return <Testimonial block={block} />;
+    case "product_grid": return <ProductGrid block={block} products={products} />;
+    case "social_feed": return <SocialFeed block={block} profile={profile} />;
+    case "spacer": return <Spacer block={block} />;
+    case "newsletter": return <Newsletter block={block} />;
+    case "image_gallery": return <ImageGallery block={block} />;
+    default:
+      return (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-xs text-zinc-500">
+          Unknown block: {block.type}
+        </div>
+      );
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Layout Renderer                                                    */
+/* ------------------------------------------------------------------ */
+
+export default function WireframeRenderer({ layout, profile, products }: WireframeRendererProps) {
+  const hasLeft = layout.left.length > 0;
+  const hasRight = layout.right.length > 0;
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="flex gap-6">
+        {/* Left Column */}
+        {hasLeft && (
+          <div className="w-1/4 space-y-4">
+            {layout.left.map((block) => (
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+            ))}
+          </div>
+        )}
+
+        {/* Center Column */}
+        <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
+          {layout.center.map((block) => (
+            <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+          ))}
+        </div>
+
+        {/* Right Column */}
+        {hasRight && (
+          <div className="w-1/4 space-y-4">
+            {layout.right.map((block) => (
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
