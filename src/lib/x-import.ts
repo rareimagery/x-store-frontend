@@ -346,7 +346,7 @@ export async function findProfileByUsername(
 
   for (const candidate of candidates) {
     const res: Response = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_username]=${encodeURIComponent(candidate)}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(candidate)}`,
       { headers: { ...drupalAuthHeaders() } }
     );
 
@@ -374,7 +374,7 @@ export async function patchProfile(
 ): Promise<void> {
   const writeHeaders = await drupalWriteHeaders();
   const res = await fetch(
-    `${DRUPAL_API}/jsonapi/node/creator_x_profile/${uuid}`,
+    `${DRUPAL_API}/jsonapi/node/x_user_profile/${uuid}`,
     {
       method: "PATCH",
       headers: {
@@ -383,7 +383,7 @@ export async function patchProfile(
       },
       body: JSON.stringify({
         data: {
-          type: "node--creator_x_profile",
+          type: "node--x_user_profile",
           id: uuid,
           attributes,
         },
@@ -573,7 +573,7 @@ export async function uploadImageToDrupal(
 
     const writeHeaders = await drupalWriteHeaders();
     const uploadRes = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile/${nodeUuid}/${fieldName}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile/${nodeUuid}/${fieldName}`,
       {
         method: "POST",
         headers: {
@@ -609,7 +609,7 @@ export async function getProfileMediaFieldState(
     });
 
     const res = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile/${nodeUuid}?${params.toString()}`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile/${nodeUuid}?${params.toString()}`,
       { headers: { ...drupalAuthHeaders() } }
     );
 
@@ -680,8 +680,8 @@ export async function syncXDataToDrupal(
     }
 
     const attributes: Record<string, unknown> = {
-      field_follower_count: enhanced.followerCount,
-      field_bio_description: { value: enhanced.bio, format: "basic_html" },
+      field_x_followers: enhanced.followerCount,
+      field_x_bio: { value: enhanced.bio, format: "basic_html" },
       field_top_posts: enhanced.topPosts.map((p) => JSON.stringify(p)),
       field_top_followers: enhanced.topFollowers.map((f) => JSON.stringify(f)),
       field_metrics: JSON.stringify(enhanced.metrics),
