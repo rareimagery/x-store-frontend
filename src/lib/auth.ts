@@ -473,6 +473,7 @@ export const authOptions: NextAuthOptions = {
       return appSession;
     },
   },
+  debug: process.env.NODE_ENV === "development" || process.env.NEXTAUTH_DEBUG === "true",
   pages: {
     signIn: "/login",
   },
