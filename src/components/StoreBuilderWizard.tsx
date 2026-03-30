@@ -61,19 +61,16 @@ export default function StoreBuilderWizard({
     xImportData?.bannerUrl || ""
   );
 
-  // Restore draft from localStorage on first mount
+  // Restore draft from localStorage on first mount.
+  // Only restore form fields (steps 0–1). Never restore to step >= 2
+  // because those steps require a live storeId from the current session.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
-      // If draft is past store creation (step >= 2) but we don't have a
-      // storeId, the store was deleted or the draft is stale — reset.
-      if (draft.step >= 2 && !draft.storeId) {
-        localStorage.removeItem(DRAFT_KEY);
-        return;
-      }
-      if (draft.step !== undefined && draft.step < 2) setStep(draft.step);
+      // Only restore pre-creation steps
+      if (draft.step !== undefined && draft.step <= 1) setStep(draft.step);
       if (draft.storeName) setStoreName(draft.storeName);
       if (draft.slug) { setSlug(draft.slug); setSlugEdited(true); }
       if (draft.ownerEmail) setOwnerEmail(draft.ownerEmail);
@@ -84,7 +81,6 @@ export default function StoreBuilderWizard({
       if (draft.profilePictureUrl) setProfilePictureUrl(draft.profilePictureUrl);
       if (draft.backgroundBannerUrl) setBackgroundBannerUrl(draft.backgroundBannerUrl);
     } catch {
-      // Corrupt draft — ignore
       localStorage.removeItem(DRAFT_KEY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

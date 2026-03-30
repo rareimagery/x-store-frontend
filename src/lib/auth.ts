@@ -464,90 +464,16 @@ export const authOptions: NextAuthOptions = {
         const xUser = (appToken.xUsername || "").toLowerCase();
         appToken.role = adminXUsernames.includes(xUser) ? "admin" : "creator";
 
-        // Auto-sync X profile data to Drupal
-        if (appToken.xId && appToken.xUsername) {
+        // Sync X data to Drupal if profile already exists.
+        // Profile creation is handled by the store creation wizard —
+        // we only update existing profiles here on subsequent logins.
+        if (appToken.xId && appToken.xUsername && account.access_token) {
           const xUser = appToken.xUsername;
           (async () => {
-            // Auto-provision profile if it doesn't exist yet
             const existing = await findProfileByUsername(xUser);
-            if (!existing) {
-              try {
-                const writeHeaders = await drupalWriteHeaders();
-
-                // Build attributes from all available X OAuth data
-                const profileAttrs: Record<string, unknown> = {
-                  title: `${xUser} X Profile`,
-                  field_x_username: xUser,
-                  field_store_theme: "xai3",
-                };
-
-                // X user ID (from OAuth provider account ID)
-                if (appToken.xId) {
-                  const numericId = parseInt(String(appToken.xId), 10);
-                  if (!isNaN(numericId)) {
-                    profileAttrs.field_x_user_id = numericId;
-                  }
-                }
-
-                // Display name
-                const xProfile = profile as XProfile;
-                const displayName =
-                  xProfile.data?.username ?? xProfile.username ?? xUser;
-                profileAttrs.field_x_display_name = displayName;
-
-                // Avatar URL
-                if (appToken.xImage) {
-                  profileAttrs.field_x_avatar_url = appToken.xImage;
-                }
-
-                // Banner URL
-                if (appToken.xBannerUrl) {
-                  profileAttrs.field_x_banner_url = appToken.xBannerUrl;
-                }
-
-                // Bio
-                if (appToken.xBio) {
-                  profileAttrs.field_x_bio = {
-                    value: appToken.xBio,
-                    format: "basic_html",
-                  };
-                }
-
-                // Verified status
-                if (appToken.xVerified !== undefined) {
-                  profileAttrs.field_x_verified = appToken.xVerified;
-                }
-
-                const res = await fetch(
-                  `${DRUPAL_API}/jsonapi/node/x_user_profile`,
-                  {
-                    method: "POST",
-                    headers: {
-                      ...writeHeaders,
-                      "Content-Type": "application/vnd.api+json",
-                    },
-                    body: JSON.stringify({
-                      data: {
-                        type: "node--x_user_profile",
-                        attributes: profileAttrs,
-                      },
-                    }),
-                  }
-                );
-                if (!res.ok) {
-                  const text = await res.text();
-                  console.error(`[auth] Profile creation failed (${res.status}):`, text);
-                  return;
-                }
-                console.log(`[auth] Auto-provisioned profile for @${xUser}`);
-              } catch (err) {
-                console.error(`[auth] Failed to auto-provision @${xUser}:`, err);
-                return;
-              }
-            }
-            if (account.access_token) {
+            if (existing) {
               await syncXDataToDrupal(
-                account.access_token,
+                account.access_token!,
                 appToken.xId as string,
                 xUser
               );
