@@ -557,7 +557,7 @@ export async function getCreatorProfile(
       include,
     });
 
-    const url = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params.toString()}`;
+    const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
     const res = await fetch(
       url,
       options?.noStore ? { cache: "no-store" } : { next: { revalidate: 60 } }
@@ -615,7 +615,7 @@ export async function getAllCreatorProfiles(): Promise<CreatorProfile[]> {
 
   for (const include of includeCandidates) {
     const params = new URLSearchParams({ include });
-    const url = `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?${params.toString()}`;
+    const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
 
     if (!res.ok) {
@@ -1090,7 +1090,7 @@ function mapConsoleStoreData(profile: any, store: any, fallbackSlug: string): Co
 export async function getConsoleProfiles(xUsername: string): Promise<ConsoleStoreData[]> {
   try {
     const res = await fetch(
-      `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?filter[field_x_username]=${xUsername}&include=field_linked_store`,
+      `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${xUsername}&include=field_linked_store`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
     if (!res.ok) return [];
@@ -1174,11 +1174,11 @@ export async function getAllStoresForAdmin(): Promise<{ data: any[]; included: a
 /** Fetch profiles with an active subscription tier (not "none"). */
 export async function getSubscriberProfiles(): Promise<any[]> {
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile` +
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile` +
       `?filter[tier-filter][condition][path]=field_x_subscription_tier` +
       `&filter[tier-filter][condition][operator]=<>` +
       `&filter[tier-filter][condition][value]=none` +
-      `&fields[node--creator_x_profile]=field_x_username,field_x_subscription_tier,field_x_subscriber_since,title` +
+      `&fields[node--x_user_profile]=field_x_username,field_x_subscription_tier,field_x_subscriber_since,title` +
       `&sort=-field_x_subscriber_since`,
     {
       headers: { ...drupalAuthHeaders() },
@@ -1193,8 +1193,8 @@ export async function getSubscriberProfiles(): Promise<any[]> {
 /** Fetch all profiles with sparse fields for admin tier management. */
 export async function getAllProfilesForAdmin(): Promise<any[]> {
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile` +
-      `?fields[node--creator_x_profile]=field_x_username,field_x_subscription_tier,title` +
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile` +
+      `?fields[node--x_user_profile]=field_x_username,field_x_subscription_tier,title` +
       `&sort=field_x_username&page[limit]=100`,
     {
       headers: { ...drupalAuthHeaders() },
@@ -1204,6 +1204,25 @@ export async function getAllProfilesForAdmin(): Promise<any[]> {
   if (!res.ok) return [];
   const data = await res.json();
   return data.data || [];
+}
+
+/** Fetch all user profiles with linked store data for admin user management. */
+export async function getAllUsersForAdmin(): Promise<{
+  data: any[];
+  included: any[];
+}> {
+  const res = await fetch(
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile` +
+      `?include=field_linked_store` +
+      `&sort=-created&page[limit]=100`,
+    {
+      headers: { ...drupalAuthHeaders() },
+      next: { revalidate: 0 },
+    }
+  );
+  if (!res.ok) return { data: [], included: [] };
+  const json = await res.json();
+  return { data: json.data || [], included: json.included || [] };
 }
 
 /** Fetch a single store by UUID. */
@@ -1223,7 +1242,7 @@ export async function getStoreById(id: string): Promise<any | null> {
 /** Fetch the creator X profile linked to a given store UUID. */
 export async function getProfileByStoreId(storeId: string): Promise<any | null> {
   const res = await fetch(
-    `${DRUPAL_API_URL}/jsonapi/node/creator_x_profile?filter[field_linked_store.id]=${storeId}`,
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_linked_store.id]=${storeId}`,
     {
       headers: { ...drupalAuthHeaders() },
       next: { revalidate: 0 },

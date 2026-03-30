@@ -10,6 +10,7 @@ import SellerChatbot from "@/components/chatbot/SellerChatbot";
 
 function titleFromPath(pathname: string): string {
   if (pathname.startsWith("/console/admin/subscribers")) return "X Subscribers";
+  if (pathname.startsWith("/console/admin/users")) return "Users";
   if (pathname.startsWith("/console/admin")) return "Admin";
   if (pathname.startsWith("/console/orders/")) return "Order Details";
   if (pathname.startsWith("/console/orders")) return "Orders";
