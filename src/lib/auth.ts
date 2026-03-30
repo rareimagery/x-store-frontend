@@ -20,13 +20,18 @@ type JsonApiIncludedEntity = {
 };
 
 type XProfile = {
-  screen_name?: string;
+  // X OAuth 2.0 fields (next-auth TwitterProvider v2.0)
   username?: string;
+  id?: string;
+  profile_image_url?: string;
+  description?: string;
+  verified?: boolean;
+  // Legacy OAuth 1.0a fields
+  screen_name?: string;
   id_str?: string;
   profile_image_url_https?: string;
   profile_banner_url?: string | null;
-  verified?: boolean;
-  description?: string;
+  // Nested structure (some next-auth versions)
   data?: {
     username?: string;
     id?: string;
@@ -92,7 +97,7 @@ async function findProfileByXUserId(xUserId: string): Promise<boolean> {
 
   try {
     const res: Response = await fetch(
-      `${DRUPAL_API}/jsonapi/node/creator_x_profile?filter[field_x_user_id]=${encodeURIComponent(xUserId)}&page[limit]=1`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_user_id]=${encodeURIComponent(xUserId)}&page[limit]=1`,
       { headers: { ...drupalAuthHeaders() } }
     );
     if (!res.ok) return false;
@@ -334,9 +339,10 @@ export const authOptions: NextAuthOptions = {
 
       const xProfile = (profile || {}) as XProfile;
 
+      // X OAuth 2.0 via next-auth returns username at the top level of the profile
       const xUsername =
-        xProfile.screen_name ??
         xProfile.username ??
+        xProfile.screen_name ??
         xProfile.data?.username ??
         "";
       const normalizedXUsername = xUsername.trim().replace(/^@+/, "").toLowerCase();
@@ -400,15 +406,17 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "twitter" && profile) {
         const xProfile = profile as XProfile;
         appToken.xUsername =
+          xProfile.username ??
           xProfile.screen_name ??
           xProfile.data?.username ??
           "";
         appToken.handle = appToken.xUsername;
         appToken.xId =
+          account.providerAccountId ??
           xProfile.id_str ??
-          xProfile.data?.id ??
-          account.providerAccountId;
+          xProfile.data?.id;
         appToken.xImage =
+          xProfile.profile_image_url ??
           xProfile.profile_image_url_https ??
           xProfile.data?.profile_image_url ??
           (typeof appToken.picture === "string" ? appToken.picture : null);
@@ -451,7 +459,7 @@ export const authOptions: NextAuthOptions = {
               try {
                 const writeHeaders = await drupalWriteHeaders();
                 await fetch(
-                  `${DRUPAL_API}/jsonapi/node/creator_x_profile`,
+                  `${DRUPAL_API}/jsonapi/node/x_user_profile`,
                   {
                     method: "POST",
                     headers: {
@@ -460,7 +468,7 @@ export const authOptions: NextAuthOptions = {
                     },
                     body: JSON.stringify({
                       data: {
-                        type: "node--creator_x_profile",
+                        type: "node--x_user_profile",
                         attributes: {
                           title: `${xUser} X Profile`,
                           field_x_username: xUser,
@@ -491,7 +499,6 @@ export const authOptions: NextAuthOptions = {
         appToken.role = authUser.role || "admin";
         appToken.shopName = authUser.shopName || null;
         appToken.storeSlug = authUser.storeSlug || null;
-        appToken.xUsername = authUser.storeSlug || null;
       }
 
       // Keep auth simple for X users: if X identity exists, default to creator role.
