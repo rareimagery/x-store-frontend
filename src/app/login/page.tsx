@@ -70,7 +70,7 @@ function LoginForm() {
             <li>
               Set callback URL to exactly:{" "}
               <code className="bg-red-950/50 px-1 rounded">
-                https://rareimagery.net/api/auth/callback/twitter
+                https://www.rareimagery.net/api/auth/callback/twitter
               </code>
             </li>
             <li>
