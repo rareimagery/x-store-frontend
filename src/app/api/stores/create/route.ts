@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { isValidSlug } from "@/lib/slugs";
 import { notifyAdminNewStore } from "@/lib/notifications";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
-import { ensureStoreSubdomainDns } from "@/lib/cloudflare";
+
 
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 
@@ -35,7 +35,7 @@ function drupalOutageFallback(slug: string, reason: string) {
     storeDrupalId: null,
     profileNodeId: null,
     slug,
-    url: `https://${slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+    url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
   });
 }
 
@@ -95,13 +95,13 @@ async function isSlugTaken(slug: string): Promise<boolean> {
     );
 
     if (!res.ok) {
-      throw new Error(`Could not validate subdomain availability (${res.status}).`);
+      throw new Error(`Could not validate slug availability (${res.status}).`);
     }
 
     const data = await res.json();
     return (data?.data?.length ?? 0) > 0;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not validate subdomain availability.";
+    const message = error instanceof Error ? error.message : "Could not validate slug availability.";
     throw new Error(message);
   }
 }
@@ -262,16 +262,7 @@ function isWritePermissionError(message: string): boolean {
 
 const storeCreateLimit = createRateLimiter({ limit: 3, windowMs: 60 * 60 * 1000 }); // 3/hour
 
-async function provisionStoreDns(slug: string) {
-  try {
-    const dns = await ensureStoreSubdomainDns(slug);
-    if (!dns.configured) {
-      console.log(`[cloudflare] DNS automation skipped for ${dns.hostname}`);
-    }
-  } catch (error) {
-    console.error(`[cloudflare] DNS automation failed for ${slug}:`, error);
-  }
-}
+// DNS provisioning removed — using path-based routing (/username) instead of subdomains
 
 export async function POST(req: NextRequest) {
   if (!DRUPAL_API) {
@@ -383,7 +374,7 @@ export async function POST(req: NextRequest) {
   try {
     slugTaken = await isSlugTaken(slug);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not validate subdomain availability.";
+    const message = error instanceof Error ? error.message : "Could not validate slug availability.";
     if (isLikelyDrupalOutage(message)) {
       return drupalOutageFallback(slug, message);
     }
@@ -392,7 +383,7 @@ export async function POST(req: NextRequest) {
 
   if (slugTaken) {
     return NextResponse.json(
-      { error: "That subdomain is already taken" },
+      { error: "That URL slug is already taken" },
       { status: 409 }
     );
   }
@@ -421,7 +412,6 @@ export async function POST(req: NextRequest) {
       let profileData: any = null;
       try {
         profileData = await createXProfile(storeData.data.id, xProfileFields);
-        await provisionStoreDns(slug);
       } catch (profileErr: any) {
         const profileErrorMessage = String(
           profileErr?.message || "X profile creation failed"
@@ -443,7 +433,7 @@ export async function POST(req: NextRequest) {
           ),
           profileNodeId: null,
           slug,
-          url: `https://${slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
         });
       }
 
@@ -463,7 +453,7 @@ export async function POST(req: NextRequest) {
         ),
         profileNodeId: profileData.data.id,
         slug,
-        url: `https://${slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+        url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
       });
     } catch (storeErr: any) {
       const storeErrorMessage = String(storeErr?.message || "Store creation failed");
@@ -476,7 +466,6 @@ export async function POST(req: NextRequest) {
       // so onboarding and theme setup can continue while Drupal perms are fixed.
       try {
         const profileData = await createXProfile(null, xProfileFields);
-        await provisionStoreDns(slug);
 
         return NextResponse.json({
           success: true,
@@ -488,7 +477,7 @@ export async function POST(req: NextRequest) {
           storeDrupalId: null,
           profileNodeId: profileData.data.id,
           slug,
-          url: `https://${slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
         });
       } catch (profileErr: any) {
         const profileErrorMessage = String(
@@ -509,7 +498,7 @@ export async function POST(req: NextRequest) {
           storeDrupalId: null,
           profileNodeId: null,
           slug,
-          url: `https://${slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
         });
       }
     }
