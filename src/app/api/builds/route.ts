@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
 
     const result = await saveBuildsDetailed(slug, updated);
     if (result.ok) {
+      revalidatePath(`/${slug}/store`);
       revalidatePath(`/stores/${slug}`);
       return NextResponse.json({ build: newBuild, builds: updated, slug });
     }
@@ -195,6 +196,7 @@ export async function PATCH(req: NextRequest) {
 
     const result = await saveBuildsDetailed(slug, updated);
     if (result.ok) {
+      revalidatePath(`/${slug}/store`);
       revalidatePath(`/stores/${slug}`);
       return NextResponse.json({ ok: true, slug });
     }
@@ -234,6 +236,7 @@ export async function DELETE(req: NextRequest) {
     const updated = (builds as StoredBuild[]).filter((b) => b.id !== id);
     const result = await saveBuildsDetailed(slug, updated);
     if (result.ok) {
+      revalidatePath(`/${slug}/store`);
       revalidatePath(`/stores/${slug}`);
       return NextResponse.json({ ok: true, slug });
     }
