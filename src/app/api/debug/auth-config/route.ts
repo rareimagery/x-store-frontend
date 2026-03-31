@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
  * Debug endpoint to verify auth configuration (no secrets exposed)
  * GET /api/debug/auth-config
  */
+const BUILD_VERSION = "2026-03-31-v3-wizard";
+
 export async function GET() {
   const nextAuthUrl = process.env.NEXTAUTH_URL;
   const hasSecret = !!process.env.NEXTAUTH_SECRET;
@@ -15,6 +17,7 @@ export async function GET() {
   const consoleAdminEmail = process.env.CONSOLE_ADMIN_EMAIL || "";
 
   return NextResponse.json({
+    BUILD_VERSION,
     NEXTAUTH_URL: nextAuthUrl || "(NOT SET)",
     NEXTAUTH_SECRET_set: hasSecret,
     NEXTAUTH_SECRET_length: process.env.NEXTAUTH_SECRET?.length || 0,
