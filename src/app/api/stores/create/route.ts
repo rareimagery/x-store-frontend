@@ -140,7 +140,7 @@ async function createDrupalStore(
           default_currency: {
             data: {
               type: "commerce_currency--commerce_currency",
-              id: "7be59a35-eea8-4d2d-8be4-b113aafad8d4",
+              id: "1f1f906f-b263-4049-946d-914e73c0d102",
             },
           },
         },
