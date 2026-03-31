@@ -134,7 +134,7 @@ async function createDrupalStore(
             administrative_area: "NY",
             postal_code: "10001",
           },
-          field_store_status: "pending",
+          field_store_status: "approved",
         },
         relationships: {
           default_currency: {

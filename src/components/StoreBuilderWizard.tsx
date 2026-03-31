@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
-import ProductManager from "./ProductManager";
 import WireframeBuilder from "./builder/WireframeBuilder";
 import type { WireframeLayout, PlacedBlock } from "./builder/WireframeBuilder";
 import type { XImportData } from "@/lib/x-import";
@@ -11,7 +10,7 @@ import type { GrokEnhancements } from "@/lib/grok";
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net";
 
-const STEPS = ["Store Info", "Creator Profile", "Choose Theme", "Add Products", "Go Live"];
+const STEPS = ["Store Info", "Creator Profile", "Build Your Page"];
 
 interface StoreBuilderWizardProps {
   xUsername?: string;
@@ -408,22 +407,22 @@ export default function StoreBuilderWizard({
             </div>
 
             <div>
-              <label className={labelClass}>Subdomain *</label>
+              <label className={labelClass}>Page URL *</label>
               <div className="flex items-center gap-2">
+                <span className="text-zinc-500">{BASE_DOMAIN}/</span>
                 <input
                   value={slug}
                   onChange={(e) => {
                     setSlugEdited(true);
-                    setSlug(e.target.value.toLowerCase());
+                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
                   }}
                   placeholder="yourname"
                   required
                   className="w-48 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
                 />
-                <span className="text-zinc-500">.{BASE_DOMAIN}</span>
               </div>
               <p className="mt-1 text-xs text-zinc-600">
-                This will be your store URL
+                This will be your landing page URL
               </p>
             </div>
 
@@ -661,98 +660,18 @@ export default function StoreBuilderWizard({
           )}
 
           <div className="px-8 pb-8 pt-4 flex gap-3">
-            <button
-              onClick={() => setStep(3)}
+            <a
+              href={`/${slug}`}
               className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
             >
-              Continue to Products
-            </button>
-            <button
-              onClick={() => setStep(3)}
+              Go to My Page
+            </a>
+            <a
+              href="/console"
               className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition hover:bg-zinc-800"
             >
-              Skip for now
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Add Products */}
-      {step === 3 && (
-        <div className={sectionClass}>
-          <h2 className="mb-2 text-xl font-bold">Add Products</h2>
-          <p className="mb-6 text-sm text-zinc-400">
-            Add products to start selling. You can always add more later.
-          </p>
-
-          {storeId && storeDrupalId ? (
-            <ProductManager storeId={storeId} storeDrupalId={storeDrupalId} />
-          ) : (
-            <p className="text-sm text-zinc-500">
-              Product manager unavailable — store ID missing.
-            </p>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => setStep(4)}
-              className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-            >
-              Continue
-            </button>
-            <button
-              onClick={() => setStep(4)}
-              className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 transition hover:bg-zinc-800"
-            >
-              Skip for now
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: Submitted — Pending Approval */}
-      {step === 4 && (
-        <div className={`${sectionClass} text-center`}>
-          <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20">
-            <svg className="h-8 w-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="mb-2 text-2xl font-bold text-amber-400">
-            Store Submitted for Review
-          </h2>
-          <p className="mb-2 text-zinc-400">
-            Your store at{" "}
-            <span className="font-semibold text-white">
-              {BASE_DOMAIN}/{slug}
-            </span>{" "}
-            has been created and is pending admin approval.
-          </p>
-          <p className="mb-6 text-sm text-zinc-500">
-            We&apos;ll review your store shortly. Once approved, your landing
-            page and store will go live.
-          </p>
-
-          <div className="flex justify-center gap-3">
-            {storeId && (
-              <a
-                href={`/console/stores/${storeId}`}
-                className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
-              >
-                Manage Store
-              </a>
-            )}
-          </div>
-
-          <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/50 p-6 text-left">
-            <h3 className="mb-3 text-sm font-semibold text-zinc-300">
-              While you wait
-            </h3>
-            <ul className="space-y-2 text-sm text-zinc-500">
-              <li>- Add more products from your store dashboard</li>
-              <li>- Customize your theme and colors</li>
-              <li>- Connect Stripe so payments are ready when you go live</li>
-            </ul>
+              Go to Console
+            </a>
           </div>
         </div>
       )}
