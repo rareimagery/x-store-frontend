@@ -351,6 +351,15 @@ function parseJsonField<T>(value: string | null | undefined): T | null {
 }
 
 function parseMultiJsonField<T>(raw: unknown): T[] {
+  // Single JSON string containing an array (cardinality-1 fields from Drupal sync).
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as T[];
+    } catch { /* not valid JSON */ }
+    return [];
+  }
+
   if (!Array.isArray(raw)) return [];
 
   return raw
