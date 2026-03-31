@@ -6,6 +6,7 @@ import {
   getAllCreatorProfiles,
   getProductsByStoreSlug,
 } from "@/lib/drupal";
+import BuilderGate from "@/components/builder/BuilderGate";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -258,6 +259,9 @@ export default async function CreatorLandingPage({
           </Link>
         </div>
       </div>
+
+      {/* Edit button — only visible to page owner and admins */}
+      <BuilderGate storeSlug={normalized} />
     </div>
   );
 }

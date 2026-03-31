@@ -37,17 +37,16 @@ export default function BuilderGate({ storeSlug, theme }: BuilderGateProps) {
 
   if (!isOwner) return null;
 
-  const handle = normalizedStoreSlug || storeSlug;
-
   return (
-    <div className="pointer-events-none fixed bottom-6 right-6 z-40">
+    <div className="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col gap-2 items-end">
       <Link
-        href={{ pathname: "/console/builder", query: { handle } }}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-slate-950/90 px-4 py-3 text-sm font-medium text-sky-200 shadow-[0_18px_48px_rgba(2,6,23,0.45)] backdrop-blur transition hover:border-sky-300/50 hover:text-white"
+        href="/console/page-building"
+        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-slate-950/90 px-4 py-3 text-sm font-medium text-indigo-200 shadow-[0_18px_48px_rgba(2,6,23,0.45)] backdrop-blur transition hover:border-indigo-300/50 hover:text-white"
       >
-        <span className="inline-flex h-2.5 w-2.5 rounded-full bg-sky-400" />
-        Open Builder
-        {theme ? <span className="text-xs text-sky-300/70">{theme}</span> : null}
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+        </svg>
+        Edit Page
       </Link>
     </div>
   );
