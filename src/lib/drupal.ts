@@ -462,7 +462,7 @@ function mapCreatorProfile(node: any, included: any[] = []): CreatorProfile {
   const rels = node.relationships;
 
   const profilePicUrl =
-    resolveImageFromRelationship(rels?.field_profile_picture?.data, included) ||
+    resolveImageFromRelationship(rels?.field_x_pfp?.data, included) ||
     firstNonEmptyString(
       attrs?.field_profile_picture_url,
       attrs?.field_profile_image_url,
@@ -470,7 +470,7 @@ function mapCreatorProfile(node: any, included: any[] = []): CreatorProfile {
     );
 
   const bannerUrl =
-    resolveImageFromRelationship(rels?.field_background_banner?.data, included) ||
+    resolveImageFromRelationship(rels?.field_x_background?.data, included) ||
     firstNonEmptyString(
       attrs?.field_x_banner_url,
       attrs?.field_banner_url,
@@ -547,70 +547,75 @@ export async function getCreatorProfile(
   options?: { noStore?: boolean }
 ): Promise<CreatorProfile | null> {
   const includeCandidates = [
-    "field_linked_store,field_profile_picture,field_profile_picture.field_media_image,field_background_banner,field_background_banner.field_media_image",
-    "field_linked_store,field_profile_picture,field_background_banner",
+    "field_linked_store,field_x_pfp,field_x_pfp.field_media_image,field_x_background,field_x_background.field_media_image",
+    "field_linked_store,field_x_pfp,field_x_background",
   ];
 
-  for (const include of includeCandidates) {
-    const params = new URLSearchParams({
-      "filter[field_x_username]": username,
-      include,
-    });
+  try {
+    for (const include of includeCandidates) {
+      const params = new URLSearchParams({
+        "filter[field_x_username]": username,
+        include,
+      });
 
-    const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
-    const res = await fetch(
-      url,
-      options?.noStore ? { cache: "no-store" } : { next: { revalidate: 60 } }
-    );
+      const url = `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?${params.toString()}`;
+      const res = await fetch(
+        url,
+        options?.noStore ? { cache: "no-store" } : { next: { revalidate: 60 } }
+      );
 
-    if (!res.ok) {
-      if (res.status === 400) {
-        continue;
+      if (!res.ok) {
+        if (res.status === 400) {
+          continue;
+        }
+        console.error(`Drupal API error: ${res.status} ${res.statusText}`);
+        return null;
       }
-      console.error(`Drupal API error: ${res.status} ${res.statusText}`);
-      return null;
+
+      const json = await res.json();
+      const nodes = json.data;
+      if (!nodes || nodes.length === 0) return null;
+
+      const node = nodes[0];
+      const profile = mapCreatorProfile(node, json.included ?? []);
+
+      // Fallback: if relationship exists but include payload omitted file entity,
+      // resolve directly from /jsonapi/file/file/{uuid} before falling back to X URL fields.
+      const pfpRef = firstRelationshipId(node?.relationships?.field_x_pfp?.data);
+      const bannerRef = firstRelationshipId(node?.relationships?.field_x_background?.data);
+
+      const needsPfpDirectLookup =
+        !!pfpRef && (!profile.profile_picture_url || /pbs\.twimg\.com/i.test(profile.profile_picture_url));
+      const needsBannerDirectLookup = !!bannerRef && !profile.banner_url;
+
+      if (needsPfpDirectLookup || needsBannerDirectLookup) {
+        const [resolvedPfp, resolvedBanner] = await Promise.all([
+          needsPfpDirectLookup && pfpRef ? resolveFileUrlByUuid(pfpRef, options) : Promise.resolve(null),
+          needsBannerDirectLookup && bannerRef ? resolveFileUrlByUuid(bannerRef, options) : Promise.resolve(null),
+        ]);
+
+        return {
+          ...profile,
+          profile_picture_url: resolvedPfp || profile.profile_picture_url,
+          banner_url: resolvedBanner || profile.banner_url,
+        };
+      }
+
+      return profile;
     }
 
-    const json = await res.json();
-    const nodes = json.data;
-    if (!nodes || nodes.length === 0) return null;
-
-    const node = nodes[0];
-    const profile = mapCreatorProfile(node, json.included ?? []);
-
-    // Fallback: if relationship exists but include payload omitted file entity,
-    // resolve directly from /jsonapi/file/file/{uuid} before falling back to X URL fields.
-    const pfpRef = firstRelationshipId(node?.relationships?.field_profile_picture?.data);
-    const bannerRef = firstRelationshipId(node?.relationships?.field_background_banner?.data);
-
-    const needsPfpDirectLookup =
-      !!pfpRef && (!profile.profile_picture_url || /pbs\.twimg\.com/i.test(profile.profile_picture_url));
-    const needsBannerDirectLookup = !!bannerRef && !profile.banner_url;
-
-    if (needsPfpDirectLookup || needsBannerDirectLookup) {
-      const [resolvedPfp, resolvedBanner] = await Promise.all([
-        needsPfpDirectLookup && pfpRef ? resolveFileUrlByUuid(pfpRef, options) : Promise.resolve(null),
-        needsBannerDirectLookup && bannerRef ? resolveFileUrlByUuid(bannerRef, options) : Promise.resolve(null),
-      ]);
-
-      return {
-        ...profile,
-        profile_picture_url: resolvedPfp || profile.profile_picture_url,
-        banner_url: resolvedBanner || profile.banner_url,
-      };
-    }
-
-    return profile;
+    console.error("Drupal API error: all creator profile include variants failed");
+    return null;
+  } catch (err) {
+    console.error("getCreatorProfile failed (network/timeout):", err);
+    return null;
   }
-
-  console.error("Drupal API error: all creator profile include variants failed");
-  return null;
 }
 
 export async function getAllCreatorProfiles(): Promise<CreatorProfile[]> {
   const includeCandidates = [
-    "field_profile_picture,field_profile_picture.field_media_image,field_background_banner,field_background_banner.field_media_image",
-    "field_profile_picture,field_background_banner",
+    "field_x_pfp,field_x_pfp.field_media_image,field_x_background,field_x_background.field_media_image",
+    "field_x_pfp,field_x_background",
   ];
 
   for (const include of includeCandidates) {
