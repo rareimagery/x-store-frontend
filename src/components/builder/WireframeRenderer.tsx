@@ -3,10 +3,20 @@ import type { CreatorProfile, Product } from "@/lib/drupal";
 import DonationCampaignCard from "@/components/DonationCampaign";
 import type { DonationCampaign } from "@/app/api/donations/route";
 
+export interface FavoriteCreator {
+  username: string;
+  display_name: string;
+  bio: string;
+  profile_image_url: string | null;
+  follower_count: number;
+  verified: boolean;
+}
+
 interface WireframeRendererProps {
   layout: WireframeLayout;
   profile: CreatorProfile;
   products: Product[];
+  favorites?: FavoriteCreator[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -253,6 +263,61 @@ function DonationBlock({ block }: { block: PlacedBlock }) {
   return <DonationCampaignCard campaign={campaign} />;
 }
 
+function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
+  const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
+  const heading = block.props.heading;
+  const shown = favorites.slice(0, maxItems);
+
+  if (shown.length === 0) return <StillBuilding label="My Favorites" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="space-y-2">
+        {shown.map((fav) => (
+          <a
+            key={fav.username}
+            href={`https://x.com/${fav.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 transition hover:border-zinc-600"
+          >
+            {fav.profile_image_url ? (
+              <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold text-indigo-400 shrink-0">
+                {fav.display_name?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-white truncate">{fav.display_name}</p>
+                {fav.verified && (
+                  <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+              <p className="text-[11px] text-zinc-500">@{fav.username}</p>
+              {fav.bio && (
+                <p className="mt-1 text-xs text-zinc-400 leading-relaxed line-clamp-2">{fav.bio}</p>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
+      {favorites.length > maxItems && (
+        <a
+          href={`/${creatorUsername}/favorites`}
+          className="mt-3 block text-center text-xs text-indigo-400 hover:text-indigo-300"
+        >
+          View all {favorites.length} favorites &rarr;
+        </a>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Block Router                                                       */
 /* ------------------------------------------------------------------ */
@@ -261,10 +326,12 @@ function RenderBlock({
   block,
   profile,
   products,
+  favorites,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
   products: Product[];
+  favorites: FavoriteCreator[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -278,6 +345,7 @@ function RenderBlock({
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
+    case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
       return (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-xs text-zinc-500">
@@ -291,7 +359,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [] }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
@@ -348,21 +416,21 @@ export default function WireframeRenderer({ layout, profile, products }: Wirefra
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
               ))}
             </div>
           )}

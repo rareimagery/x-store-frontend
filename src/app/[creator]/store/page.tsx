@@ -23,6 +23,7 @@ import { getTemplateDefinition } from "@/templates/registry";
 import type { TemplatePreviewProps } from "@/templates/types";
 import { parseStoredBuilderDocument, type BuilderPreviewData } from "@/lib/builderDocument";
 import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
+import type { FavoriteCreator } from "@/components/builder/WireframeRenderer";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -58,10 +59,24 @@ export default async function CreatorStorePage({
     notFound();
   }
 
-  const [profile, products, publishedBuilds] = await Promise.all([
+  const [profile, products, publishedBuilds, favorites] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
     getPublishedBuilds(normalized),
+    (async (): Promise<FavoriteCreator[]> => {
+      try {
+        const { DRUPAL_API_URL, drupalAuthHeaders } = await import("@/lib/drupal");
+        const res = await fetch(
+          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites`,
+          { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+        );
+        if (!res.ok) return [];
+        const json = await res.json();
+        const raw = json.data?.[0]?.attributes?.field_my_favorites;
+        if (!raw) return [];
+        return JSON.parse(raw);
+      } catch { return []; }
+    })(),
   ]);
 
   if (!profile) {
@@ -200,7 +215,7 @@ export default async function CreatorStorePage({
       <>
         <StoreNav creator={creator} />
         <div className="min-h-screen bg-zinc-950 pt-12">
-          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} />
+          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={favorites} />
           <StoreRareProjectConversations creator={creator} />
         </div>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />

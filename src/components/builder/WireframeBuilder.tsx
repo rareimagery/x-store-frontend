@@ -151,6 +151,10 @@ function BlockInspector({
       { key: "campaign_image_url", label: "Campaign Image URL", type: "url" },
       { key: "suggested_amounts", label: "Suggested Amounts (comma-separated)", type: "text" },
     ],
+    my_favorites: [
+      { key: "heading", label: "Section Heading", type: "text" },
+      { key: "max_items", label: "Max to Show (up to 10)", type: "number" },
+    ],
   };
 
   const fields = fieldDefs[block.type] || [];
