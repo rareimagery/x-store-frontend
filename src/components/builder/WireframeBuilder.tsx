@@ -144,6 +144,13 @@ function BlockInspector({
       { key: "heading", label: "Heading", type: "text" },
       { key: "max_items", label: "Max Posts", type: "number" },
     ],
+    donation: [
+      { key: "heading", label: "Campaign Title", type: "text" },
+      { key: "body_text", label: "Description", type: "textarea" },
+      { key: "goal_amount", label: "Goal Amount ($)", type: "number" },
+      { key: "campaign_image_url", label: "Campaign Image URL", type: "url" },
+      { key: "suggested_amounts", label: "Suggested Amounts (comma-separated)", type: "text" },
+    ],
   };
 
   const fields = fieldDefs[block.type] || [];

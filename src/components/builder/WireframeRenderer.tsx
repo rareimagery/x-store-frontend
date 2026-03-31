@@ -1,5 +1,7 @@
 import type { PlacedBlock, WireframeLayout } from "./WireframeBuilder";
 import type { CreatorProfile, Product } from "@/lib/drupal";
+import DonationCampaignCard from "@/components/DonationCampaign";
+import type { DonationCampaign } from "@/app/api/donations/route";
 
 interface WireframeRendererProps {
   layout: WireframeLayout;
@@ -209,6 +211,36 @@ function ImageGallery({ block }: { block: PlacedBlock }) {
   );
 }
 
+function DonationBlock({ block }: { block: PlacedBlock }) {
+  const suggestedRaw = String(block.props.suggested_amounts || "5,10,25,50,100");
+  const suggestedAmounts = suggestedRaw
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => n > 0);
+
+  const campaign: DonationCampaign = {
+    id: block.instanceId,
+    drupalId: 0,
+    title: String(block.props.heading || "Support This Campaign"),
+    description: String(block.props.body_text || ""),
+    goalAmount: Number(block.props.goal_amount) || 1000,
+    raisedAmount: 0,
+    donorCount: 0,
+    imageUrl: (block.props.campaign_image_url as string) || null,
+    category: null,
+    endDate: null,
+    minDonation: 1,
+    suggestedAmounts,
+    donorWallEnabled: true,
+    allowAnonymous: true,
+    thankYouMessage: null,
+    storeSlug: "",
+    creatorUsername: "",
+  };
+
+  return <DonationCampaignCard campaign={campaign} />;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Block Router                                                       */
 /* ------------------------------------------------------------------ */
@@ -233,6 +265,7 @@ function RenderBlock({
     case "spacer": return <Spacer block={block} />;
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
+    case "donation": return <DonationBlock block={block} />;
     default:
       return (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-xs text-zinc-500">
