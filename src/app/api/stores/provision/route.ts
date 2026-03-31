@@ -3,15 +3,10 @@ import { getToken } from "next-auth/jwt";
 import { checkRequiredPaidSubscription } from "@/lib/x-subscription";
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import {
-  fetchXData,
-  patchProfile,
-  findProfileByUsername,
-  uploadImageToDrupal,
   createImportSnapshot,
   updateImportSnapshot,
 } from "@/lib/x-import";
-import type { XImportData } from "@/lib/x-import";
-import { generateCreatorSite } from "@/lib/ai/generate-site";
+import { triggerDrupalSync } from "@/lib/drupal-sync";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { ensureStoreSubdomainDns } from "@/lib/cloudflare";
 import { randomUUID } from "crypto";
@@ -32,31 +27,15 @@ async function profileExists(username: string): Promise<string | null> {
 async function createProfile(
   username: string,
   xId: string,
-  xData?: XImportData
 ): Promise<{ id: string }> {
   const writeHeaders = await drupalWriteHeaders();
 
   const attributes: Record<string, any> = {
     title: `${username} X Profile`,
     field_x_username: username,
+    field_x_user_id: xId,
     field_store_theme: "xai3",
   };
-
-  if (xData) {
-    if (xData.bio) {
-      attributes.field_bio_description = { value: xData.bio, format: "basic_html" };
-    }
-    if (xData.followerCount) {
-      attributes.field_follower_count = xData.followerCount;
-    }
-    if (xData.topPosts.length) {
-      attributes.field_top_posts = xData.topPosts.map((p) => JSON.stringify(p));
-    }
-    if (xData.topFollowers.length) {
-      attributes.field_top_followers = xData.topFollowers.map((f) => JSON.stringify(f));
-    }
-    attributes.field_metrics = JSON.stringify(xData.metrics);
-  }
 
   const res = await fetch(`${DRUPAL_API}/jsonapi/node/x_user_profile`, {
     method: "POST",
@@ -113,7 +92,6 @@ export async function POST(req: NextRequest) {
 
   const xUsername = token.xUsername as string;
   const xId = token.xId as string;
-  const xAccessToken = token.xAccessToken as string;
   const importRunId = randomUUID();
   const snapshotUuid = await createImportSnapshot({
     xUsername,
@@ -172,96 +150,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Stage-first: fetch X data before writing any Drupal entities.
-    // Non-fatal — if X API is unavailable we create a minimal profile.
-    let xData: XImportData | undefined;
-    if (xAccessToken) {
-      try {
-        xData = await fetchXData(xAccessToken, xId);
-        // Store the staged X data in the snapshot payload
-        if (snapshotUuid) {
-          await updateImportSnapshot(snapshotUuid, {
-            payload: {
-              username: xData.username,
-              followerCount: xData.followerCount,
-              postsCount: xData.topPosts.length,
-              bio: xData.bio,
-              staged: true,
-            },
-          });
-        }
-      } catch (err: any) {
-        console.warn(
-          `[provision] X data prefetch failed for @${xUsername} — creating minimal profile:`,
-          err.message
-        );
-      }
-    }
-
-    // Create profile node, pre-populated with staged X data when available
-    const profile = await createProfile(xUsername, xId, xData);
+    // Create minimal profile node — Drupal will populate X data via sync.
+    const profile = await createProfile(xUsername, xId);
     await provisionStoreDns(xUsername);
 
     if (snapshotUuid) {
       await updateImportSnapshot(snapshotUuid, {
         status: "success",
         profileUuid: profile.id,
-        ...(xData && {
-          payload: {
-            username: xData.username,
-            followerCount: xData.followerCount,
-            postsImported: xData.topPosts.length,
-            topFollowersImported: xData.topFollowers.length,
-            engagementScore: xData.metrics.engagement_score,
-            verified: xData.verified,
-          },
-        }),
       });
     }
 
-    // Async: upload profile images (non-blocking)
-    if (xData) {
-      const profileId = profile.id;
-      if (xData.profileImageUrl) {
-        uploadImageToDrupal(xData.profileImageUrl, profileId, "field_profile_picture", `${xUsername}-pfp`)
-          .catch((e) => console.error(`[provision] pfp upload failed:`, e));
-      }
-      if (xData.bannerUrl) {
-        uploadImageToDrupal(xData.bannerUrl, profileId, "field_background_banner", `${xUsername}-banner`)
-          .catch((e) => console.error(`[provision] banner upload failed:`, e));
-      }
-    }
-
-    // Async: AI site generation using already-fetched xData — non-blocking
-    if (xData) {
-      const stagedXData = xData;
-      (async () => {
-        try {
-          const result = await generateCreatorSite(stagedXData);
-          const profileNode = await findProfileByUsername(xUsername);
-          if (profileNode) {
-            await patchProfile(profileNode.uuid, {
-              field_store_theme: result.grokAnalysis.suggestedThemePreset || "xai3",
-              field_bio_description: {
-                value: result.grokAnalysis.rewrittenBio,
-                format: "basic_html",
-              },
-              field_metrics: JSON.stringify({
-                ai_site: {
-                  version: 1,
-                  generatedAt: result.generatedAt,
-                  grokAnalysis: result.grokAnalysis,
-                  components: result.components,
-                },
-              }),
-            });
-            console.log(`[provision] AI site generated for @${xUsername}`);
-          }
-        } catch (err) {
-          console.error(`[provision] AI site generation failed for @${xUsername}:`, err);
-        }
-      })();
-    }
+    // Tell Drupal to sync X data (Drupal owns X API calls, images, metrics).
+    triggerDrupalSync(xUsername).catch((err) =>
+      console.error(`[provision] Drupal sync trigger failed for @${xUsername}:`, err)
+    );
 
     return NextResponse.json({
       success: true,

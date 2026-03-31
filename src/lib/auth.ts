@@ -5,7 +5,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import TwitterProvider from "next-auth/providers/twitter";
 
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
-import { syncXDataToDrupal, findProfileByUsername } from "@/lib/x-import";
+import { findProfileByUsername } from "@/lib/x-import";
+import { triggerDrupalSync } from "@/lib/drupal-sync";
 import { checkRequiredPaidSubscription } from "@/lib/x-subscription";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
@@ -467,19 +468,16 @@ export const authOptions: NextAuthOptions = {
         // Sync X data to Drupal if profile already exists.
         // Profile creation is handled by the store creation wizard —
         // we only update existing profiles here on subsequent logins.
-        if (appToken.xId && appToken.xUsername && account.access_token) {
+        // Tell Drupal to sync X data on login (Drupal owns the X API calls).
+        if (appToken.xUsername) {
           const xUser = appToken.xUsername;
           (async () => {
             const existing = await findProfileByUsername(xUser);
             if (existing) {
-              await syncXDataToDrupal(
-                account.access_token!,
-                appToken.xId as string,
-                xUser
-              );
+              await triggerDrupalSync(xUser);
             }
           })().catch((err) =>
-            console.error(`[auth] X sync failed for @${appToken.xUsername}:`, err)
+            console.error(`[auth] Drupal sync trigger failed for @${appToken.xUsername}:`, err)
           );
         }
       }

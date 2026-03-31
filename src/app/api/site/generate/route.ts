@@ -5,7 +5,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { fetchXData, findProfileByUsername, patchProfile } from "@/lib/x-import";
+import { findProfileByUsername, patchProfile } from "@/lib/x-import";
+import { getCreatorProfile } from "@/lib/drupal";
+import { triggerDrupalSync } from "@/lib/drupal-sync";
 import { generateCreatorSite } from "@/lib/ai/generate-site";
 import { getBuilds, saveBuilds } from "@/lib/drupalBuilds";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
@@ -28,20 +30,47 @@ export async function POST(req: NextRequest) {
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
 
   const xUsername = token.xUsername as string;
-  const xId = token.xId as string;
-  const xAccessToken = token.xAccessToken as string | undefined;
 
   try {
-    // 1. Fetch X profile data
-    const xData = await fetchXData(xAccessToken, xId);
+    // 1. Ensure Drupal has fresh X data, then read it back
+    await triggerDrupalSync(xUsername).catch(() => {});
+    const profile = await getCreatorProfile(xUsername, { noStore: true });
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    const xData = {
+      username: profile.x_username,
+      displayName: profile.title || profile.x_username,
+      bio: profile.bio?.replace(/<[^>]*>/g, "") || "",
+      followerCount: profile.follower_count,
+      profileImageUrl: profile.profile_picture_url,
+      bannerUrl: profile.banner_url,
+      verified: false,
+      verifiedType: "none" as const,
+      topPosts: profile.top_posts.map((p) => ({
+        id: p.id, text: p.text, likes: p.likes ?? 0, retweets: p.retweets ?? 0,
+        replies: p.replies ?? 0, views: p.views ?? 0, date: p.date ?? "",
+      })),
+      topFollowers: profile.top_followers.map((f) => ({
+        username: f.username, display_name: f.display_name,
+        profile_image_url: f.profile_image_url, follower_count: f.follower_count,
+        verified: f.verified ?? false,
+      })),
+      metrics: profile.metrics || {
+        engagement_score: 0, avg_likes: 0, avg_retweets: 0, avg_views: 0,
+        top_themes: [] as string[], recommended_products: [] as string[],
+        posting_frequency: "Unknown", audience_sentiment: "Positive",
+      },
+    };
 
     // 2. Run dual-AI pipeline (Grok → Haiku)
     const result = await generateCreatorSite(xData);
 
     // 3. Store generation result on the creator profile
-    const profile = await findProfileByUsername(xUsername);
-    if (profile) {
-      await patchProfile(profile.uuid, {
+    const profileNode = await findProfileByUsername(xUsername);
+    if (profileNode) {
+      await patchProfile(profileNode.uuid, {
         field_metrics: JSON.stringify({
           ...JSON.parse("{}"), // merge with existing if needed
           ai_site: {
@@ -88,7 +117,7 @@ export async function POST(req: NextRequest) {
       // 5. Apply Grok's theme recommendation to profile
       const resolvedTheme = result.grokAnalysis.suggestedThemePreset;
       if (resolvedTheme) {
-        await patchProfile(profile.uuid, {
+        await patchProfile(profileNode.uuid, {
           field_store_theme: resolvedTheme,
           field_bio_description: {
             value: result.grokAnalysis.rewrittenBio,

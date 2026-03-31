@@ -13,18 +13,19 @@ interface WireframeRendererProps {
 /*  Block Renderers                                                    */
 /* ------------------------------------------------------------------ */
 
-function HeroBanner({ block }: { block: PlacedBlock }) {
-  const { heading, subheading, background_image_url, cta_text, cta_url } = block.props;
+function HeroBanner({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+  const { heading, subheading, cta_text, cta_url } = block.props;
+  const bgUrl = (block.props.background_image_url as string) || profile.banner_url;
   return (
     <div
       className="relative rounded-xl overflow-hidden bg-zinc-800 p-8 sm:p-12 text-center"
       style={
-        background_image_url
-          ? { backgroundImage: `url(${background_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+        bgUrl
+          ? { backgroundImage: `url(${bgUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
           : undefined
       }
     >
-      {background_image_url && <div className="absolute inset-0 bg-black/50" />}
+      {bgUrl && <div className="absolute inset-0 bg-black/50" />}
       <div className="relative z-10">
         {heading && <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{String(heading)}</h2>}
         {subheading && <p className="text-sm sm:text-base text-zinc-300 mb-6">{String(subheading)}</p>}
@@ -41,8 +42,21 @@ function HeroBanner({ block }: { block: PlacedBlock }) {
   );
 }
 
+function StillBuilding({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 p-6 text-center">
+      <svg className="h-6 w-6 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.22-3.58a1.5 1.5 0 010-2.47l5.22-3.58a1.5 1.5 0 012.16 1.24v7.17a1.5 1.5 0 01-2.16 1.24zM20.25 12a.75.75 0 01-.75.75H16.5a.75.75 0 010-1.5h3a.75.75 0 01.75.75z" />
+      </svg>
+      <p className="text-xs font-medium text-zinc-500">{label}</p>
+      <p className="text-[10px] text-zinc-600 mt-1">Still building</p>
+    </div>
+  );
+}
+
 function TextBlock({ block }: { block: PlacedBlock }) {
   const { heading, body_text } = block.props;
+  if (!heading && !body_text) return <StillBuilding label="Text Block" />;
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
       {heading && <h3 className="text-lg font-semibold text-white mb-2">{String(heading)}</h3>}
@@ -55,6 +69,7 @@ function TextBlock({ block }: { block: PlacedBlock }) {
 
 function CtaSection({ block }: { block: PlacedBlock }) {
   const { heading, body_text, cta_text, cta_url, background_color } = block.props;
+  if (!heading && !cta_text) return <StillBuilding label="Call to Action" />;
   return (
     <div
       className="rounded-xl p-6 text-center"
@@ -80,22 +95,18 @@ function VideoEmbed({ block }: { block: PlacedBlock }) {
   const ytMatch = embedUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
   if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
 
+  if (!embedUrl) return <StillBuilding label="Video Embed" />;
+
   return (
     <div className="rounded-xl overflow-hidden border border-zinc-800">
       {heading && <p className="px-4 pt-3 text-sm font-medium text-zinc-300">{String(heading)}</p>}
       <div className="aspect-video">
-        {embedUrl ? (
-          <iframe
-            src={embedUrl}
-            className="h-full w-full"
-            allowFullScreen
-            title={String(heading || "Video")}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-zinc-800 text-zinc-600 text-sm">
-            No video URL set
-          </div>
-        )}
+        <iframe
+          src={embedUrl}
+          className="h-full w-full"
+          allowFullScreen
+          title={String(heading || "Video")}
+        />
       </div>
     </div>
   );
@@ -103,6 +114,7 @@ function VideoEmbed({ block }: { block: PlacedBlock }) {
 
 function Testimonial({ block }: { block: PlacedBlock }) {
   const { quote_text, author_name, author_handle } = block.props;
+  if (!quote_text && !author_name) return <StillBuilding label="Testimonial" />;
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
       {quote_text && (
@@ -255,7 +267,7 @@ function RenderBlock({
   products: Product[];
 }) {
   switch (block.type) {
-    case "hero_banner": return <HeroBanner block={block} />;
+    case "hero_banner": return <HeroBanner block={block} profile={profile} />;
     case "text_block": return <TextBlock block={block} />;
     case "cta_section": return <CtaSection block={block} />;
     case "video_embed": return <VideoEmbed block={block} />;
@@ -282,34 +294,79 @@ function RenderBlock({
 export default function WireframeRenderer({ layout, profile, products }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
+  const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex gap-6">
-        {/* Left Column */}
-        {hasLeft && (
-          <div className="w-1/4 space-y-4">
-            {layout.left.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
-            ))}
-          </div>
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* ── X-style profile header ── */}
+      <div className="relative h-48 sm:h-64 w-full bg-zinc-900 overflow-hidden">
+        {profile.banner_url && (
+          <img src={profile.banner_url} alt="" className="h-full w-full object-cover" />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+      </div>
 
-        {/* Center Column */}
-        <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
-          {layout.center.map((block) => (
-            <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
-          ))}
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="-mt-16 sm:-mt-20 flex items-end gap-4">
+          <div className="h-28 w-28 sm:h-36 sm:w-36 shrink-0 rounded-full border-4 border-zinc-950 overflow-hidden bg-zinc-800">
+            {profile.profile_picture_url ? (
+              <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-zinc-500">
+                {profile.x_username?.[0]?.toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="pb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">{profile.title || `@${profile.x_username}`}</h1>
+            <a
+              href={`https://x.com/${profile.x_username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-indigo-400 hover:text-indigo-300"
+            >
+              @{profile.x_username}
+            </a>
+          </div>
         </div>
 
-        {/* Right Column */}
-        {hasRight && (
-          <div className="w-1/4 space-y-4">
-            {layout.right.map((block) => (
+        {bio && (
+          <p className="mt-4 max-w-xl text-sm text-zinc-400 leading-relaxed">{bio}</p>
+        )}
+
+        {profile.follower_count > 0 && (
+          <div className="mt-3 flex gap-6 text-sm text-zinc-500">
+            <span><strong className="text-white">{profile.follower_count >= 1000 ? `${(profile.follower_count / 1000).toFixed(1)}K` : profile.follower_count}</strong> Followers</span>
+            {profile.top_posts.length > 0 && (
+              <span><strong className="text-white">{profile.top_posts.length}</strong> Posts</span>
+            )}
+          </div>
+        )}
+
+        {/* ── 3-column wireframe blocks ── */}
+        <div className="mt-8 pb-12 flex gap-6">
+          {hasLeft && (
+            <div className="w-1/4 space-y-4">
+              {layout.left.map((block) => (
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+              ))}
+            </div>
+          )}
+
+          <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
+            {layout.center.map((block) => (
               <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
             ))}
           </div>
-        )}
+
+          {hasRight && (
+            <div className="w-1/4 space-y-4">
+              {layout.right.map((block) => (
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

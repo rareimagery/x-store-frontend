@@ -17,10 +17,12 @@ import Sidebar from "@/components/Sidebar";
 import StoreNav from "@/components/StoreNav";
 import BuilderGate from "@/components/builder/BuilderGate";
 import StoreBuildRenderer from "@/components/builder/StoreBuildRenderer";
+import WireframeRenderer from "@/components/builder/WireframeRenderer";
 import StoreRareProjectConversations from "@/components/StoreRareProjectConversations";
 import { getTemplateDefinition } from "@/templates/registry";
 import type { TemplatePreviewProps } from "@/templates/types";
 import { parseStoredBuilderDocument, type BuilderPreviewData } from "@/lib/builderDocument";
+import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -145,6 +147,19 @@ export default async function CreatorStorePage({
 
   const publishedBuilderBuilds = publishedBuilds.filter((build) => parseStoredBuilderDocument(build.code));
 
+  // Detect wireframe builds
+  const wireframeLayout: WireframeLayout | null = (() => {
+    for (const build of publishedBuilds) {
+      try {
+        const parsed = JSON.parse(build.code);
+        if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
+          return parsed.layout as WireframeLayout;
+        }
+      } catch { /* not wireframe JSON */ }
+    }
+    return null;
+  })();
+
   if (profile.store_theme === "myspace") {
     return (
       <>
@@ -173,6 +188,19 @@ export default async function CreatorStorePage({
         <StoreNav creator={creator} />
         <div className="pt-12">
           <StoreBuildRenderer builds={publishedBuilderBuilds} previewData={builderPreviewData} />
+          <StoreRareProjectConversations creator={creator} />
+        </div>
+        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
+      </>
+    );
+  }
+
+  if (wireframeLayout) {
+    return (
+      <>
+        <StoreNav creator={creator} />
+        <div className="min-h-screen bg-zinc-950 pt-12">
+          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} />
           <StoreRareProjectConversations creator={creator} />
         </div>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
