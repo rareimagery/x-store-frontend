@@ -147,92 +147,104 @@ export default function StoreBuilderWizard({
   const [profileNodeId, setProfileNodeId] = useState<string | null>(null);
   const [wireframeLayout, setWireframeLayout] = useState<WireframeLayout | null>(null);
 
-  /** Build a default wireframe layout from the creator's imported X profile data. */
-  function buildDefaultWireframe(): WireframeLayout {
-    let order = 0;
+  /**
+   * Call the API to create real Drupal block_content instances from the
+   * X profile data, then return a wireframe layout referencing those block IDs.
+   */
+  async function generateDrupalBlocks(hasProducts: boolean): Promise<WireframeLayout> {
+    try {
+      const res = await fetch("/api/blocks/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileData: {
+            username: xUsernameField || xUsername || slug,
+            displayName: xImportData?.displayName || xUsernameField,
+            bio: bioDescription,
+            bannerUrl: backgroundBannerUrl,
+            avatarUrl: profilePictureUrl,
+            followerCount: followerCount ? parseInt(followerCount) : undefined,
+            topPosts: xImportData?.topPosts,
+            topFollowers: xImportData?.topFollowers,
+          },
+          storeSlug: slug,
+          storeName,
+          hasProducts,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.layout) {
+          // Convert API response blocks into PlacedBlock format
+          const toPlaced = (blocks: any[]): PlacedBlock[] =>
+            blocks.map((b: any) => ({
+              instanceId: b.drupalId, // Use Drupal block UUID as instance ID
+              type: b.type,
+              column: b.column,
+              order: b.order,
+              props: { heading: b.label, _drupalBlockId: b.drupalId },
+            }));
+
+          return {
+            left: toPlaced(data.layout.left || []),
+            center: toPlaced(data.layout.center || []),
+            right: toPlaced(data.layout.right || []),
+          };
+        }
+      }
+    } catch (err) {
+      console.error("[wizard] Block generation failed, using fallback:", err);
+    }
+
+    // Fallback: client-side only blocks if Drupal API fails
+    return buildFallbackWireframe();
+  }
+
+  /** Fallback wireframe if Drupal block creation fails. */
+  function buildFallbackWireframe(): WireframeLayout {
     const uid = () => `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-
-    const left: PlacedBlock[] = [];
-    const center: PlacedBlock[] = [];
-    const right: PlacedBlock[] = [];
-
-    // Hero banner with their background image
-    center.push({
-      instanceId: uid(),
-      type: "hero_banner",
-      column: "center",
-      order: order++,
-      props: {
-        heading: storeName || `${xUser}'s Store`,
-        subheading: bioDescription || "Welcome to my store",
-        background_image_url: backgroundBannerUrl || "",
-        cta_text: "Shop Now",
-        cta_url: `/${slug}/store`,
-      },
-    });
-
-    // Social feed in left sidebar
-    if (xImportData?.topPosts?.length) {
-      left.push({
-        instanceId: uid(),
-        type: "social_feed",
-        column: "left",
-        order: 0,
-        props: { heading: "Latest Posts", max_items: 5 },
-      });
-    }
-
-    // Text block with their bio
-    if (bioDescription) {
-      left.push({
-        instanceId: uid(),
-        type: "text_block",
-        column: "left",
-        order: left.length,
-        props: {
-          heading: "About",
-          body_text: bioDescription,
+    return {
+      left: [
+        ...(bioDescription ? [{
+          instanceId: uid(), type: "text_block", column: "left" as const, order: 0,
+          props: { heading: "About", body_text: bioDescription },
+        }] : []),
+        ...(xImportData?.topPosts?.length ? [{
+          instanceId: uid(), type: "social_feed", column: "left" as const, order: 1,
+          props: { heading: "Latest Posts", max_items: 5 },
+        }] : []),
+      ],
+      center: [
+        {
+          instanceId: uid(), type: "hero_banner", column: "center" as const, order: 0,
+          props: {
+            heading: storeName || `${xUser}'s Store`,
+            subheading: bioDescription || "Welcome to my store",
+            background_image_url: backgroundBannerUrl || "",
+            cta_text: "Shop Now", cta_url: `/${slug}/store`,
+          },
         },
-      });
-    }
-
-    // Product grid in center
-    center.push({
-      instanceId: uid(),
-      type: "product_grid",
-      column: "center",
-      order: order++,
-      props: { heading: "Shop", max_items: 6, gallery_columns: 2 },
-    });
-
-    // CTA in right sidebar
-    right.push({
-      instanceId: uid(),
-      type: "cta_section",
-      column: "right",
-      order: 0,
-      props: {
-        heading: "Follow Me",
-        body_text: `Stay up to date with @${xUser}`,
-        cta_text: "Follow on X",
-        cta_url: `https://x.com/${xUser}`,
-      },
-    });
-
-    // Newsletter in right sidebar
-    right.push({
-      instanceId: uid(),
-      type: "newsletter",
-      column: "right",
-      order: 1,
-      props: {
-        heading: "Stay in the Loop",
-        body_text: "Get notified about new drops and exclusives.",
-        cta_text: "Subscribe",
-      },
-    });
-
-    return { left, center, right };
+        {
+          instanceId: uid(), type: "product_grid", column: "center" as const, order: 1,
+          props: { heading: "Shop", max_items: 6, gallery_columns: 2 },
+        },
+      ],
+      right: [
+        {
+          instanceId: uid(), type: "cta_section", column: "right" as const, order: 0,
+          props: {
+            heading: "Follow Me",
+            body_text: `Stay up to date with @${xUser}`,
+            cta_text: "Follow on X", cta_url: `https://x.com/${xUser}`,
+          },
+        },
+        {
+          instanceId: uid(), type: "newsletter", column: "right" as const, order: 1,
+          props: { heading: "Stay in the Loop", body_text: "Get notified about new drops and exclusives.", cta_text: "Subscribe" },
+        },
+      ],
+    };
   }
 
   function autoSlug(name: string): string {
@@ -312,8 +324,10 @@ export default function StoreBuilderWizard({
       setStoreDrupalId(data?.storeDrupalId || "");
       setProfileNodeId(data?.profileNodeId || "");
 
-      // Build default wireframe layout from imported profile data
-      setWireframeLayout(buildDefaultWireframe());
+      // Create Drupal block_content instances from profile data
+      // and build the wireframe layout referencing those blocks
+      const layout = await generateDrupalBlocks(false);
+      setWireframeLayout(layout);
 
       clearDraft();  // Draft fulfilled — remove so retry doesn't loop
       setStep(2); // Jump to wireframe builder step
