@@ -176,33 +176,24 @@ async function createXProfile(storeId: string | null, fields: XProfileFields) {
     field_x_username: fields.xUsername,
   };
 
-  // Optional text fields
+  // Optional fields — use actual Drupal field names
   if (fields.bioDescription) {
-    attributes.field_bio_description = {
+    attributes.field_x_bio = {
       value: fields.bioDescription,
       format: "basic_html",
     };
   }
   if (fields.followerCount != null) {
-    attributes.field_follower_count = fields.followerCount;
+    attributes.field_x_followers = fields.followerCount;
   }
   if (fields.topPosts) {
-    attributes.field_top_posts = {
-      value: fields.topPosts,
-      format: "basic_html",
-    };
+    attributes.field_top_posts = fields.topPosts;
   }
   if (fields.topFollowers) {
-    attributes.field_top_followers = {
-      value: fields.topFollowers,
-      format: "basic_html",
-    };
+    attributes.field_top_followers = fields.topFollowers;
   }
   if (fields.metrics) {
-    attributes.field_metrics = {
-      value: fields.metrics,
-      format: "basic_html",
-    };
+    attributes.field_metrics = fields.metrics;
   }
 
   // MySpace fields
