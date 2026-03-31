@@ -92,11 +92,11 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ campaigns });
 }
 
-/** POST /api/donations — Create a new campaign (authenticated creators) */
+/** POST /api/donations — Create a new campaign (admin only) */
 export async function POST(req: NextRequest) {
   const token = await getToken({ req });
-  if (!token?.xUsername && token?.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (token?.role !== "admin") {
+    return NextResponse.json({ error: "Only administrators can create donation campaigns" }, { status: 403 });
   }
 
   const body = await req.json();
