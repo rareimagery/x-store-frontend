@@ -807,7 +807,7 @@ function mapProductDetail(
   const attrs = product.attributes;
   const rels = product.relationships ?? {};
 
-  // Images
+  // Images — from field_images file references, fallback to field_product_image_url
   const imageRefs = rels.field_images?.data ?? [];
   const images: ProductImage[] = imageRefs
     .map((ref: any) => {
@@ -819,6 +819,11 @@ function mapProductDetail(
       return url ? { url, alt: ref.meta?.alt || attrs.title } : null;
     })
     .filter(Boolean) as ProductImage[];
+
+  // Fallback: use field_product_image_url if no file-based images
+  if (images.length === 0 && attrs.field_product_image_url) {
+    images.push({ url: attrs.field_product_image_url, alt: attrs.title });
+  }
 
   // Variations
   const variationRefs = rels.variations?.data ?? [];
@@ -840,12 +845,26 @@ function mapProductDetail(
         }
       }
 
-      // Gather attributes (size, color, etc.)
+      // Gather attributes (size, color, etc.) — resolve from relationships or attributes
       const attrMap: Record<string, string> = {};
-      if (va.attribute_size) attrMap.size = va.attribute_size;
-      if (va.attribute_color) attrMap.color = va.attribute_color;
-      if (va.field_size?.value) attrMap.size = va.field_size.value;
-      if (va.field_color?.value) attrMap.color = va.field_color.value;
+      const vRels = v.relationships ?? {};
+
+      // Entity reference attributes (included as relationships in JSON:API)
+      for (const [relName, label] of [["attribute_color", "color"], ["attribute_size", "size"]] as const) {
+        const ref = vRels[relName]?.data;
+        if (ref?.id) {
+          const attrValue = included.find((inc: any) => inc.id === ref.id && inc.type?.includes("commerce_product_attribute_value"));
+          if (attrValue) {
+            attrMap[label] = attrValue.attributes?.name ?? "";
+          }
+        }
+      }
+
+      // Fallback: plain text attribute fields
+      if (!attrMap.size && va.attribute_size) attrMap.size = va.attribute_size;
+      if (!attrMap.color && va.attribute_color) attrMap.color = va.attribute_color;
+      if (!attrMap.size && va.field_size?.value) attrMap.size = va.field_size.value;
+      if (!attrMap.color && va.field_color?.value) attrMap.color = va.field_color.value;
       if (va.field_license_tier) attrMap.license_tier = va.field_license_tier;
       if (va.field_color_finish) attrMap.color_finish = va.field_color_finish;
       if (va.field_size_option) attrMap.size_option = va.field_size_option;
@@ -980,7 +999,7 @@ const PRODUCT_TYPES = ["default", "clothing", "digital_download", "crafts", "pri
 
 const PRODUCT_INCLUDES: Record<string, string> = {
   default: "variations,field_images,stores",
-  clothing: "variations,field_images,stores",
+  clothing: "variations,variations.attribute_color,variations.attribute_size,field_images,stores",
   digital_download: "variations,field_images,field_preview_images,stores,field_categories,field_tags",
   crafts: "variations,variations.field_variation_image,field_images,stores,field_categories,field_tags",
   printful: "variations,variations.field_variation_image,variations.field_color_swatch,field_images,stores,field_categories,field_tags",
