@@ -71,7 +71,7 @@ function HeroBanner({ block, profile }: { block: PlacedBlock; profile: CreatorPr
   const bgUrl = (block.props.background_image_url as string) || profile.banner_url;
   return (
     <div
-      className="relative rounded-xl overflow-hidden bg-zinc-800 p-8 sm:p-12 text-center"
+      className="relative rounded-xl overflow-hidden wf-card p-8 sm:p-12 text-center"
       style={
         bgUrl
           ? { backgroundImage: `url(${bgUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -97,12 +97,12 @@ function HeroBanner({ block, profile }: { block: PlacedBlock; profile: CreatorPr
 
 function StillBuilding({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 p-6 text-center">
-      <svg className="h-6 w-6 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed wf-border wf-card p-6 text-center">
+      <svg className="h-6 w-6 wf-muted mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.22-3.58a1.5 1.5 0 010-2.47l5.22-3.58a1.5 1.5 0 012.16 1.24v7.17a1.5 1.5 0 01-2.16 1.24zM20.25 12a.75.75 0 01-.75.75H16.5a.75.75 0 010-1.5h3a.75.75 0 01.75.75z" />
       </svg>
-      <p className="text-xs font-medium text-zinc-500">{label}</p>
-      <p className="text-[10px] text-zinc-600 mt-1">Still building</p>
+      <p className="text-xs font-medium wf-muted">{label}</p>
+      <p className="text-[10px] wf-muted mt-1">Still building</p>
     </div>
   );
 }
@@ -111,10 +111,10 @@ function TextBlock({ block }: { block: PlacedBlock }) {
   const { heading, body_text } = block.props;
   if (!heading && !body_text) return <StillBuilding label="Text Block" />;
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+    <div className="rounded-xl border wf-card p-5">
       {heading && <h3 className="text-lg font-semibold text-white mb-2">{String(heading)}</h3>}
       {body_text && (
-        <div className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">{String(body_text)}</div>
+        <div className="text-sm wf-muted leading-relaxed whitespace-pre-wrap">{String(body_text)}</div>
       )}
     </div>
   );
@@ -151,7 +151,7 @@ function VideoEmbed({ block }: { block: PlacedBlock }) {
   if (!embedUrl) return <StillBuilding label="Video Embed" />;
 
   return (
-    <div className="rounded-xl overflow-hidden border border-zinc-800">
+    <div className="rounded-xl overflow-hidden border wf-border">
       {heading && <p className="px-4 pt-3 text-sm font-medium text-zinc-300">{String(heading)}</p>}
       <div className="aspect-video">
         <iframe
@@ -169,19 +169,19 @@ function Testimonial({ block }: { block: PlacedBlock }) {
   const { quote_text, author_name, author_handle } = block.props;
   if (!quote_text && !author_name) return <StillBuilding label="Testimonial" />;
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+    <div className="rounded-xl border wf-card p-5">
       {quote_text && (
         <blockquote className="text-sm text-zinc-300 italic leading-relaxed mb-3">
           &ldquo;{String(quote_text)}&rdquo;
         </blockquote>
       )}
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-full bg-indigo-600/20 flex items-center justify-center text-xs font-bold text-indigo-400">
+        <div className="h-8 w-8 rounded-full bg-indigo-600/20 flex items-center justify-center text-xs font-bold wf-accent">
           {String(author_name || "?")[0]?.toUpperCase()}
         </div>
         <div>
           {author_name && <p className="text-xs font-medium text-white">{String(author_name)}</p>}
-          {author_handle && <p className="text-[10px] text-zinc-500">@{String(author_handle)}</p>}
+          {author_handle && <p className="text-[10px] wf-muted">@{String(author_handle)}</p>}
         </div>
       </div>
     </div>
@@ -206,14 +206,14 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
           <a
             key={p.id}
             href={`/products/${productSlug(p.title)}`}
-            className="group rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+            className="group rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
           >
             {p.image_url ? (
-              <div className="aspect-square bg-zinc-800 overflow-hidden">
+              <div className="aspect-square wf-card overflow-hidden">
                 <img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
               </div>
             ) : (
-              <div className="aspect-square bg-zinc-800 flex items-center justify-center">
+              <div className="aspect-square wf-card flex items-center justify-center">
                 <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
@@ -222,9 +222,9 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
             <div className="p-3">
               <p className="text-sm font-medium text-zinc-200 truncate">{p.title}</p>
               {p.description && (
-                <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{p.description}</p>
+                <p className="mt-1 text-xs wf-muted line-clamp-2">{p.description}</p>
               )}
-              <p className="mt-1 text-sm font-semibold text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
+              <p className="mt-1 text-sm font-semibold wf-accent">${parseFloat(p.price).toFixed(2)}</p>
             </div>
           </a>
         ))}
@@ -248,7 +248,7 @@ function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorPr
             href={`https://x.com/${profile.x_username}/status/${post.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+            className="block rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
           >
             {post.image_url && (
               <div className="relative">
@@ -270,13 +270,13 @@ function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorPr
                 {profile.profile_picture_url && (
                   <img src={profile.profile_picture_url} alt="" className="h-5 w-5 rounded-full" />
                 )}
-                <span className="text-[11px] font-medium text-zinc-400">@{profile.x_username}</span>
+                <span className="text-[11px] font-medium wf-muted">@{profile.x_username}</span>
                 {post.date && (
-                  <span className="text-[10px] text-zinc-600">{new Date(post.date).toLocaleDateString()}</span>
+                  <span className="text-[10px] wf-muted">{new Date(post.date).toLocaleDateString()}</span>
                 )}
               </div>
               <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.text}</p>
-              <div className="mt-2 flex items-center gap-4 text-[10px] text-zinc-600">
+              <div className="mt-2 flex items-center gap-4 text-[10px] wf-muted">
                 {post.likes > 0 && (
                   <span className="flex items-center gap-1">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -297,7 +297,7 @@ function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorPr
           </a>
         ))}
         {posts.length === 0 && (
-          <p className="text-xs text-zinc-600">No posts yet</p>
+          <p className="text-xs wf-muted">No posts yet</p>
         )}
       </div>
     </div>
@@ -312,14 +312,14 @@ function Spacer({ block }: { block: PlacedBlock }) {
 function Newsletter({ block }: { block: PlacedBlock }) {
   const { heading, body_text, cta_text } = block.props;
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
+    <div className="rounded-xl border wf-card p-5 text-center">
       {heading && <h3 className="text-lg font-semibold text-white mb-1">{String(heading)}</h3>}
-      {body_text && <p className="text-xs text-zinc-400 mb-3">{String(body_text)}</p>}
+      {body_text && <p className="text-xs wf-muted mb-3">{String(body_text)}</p>}
       <div className="flex gap-2 max-w-xs mx-auto">
         <input
           type="email"
           placeholder="you@email.com"
-          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white placeholder-zinc-500"
+          className="flex-1 rounded-lg border border-zinc-700 wf-card px-3 py-2 text-xs text-white placeholder-zinc-500"
           readOnly
         />
         <button className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white">
@@ -333,9 +333,9 @@ function Newsletter({ block }: { block: PlacedBlock }) {
 function ImageGallery({ block }: { block: PlacedBlock }) {
   const { heading } = block.props;
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+    <div className="rounded-xl border wf-card p-5">
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="flex items-center justify-center h-32 text-xs text-zinc-600">
+      <div className="flex items-center justify-center h-32 text-xs wf-muted">
         Image gallery — upload images in Drupal
       </div>
     </div>
@@ -388,10 +388,10 @@ function PinnedPostBlock({ block, profile }: { block: PlacedBlock; profile: Crea
         className="block rounded-xl border border-indigo-500/30 bg-indigo-950/10 overflow-hidden transition hover:border-indigo-400/50"
       >
         <div className="flex items-center gap-2 px-4 pt-3 pb-2">
-          <svg className="h-3.5 w-3.5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="h-3.5 w-3.5 wf-accent" fill="currentColor" viewBox="0 0 24 24">
             <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Pinned</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider wf-accent">Pinned</span>
         </div>
 
         {post.image_url && (
@@ -400,7 +400,7 @@ function PinnedPostBlock({ block, profile }: { block: PlacedBlock; profile: Crea
 
         <div className="p-4">
           <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-4">{post.text}</p>
-          <div className="mt-3 flex items-center gap-4 text-[11px] text-zinc-500">
+          <div className="mt-3 flex items-center gap-4 text-[11px] wf-muted">
             {post.likes > 0 && <span>{post.likes >= 1000 ? `${(post.likes / 1000).toFixed(1)}K` : post.likes} likes</span>}
             {post.retweets > 0 && <span>{post.retweets} reposts</span>}
             {post.views > 0 && <span>{post.views >= 1000 ? `${(post.views / 1000).toFixed(1)}K` : post.views} views</span>}
@@ -431,19 +431,19 @@ function MusicPlayerBlock({ block, musicTracks }: { block: PlacedBlock; musicTra
               href={track.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-xs transition hover:border-zinc-600"
+              className="flex items-center gap-2 rounded-lg border wf-border wf-card px-3 py-2 text-xs transition hover:border-zinc-600"
             >
               {track.provider === "spotify" ? (
                 <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02z" /></svg>
               ) : (
                 <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="#FA2D48"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" /></svg>
               )}
-              <span className="text-zinc-400 truncate">{track.title}</span>
-              {track.artist && <span className="text-zinc-600 truncate">{track.artist}</span>}
+              <span className="wf-muted truncate">{track.title}</span>
+              {track.artist && <span className="wf-muted truncate">{track.artist}</span>}
             </a>
           ))}
           {musicTracks.length > 4 && (
-            <p className="text-center text-[10px] text-zinc-600">+{musicTracks.length - 4} more tracks</p>
+            <p className="text-center text-[10px] wf-muted">+{musicTracks.length - 4} more tracks</p>
           )}
         </div>
       )}
@@ -468,18 +468,18 @@ function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XAr
             href={article.x_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+            className="block rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
           >
             {article.image_url && (
               <img src={article.image_url} alt="" className="w-full h-32 object-cover" />
             )}
             <div className="p-3">
               <h4 className="text-sm font-semibold text-white line-clamp-2">{article.title}</h4>
-              <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{article.intro}</p>
-              <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-500">
+              <p className="mt-1 text-xs wf-muted line-clamp-2">{article.intro}</p>
+              <div className="mt-2 flex items-center gap-3 text-[10px] wf-muted">
                 {article.date && <span>{new Date(article.date).toLocaleDateString()}</span>}
                 {article.likes > 0 && <span>{article.likes} likes</span>}
-                <span className="text-indigo-400">Read on X &rarr;</span>
+                <span className="wf-accent">Read on X &rarr;</span>
               </div>
             </div>
           </a>
@@ -503,7 +503,7 @@ function GrokGalleryBlock({ block, gallery, creatorUsername }: { block: PlacedBl
         {shown.map((item, i) => (
           <div
             key={item.id}
-            className={`relative rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden ${i === 0 && shown.length > 2 ? "col-span-2" : ""}`}
+            className={`relative rounded-xl border wf-card overflow-hidden ${i === 0 && shown.length > 2 ? "col-span-2" : ""}`}
           >
             {item.type === "video" ? (
               <video src={item.url} className={`w-full object-cover ${i === 0 && shown.length > 2 ? "h-48" : "aspect-square"}`} muted playsInline preload="metadata" />
@@ -519,7 +519,7 @@ function GrokGalleryBlock({ block, gallery, creatorUsername }: { block: PlacedBl
       {gallery.length > maxItems && (
         <a
           href={`/${creatorUsername}/gallery`}
-          className="mt-3 block text-center text-xs text-indigo-400 hover:text-indigo-300"
+          className="mt-3 block text-center text-xs wf-accent hover:text-indigo-300"
         >
           View all {gallery.length} creations &rarr;
         </a>
@@ -543,18 +543,18 @@ function XCommunitiesBlock({ block, communities }: { block: PlacedBlock; communi
             href={c.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 transition hover:border-zinc-600"
+            className="flex items-center gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600/20 text-indigo-400 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600/20 wf-accent shrink-0">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584m12-1.697a5.971 5.971 0 00-.941-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white truncate">{c.name}</p>
-              {c.description && <p className="text-[11px] text-zinc-500 truncate">{c.description}</p>}
+              {c.description && <p className="text-[11px] wf-muted truncate">{c.description}</p>}
             </div>
-            <span className="text-[10px] text-indigo-400 shrink-0">Join</span>
+            <span className="text-[10px] wf-accent shrink-0">Join</span>
           </a>
         ))}
       </div>
@@ -579,12 +579,12 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
             href={`https://x.com/${fav.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 transition hover:border-zinc-600"
+            className="flex items-start gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
           >
             {fav.profile_image_url ? (
               <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold text-indigo-400 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold wf-accent shrink-0">
                 {fav.display_name?.[0]?.toUpperCase() || "?"}
               </div>
             )}
@@ -597,9 +597,9 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
                   </svg>
                 )}
               </div>
-              <p className="text-[11px] text-zinc-500">@{fav.username}</p>
+              <p className="text-[11px] wf-muted">@{fav.username}</p>
               {fav.bio && (
-                <p className="mt-1 text-xs text-zinc-400 leading-relaxed line-clamp-2">{fav.bio}</p>
+                <p className="mt-1 text-xs wf-muted leading-relaxed line-clamp-2">{fav.bio}</p>
               )}
             </div>
           </a>
@@ -608,7 +608,7 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
       {favorites.length > maxItems && (
         <a
           href={`/${creatorUsername}/favorites`}
-          className="mt-3 block text-center text-xs text-indigo-400 hover:text-indigo-300"
+          className="mt-3 block text-center text-xs wf-accent hover:text-indigo-300"
         >
           View all {favorites.length} favorites &rarr;
         </a>
@@ -660,7 +660,7 @@ function RenderBlock({
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
       return (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-xs text-zinc-500">
+        <div className="rounded-xl border wf-card p-4 text-xs wf-muted">
           Unknown block: {block.type}
         </div>
       );
@@ -686,7 +686,26 @@ export default function WireframeRenderer({ layout, profile, products, favorites
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.bg, color: colors.text }}>
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: colors.bg,
+        color: colors.text,
+        "--wf-bg": colors.bg,
+        "--wf-surface": colors.surface,
+        "--wf-border": colors.border,
+        "--wf-accent": colors.accent,
+        "--wf-text": colors.text,
+        "--wf-text-muted": colors.textMuted,
+      } as React.CSSProperties}
+    >
+      <style>{`
+        .wf-card { background: var(--wf-surface); border-color: var(--wf-border); }
+        .wf-card:hover { border-color: color-mix(in srgb, var(--wf-border) 50%, var(--wf-accent) 50%); }
+        .wf-accent { color: var(--wf-accent); }
+        .wf-muted { color: var(--wf-text-muted); }
+        .wf-border { border-color: var(--wf-border); }
+      `}</style>
       {/* ── X-style profile header ── */}
       <div className="relative h-48 sm:h-64 w-full overflow-hidden" style={{ backgroundColor: colors.surface }}>
         {profile.banner_url && (
@@ -697,11 +716,11 @@ export default function WireframeRenderer({ layout, profile, products, favorites
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="-mt-16 sm:-mt-20 flex items-end gap-4">
-          <div className="h-28 w-28 sm:h-36 sm:w-36 shrink-0 rounded-full border-4 border-zinc-950 overflow-hidden bg-zinc-800">
+          <div className="h-28 w-28 sm:h-36 sm:w-36 shrink-0 rounded-full border-4 border-zinc-950 overflow-hidden wf-card">
             {profile.profile_picture_url ? (
               <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-zinc-500">
+              <div className="flex h-full w-full items-center justify-center text-3xl font-bold wf-muted">
                 {profile.x_username?.[0]?.toUpperCase()}
               </div>
             )}
