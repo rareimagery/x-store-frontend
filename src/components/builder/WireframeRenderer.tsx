@@ -598,8 +598,38 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           <p className="mt-4 max-w-xl text-sm text-zinc-400 leading-relaxed">{bio}</p>
         )}
 
+        {/* ── Navigation menu ── */}
+        <nav className="mt-6 flex items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900/50 p-1.5 overflow-x-auto">
+          <a
+            href={`/${profile.x_username}`}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-white bg-zinc-800 transition hover:bg-zinc-700"
+          >
+            Home
+          </a>
+          <a
+            href={`/${profile.x_username}/store`}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Store
+          </a>
+          <a
+            href={`/${profile.x_username}/favorites`}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Favorites
+          </a>
+          <a
+            href={`https://x.com/${profile.x_username}/articles`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Articles
+          </a>
+        </nav>
+
         {/* ── 3-column wireframe blocks ── */}
-        <div className="mt-8 pb-12 flex gap-6">
+        <div className="mt-6 pb-12 flex gap-6">
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
