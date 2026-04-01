@@ -169,6 +169,38 @@ export default function MusicPage() {
         {saving && <span className="text-sm text-zinc-500">Saving...</span>}
       </div>
 
+      {/* Quick connect */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <a
+          href="https://open.spotify.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-[#1DB954]/50 hover:bg-[#1DB954]/5"
+        >
+          <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="#1DB954">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-white">Spotify</p>
+            <p className="text-[10px] text-zinc-500">Open to copy track links</p>
+          </div>
+        </a>
+        <a
+          href="https://music.apple.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-[#FA2D48]/50 hover:bg-[#FA2D48]/5"
+        >
+          <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="#FA2D48">
+            <path d="M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.801.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03c.525-.015 1.05-.04 1.573-.104.755-.092 1.478-.252 2.136-.618.894-.5 1.553-1.203 1.972-2.125.276-.608.424-1.252.5-1.908.06-.495.083-.993.09-1.49.003-.18 0-.358 0-.537V6.085l.004.04z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-white">Apple Music</p>
+            <p className="text-[10px] text-zinc-500">Open to copy track links</p>
+          </div>
+        </a>
+      </div>
+
       {/* Add track */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-6 space-y-3">
         <p className="text-sm font-medium text-zinc-300">Add a track or playlist</p>

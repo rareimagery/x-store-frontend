@@ -123,20 +123,20 @@ export default function ConsoleDashboard() {
         </Link>
 
         <Link
-          href="/console/categories"
+          href="/console/music"
           className="group rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 transition hover:border-zinc-700"
         >
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20">
             <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5l9-4.5 9 4.5m-18 0l9 4.5m9-4.5v9L12 21l-9-4.5v-9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
           </div>
-          <h3 className="font-medium text-white group-hover:text-blue-400">Store Categories</h3>
-          <p className="mt-1 text-xs text-zinc-500">Manage catalog categories and product organization</p>
+          <h3 className="font-medium text-white group-hover:text-blue-400">Music</h3>
+          <p className="mt-1 text-xs text-zinc-500">Add Spotify or Apple Music to your store</p>
         </Link>
 
         <Link
-          href="/console/builder"
+          href="/console/page-building"
           className="group rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 transition hover:border-zinc-700"
         >
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/20">
@@ -145,20 +145,20 @@ export default function ConsoleDashboard() {
             </svg>
           </div>
           <h3 className="font-medium text-white group-hover:text-purple-400">Page Building</h3>
-          <p className="mt-1 text-xs text-zinc-500">Build and publish storefront sections with AI tools</p>
+          <p className="mt-1 text-xs text-zinc-500">Build and publish your wireframe storefront layout</p>
         </Link>
 
         <Link
-          href="/console/print-services"
+          href="/console/design-studio"
           className="group rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 transition hover:border-zinc-700"
         >
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600/20">
             <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
             </svg>
           </div>
-          <h3 className="font-medium text-white group-hover:text-emerald-400">Print Services</h3>
-          <p className="mt-1 text-xs text-zinc-500">Connect and manage print-on-demand fulfillment</p>
+          <h3 className="font-medium text-white group-hover:text-emerald-400">Design Studio</h3>
+          <p className="mt-1 text-xs text-zinc-500">AI-generate merch designs with Grok Imagine</p>
         </Link>
       </div>
 
