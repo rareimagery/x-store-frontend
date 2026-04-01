@@ -12,11 +12,24 @@ export interface FavoriteCreator {
   verified: boolean;
 }
 
+export interface XArticle {
+  id: string;
+  title: string;
+  intro: string;
+  x_url: string;
+  image_url: string | null;
+  date: string;
+  likes: number;
+  retweets: number;
+  views: number;
+}
+
 interface WireframeRendererProps {
   layout: WireframeLayout;
   profile: CreatorProfile;
   products: Product[];
   favorites?: FavoriteCreator[];
+  articles?: XArticle[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -263,6 +276,44 @@ function DonationBlock({ block }: { block: PlacedBlock }) {
   return <DonationCampaignCard campaign={campaign} />;
 }
 
+function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XArticle[] }) {
+  const maxItems = Number(block.props.max_items) || 5;
+  const heading = block.props.heading;
+  const shown = articles.slice(0, maxItems);
+
+  if (shown.length === 0) return <StillBuilding label="X Articles" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="space-y-3">
+        {shown.map((article) => (
+          <a
+            key={article.id}
+            href={article.x_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+          >
+            {article.image_url && (
+              <img src={article.image_url} alt="" className="w-full h-32 object-cover" />
+            )}
+            <div className="p-3">
+              <h4 className="text-sm font-semibold text-white line-clamp-2">{article.title}</h4>
+              <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{article.intro}</p>
+              <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-500">
+                {article.date && <span>{new Date(article.date).toLocaleDateString()}</span>}
+                {article.likes > 0 && <span>{article.likes} likes</span>}
+                <span className="text-indigo-400">Read on X &rarr;</span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
   const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
   const heading = block.props.heading;
@@ -327,11 +378,13 @@ function RenderBlock({
   profile,
   products,
   favorites,
+  articles,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
   products: Product[];
   favorites: FavoriteCreator[];
+  articles: XArticle[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -345,6 +398,7 @@ function RenderBlock({
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
+    case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
       return (
@@ -359,7 +413,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [] }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [] }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
@@ -416,21 +470,21 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
               ))}
             </div>
           )}
