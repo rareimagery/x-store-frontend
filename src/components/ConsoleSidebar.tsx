@@ -16,6 +16,15 @@ const storeLinks: Array<{ href: Route; label: string; icon: string }> = [
   { href: "/console/design-studio" as Route, label: "Design Studio", icon: "M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" },
 ];
 
+const storeManagementLinks: Array<{ href: Route; label: string; icon: string }> = [
+  { href: "/console/products" as Route, label: "Products", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" },
+  { href: "/console/orders" as Route, label: "Orders", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
+  { href: "/console/shipping" as Route, label: "Shipping", icon: "M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zm2-4V9a1 1 0 00-1-1h-2l-3-4H8L5 8H3a1 1 0 00-1 1v4m0 0h18" },
+  { href: "/console/accounting" as Route, label: "Accounting", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { href: "/console/printful" as Route, label: "Printful", icon: "M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" },
+  { href: "/console/settings" as Route, label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+];
+
 const adminLinks: Array<{ href: Route; label: string; icon: string }> = [
   { href: "/console/admin", label: "All Stores", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
   { href: "/console/admin/users" as Route, label: "Users", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
@@ -27,17 +36,56 @@ interface ConsoleSidebarProps {
   onNavigate?: () => void;
 }
 
+function SidebarLink({
+  href,
+  icon,
+  label,
+  isActive,
+  onNavigate,
+  indent = false,
+}: {
+  href: Route;
+  icon: string;
+  label: string;
+  isActive: boolean;
+  onNavigate?: () => void;
+  indent?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${indent ? "pl-9" : ""} ${
+        isActive
+          ? "bg-indigo-600/20 text-indigo-400"
+          : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+      }`}
+    >
+      <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+      </svg>
+      {label}
+    </Link>
+  );
+}
+
 export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { role, hasStore, xUsername, storeSlug, xSubscriptionTier, stores, activeStoreId } = useConsole();
   const isAdmin = role === "admin";
   const [switchingStore, setSwitchingStore] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(() => {
+    // Auto-open if currently on a store management page
+    return ["/console/products", "/console/orders", "/console/shipping", "/console/accounting", "/console/printful", "/console/settings"].some((p) => pathname.startsWith(p));
+  });
 
   const isActive = (href: Route) => {
     if (href === "/console") return pathname === "/console";
     return pathname.startsWith(href);
   };
+
+  const isStoreManagementActive = storeManagementLinks.some((l) => isActive(l.href));
 
   const selectableStores = stores.filter((store) => !!store.storeId);
 
@@ -95,29 +143,43 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
       )}
 
       {/* Store Nav */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-4">
         {hasStore ? (
           <>
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Workspace
             </p>
             {storeLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                  isActive(link.href)
+              <SidebarLink key={link.href} href={link.href} icon={link.icon} label={link.label} isActive={isActive(link.href)} onNavigate={onNavigate} />
+            ))}
+
+            {/* Store dropdown */}
+            <div className="mt-3">
+              <button
+                onClick={() => setStoreOpen(!storeOpen)}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  isStoreManagementActive && !storeOpen
                     ? "bg-indigo-600/20 text-indigo-400"
                     : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                 }`}
               >
                 <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72" />
                 </svg>
-                {link.label}
-              </Link>
-            ))}
+                <span className="flex-1 text-left">Store</span>
+                <svg className={`h-3.5 w-3.5 transition-transform ${storeOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {storeOpen && (
+                <div className="mt-1 space-y-0.5">
+                  {storeManagementLinks.map((link) => (
+                    <SidebarLink key={link.href} href={link.href} icon={link.icon} label={link.label} isActive={isActive(link.href)} onNavigate={onNavigate} indent />
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -139,21 +201,7 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
               Create Store
             </Link>
             {isAdmin && storeLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                  isActive(link.href)
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                }`}
-              >
-                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
-                </svg>
-                {link.label}
-              </Link>
+              <SidebarLink key={link.href} href={link.href} icon={link.icon} label={link.label} isActive={isActive(link.href)} onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -166,21 +214,7 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
               Platform Admin
             </p>
             {adminLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                  isActive(link.href)
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                }`}
-              >
-                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
-                </svg>
-                {link.label}
-              </Link>
+              <SidebarLink key={link.href} href={link.href} icon={link.icon} label={link.label} isActive={isActive(link.href)} onNavigate={onNavigate} />
             ))}
           </>
         )}
