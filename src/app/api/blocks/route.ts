@@ -36,15 +36,6 @@ const BLOCK_CATALOG: BlockComponentDef[] = [
     defaultSpan: 6,
   },
   {
-    id: "text_block",
-    type: "text_block",
-    label: "Text Block",
-    description: "Rich text with heading and body",
-    icon: "M4 6h16M4 12h16M4 18h7",
-    defaultColumn: "center",
-    defaultSpan: 6,
-  },
-  {
     id: "music_player",
     type: "music_player",
     label: "Music Player",
