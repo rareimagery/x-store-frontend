@@ -224,7 +224,7 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
       {hasStore && storeSlug && (
         <div className="border-t border-zinc-800 px-3 py-3">
           <a
-            href={`https://${storeSlug}.rareimagery.net`}
+            href={`https://www.rareimagery.net/${storeSlug}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={onNavigate}
