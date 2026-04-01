@@ -15,7 +15,7 @@ export default function DesignStudioPage() {
   const [productType, setProductType] = useState("t_shirt");
   const [generating, setGenerating] = useState(false);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
-  const [revisedPrompt, setRevisedPrompt] = useState<string | null>(null);
+  const [usedPfp, setUsedPfp] = useState<{ used: boolean; username?: string }>({ used: false });
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
@@ -44,7 +44,7 @@ export default function DesignStudioPage() {
     if (!prompt.trim()) return;
     setGenerating(true);
     setDesignUrl(null);
-    setRevisedPrompt(null);
+    setUsedPfp({ used: false });
     setError(null);
     setPublished(null);
 
@@ -62,7 +62,7 @@ export default function DesignStudioPage() {
       }
 
       setDesignUrl(data.image_url);
-      setRevisedPrompt(data.revised_prompt || null);
+      setUsedPfp({ used: data.used_pfp || false, username: data.pfp_username });
       if (!title) {
         setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
       }
@@ -190,10 +190,15 @@ export default function DesignStudioPage() {
             />
           </div>
 
-          {revisedPrompt && (
-            <p className="px-4 py-2 text-xs text-zinc-500 border-t border-zinc-800">
-              Grok interpreted: {revisedPrompt}
-            </p>
+          {usedPfp.used && (
+            <div className="px-4 py-2 border-t border-zinc-800 flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs text-emerald-400">
+                Used @{usedPfp.username} PFP as reference
+              </span>
+            </div>
           )}
 
           {/* Publish to Printful */}

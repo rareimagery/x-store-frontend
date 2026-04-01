@@ -30,12 +30,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await generateDesign(prompt.trim(), productType);
+    const currentUsername = token.xUsername as string;
+    const result = await generateDesign(prompt.trim(), productType, currentUsername);
 
     return NextResponse.json({
       success: true,
       image_url: result.url,
-      revised_prompt: result.revisedPrompt,
+      used_pfp: result.usedPfp,
+      pfp_username: result.pfpUsername,
       product_type: productType,
       original_prompt: prompt.trim(),
     });
