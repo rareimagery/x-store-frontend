@@ -162,23 +162,90 @@ export default function ConsoleDashboard() {
         </Link>
       </div>
 
-      {xUsername && activeTemplate && (
+      {xUsername && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Active Template</p>
-              <h3 className="mt-2 text-lg font-semibold text-white">{activeTemplate.name}</h3>
-              <p className="mt-1 max-w-xl text-sm text-zinc-400">{activeTemplate.description}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-400">Creating Your Safe Space</p>
+              <h3 className="mt-2 text-lg font-semibold text-white">Build your page by dragging blocks</h3>
+              <p className="mt-1 max-w-xl text-sm text-zinc-400">
+                Pick components from the left, drop them into any column. Your profile header appears automatically at the top.
+              </p>
             </div>
             <Link
-              href="/console/builder"
-              className="inline-flex min-h-11 items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+              href="/console/page-building"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
             >
               Open Builder
             </Link>
           </div>
-          <p className="mt-4 text-xs text-zinc-500">
-            Template changes, AI generation, and publishing now happen in the builder workspace.
+
+          {/* Mini wireframe preview */}
+          <div className="mt-5 rounded-lg border border-zinc-700/50 bg-zinc-950 p-3 overflow-hidden">
+            {/* Mini header */}
+            <div className="h-10 rounded-md bg-zinc-800 mb-2 flex items-center px-3 gap-2">
+              <div className="h-6 w-6 rounded-full bg-indigo-600/30" />
+              <div className="space-y-1">
+                <div className="h-2 w-20 rounded bg-zinc-600" />
+                <div className="h-1.5 w-12 rounded bg-zinc-700" />
+              </div>
+            </div>
+
+            {/* Mini 3-column layout */}
+            <div className="flex gap-1.5">
+              {/* Left */}
+              <div className="w-1/4 space-y-1.5">
+                <div className="rounded border border-dashed border-zinc-700 bg-zinc-900/50 p-2">
+                  <div className="flex items-center gap-1">
+                    <svg className="h-2.5 w-2.5 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" /></svg>
+                    <span className="text-[8px] text-zinc-500">Favorites</span>
+                  </div>
+                </div>
+                <div className="rounded border border-dashed border-zinc-700 bg-zinc-900/50 p-2">
+                  <div className="flex items-center gap-1">
+                    <svg className="h-2.5 w-2.5 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19V6l12-3v13" /></svg>
+                    <span className="text-[8px] text-zinc-500">Music</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Center */}
+              <div className="w-1/2 space-y-1.5">
+                <div className="rounded border border-dashed border-zinc-700 bg-zinc-900/50 p-2">
+                  <div className="flex items-center gap-1">
+                    <svg className="h-2.5 w-2.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 8h10M7 12h4m1 8l-4-4H5V6h14v8" /></svg>
+                    <span className="text-[8px] text-zinc-500">Social Feed</span>
+                  </div>
+                </div>
+                <div className="rounded border border-dashed border-zinc-700 bg-zinc-900/50 p-2">
+                  <div className="flex items-center gap-1">
+                    <svg className="h-2.5 w-2.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm10 4h6v2h-6zM4 14h6v2H4zm10 4h6v2h-6z" /></svg>
+                    <span className="text-[8px] text-zinc-500">Products</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right */}
+              <div className="w-1/4 space-y-1.5">
+                <div className="rounded border border-dashed border-zinc-700 bg-zinc-900/50 p-2">
+                  <div className="flex items-center gap-1">
+                    <svg className="h-2.5 w-2.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8" /></svg>
+                    <span className="text-[8px] text-zinc-500">Newsletter</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Labels */}
+            <div className="mt-2 flex justify-between px-1">
+              <span className="text-[7px] uppercase tracking-wider text-zinc-600">Left</span>
+              <span className="text-[7px] uppercase tracking-wider text-zinc-600">Center</span>
+              <span className="text-[7px] uppercase tracking-wider text-zinc-600">Right</span>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-zinc-500">
+            Tap a component, then tap a column to place it. Rearrange, customize, and hit Save &amp; Publish.
           </p>
         </div>
       )}
