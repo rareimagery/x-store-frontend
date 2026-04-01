@@ -13,6 +13,14 @@ export interface FavoriteCreator {
   verified: boolean;
 }
 
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  provider: "spotify" | "apple_music";
+}
+
 export interface XArticle {
   id: string;
   title: string;
@@ -31,6 +39,7 @@ interface WireframeRendererProps {
   products: Product[];
   favorites?: FavoriteCreator[];
   articles?: XArticle[];
+  musicTracks?: MusicTrack[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -277,8 +286,9 @@ function DonationBlock({ block }: { block: PlacedBlock }) {
   return <DonationCampaignCard campaign={campaign} />;
 }
 
-function MusicPlayerBlock({ block }: { block: PlacedBlock }) {
-  const url = String(block.props.music_url || "");
+function MusicPlayerBlock({ block, musicTracks }: { block: PlacedBlock; musicTracks: MusicTrack[] }) {
+  // Use inspector URL if set, otherwise use first saved track from console
+  const url = String(block.props.music_url || "") || musicTracks[0]?.url || "";
   const heading = block.props.heading;
 
   if (!url) return <StillBuilding label="Music Player" />;
@@ -287,6 +297,30 @@ function MusicPlayerBlock({ block }: { block: PlacedBlock }) {
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
       <StorePlayer url={url} theme="dark" />
+      {musicTracks.length > 1 && (
+        <div className="mt-2 space-y-1">
+          {musicTracks.slice(1, 4).map((track) => (
+            <a
+              key={track.id}
+              href={track.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-xs transition hover:border-zinc-600"
+            >
+              {track.provider === "spotify" ? (
+                <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02z" /></svg>
+              ) : (
+                <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="#FA2D48"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" /></svg>
+              )}
+              <span className="text-zinc-400 truncate">{track.title}</span>
+              {track.artist && <span className="text-zinc-600 truncate">{track.artist}</span>}
+            </a>
+          ))}
+          {musicTracks.length > 4 && (
+            <p className="text-center text-[10px] text-zinc-600">+{musicTracks.length - 4} more tracks</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -394,12 +428,14 @@ function RenderBlock({
   products,
   favorites,
   articles,
+  musicTracks,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
   products: Product[];
   favorites: FavoriteCreator[];
   articles: XArticle[];
+  musicTracks: MusicTrack[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -413,7 +449,7 @@ function RenderBlock({
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
-    case "music_player": return <MusicPlayerBlock block={block} />;
+    case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
@@ -429,7 +465,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [] }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [] }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
@@ -486,21 +522,21 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
               ))}
             </div>
           )}
