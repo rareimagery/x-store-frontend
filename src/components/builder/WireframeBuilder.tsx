@@ -527,7 +527,8 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
   const totalBlocks = layout.left.length + layout.center.length + layout.right.length;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-zinc-950 text-white">
+    <>
+    <div className="flex h-[calc(100vh-12rem)] bg-zinc-950 text-white">
       {/* Block Palette */}
       <div className="w-56 shrink-0 border-r border-zinc-800 bg-zinc-900/80 overflow-y-auto p-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">
@@ -716,37 +717,6 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
         </div>
       </div>
 
-      {/* Color Scheme Picker */}
-      <div className="border-t border-zinc-800 p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Page Color Scheme</p>
-        <div className="flex gap-2">
-          {[
-            { id: "midnight", label: "Midnight", bg: "#09090b", surface: "#18181b", accent: "#6366f1", text: "#ffffff" },
-            { id: "ocean", label: "Ocean", bg: "#0c1222", surface: "#1a2332", accent: "#38bdf8", text: "#e0f2fe" },
-            { id: "forest", label: "Forest", bg: "#0a0f0a", surface: "#1a2e1a", accent: "#4ade80", text: "#dcfce7" },
-            { id: "sunset", label: "Sunset", bg: "#1a0a0a", surface: "#2e1a1a", accent: "#fb923c", text: "#fff7ed" },
-            { id: "royal", label: "Royal", bg: "#0f0a1a", surface: "#1e152e", accent: "#a78bfa", text: "#ede9fe" },
-          ].map((scheme) => (
-            <button
-              key={scheme.id}
-              onClick={() => setColorScheme(scheme.id)}
-              className={`flex-1 rounded-lg border p-2 text-center transition ${
-                colorScheme === scheme.id
-                  ? "border-indigo-500 ring-1 ring-indigo-500/50"
-                  : "border-zinc-700 hover:border-zinc-600"
-              }`}
-            >
-              <div className="flex justify-center gap-1 mb-1.5">
-                <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.bg }} />
-                <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.surface }} />
-                <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.accent }} />
-              </div>
-              <p className="text-[9px] text-zinc-400">{scheme.label}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Block Inspector Panel */}
       {selectedBlock && (
         <BlockInspector
@@ -757,5 +727,37 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
         />
       )}
     </div>
+
+    {/* Color Scheme Picker — below the builder */}
+    <div className="border-t border-zinc-800 bg-zinc-900/80 px-6 py-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Page Color Scheme</p>
+      <div className="flex gap-2 max-w-2xl">
+        {[
+          { id: "midnight", label: "Midnight", bg: "#09090b", surface: "#18181b", accent: "#6366f1" },
+          { id: "ocean", label: "Ocean", bg: "#0c1222", surface: "#1a2332", accent: "#38bdf8" },
+          { id: "forest", label: "Forest", bg: "#0a0f0a", surface: "#1a2e1a", accent: "#4ade80" },
+          { id: "sunset", label: "Sunset", bg: "#1a0a0a", surface: "#2e1a1a", accent: "#fb923c" },
+          { id: "royal", label: "Royal", bg: "#0f0a1a", surface: "#1e152e", accent: "#a78bfa" },
+        ].map((scheme) => (
+          <button
+            key={scheme.id}
+            onClick={() => setColorScheme(scheme.id)}
+            className={`flex-1 rounded-lg border p-2 text-center transition ${
+              colorScheme === scheme.id
+                ? "border-indigo-500 ring-1 ring-indigo-500/50"
+                : "border-zinc-700 hover:border-zinc-600"
+            }`}
+          >
+            <div className="flex justify-center gap-1 mb-1.5">
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.bg }} />
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.surface }} />
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.accent }} />
+            </div>
+            <p className="text-[9px] text-zinc-400">{scheme.label}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+    </>
   );
 }
