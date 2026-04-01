@@ -43,7 +43,7 @@ export default function SettingsPage() {
               Subdomain
             </label>
             <p className="mt-1 text-sm text-white">
-              {storeSlug}.rareimagery.net
+              rareimagery.net/{storeSlug}
             </p>
           </div>
           <div>

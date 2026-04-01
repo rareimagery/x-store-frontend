@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       success: true,
       profileId: existingId,
       alreadyExisted: true,
-      url: `https://${xUsername}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+      url: `https://www.rareimagery.net/${xUsername}`,
     });
   }
 
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
       success: true,
       profileId: profile.id,
       alreadyExisted: false,
-      url: `https://${xUsername}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`,
+      url: `https://www.rareimagery.net/${xUsername}`,
     });
   } catch (err: any) {
     if (snapshotUuid) {

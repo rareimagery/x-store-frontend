@@ -86,7 +86,7 @@ export default function ConsoleDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Store Workspace</h1>
         <a
-          href={`https://${storeSlug}.rareimagery.net`}
+          href={`https://www.rareimagery.net/${storeSlug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:border-zinc-600"
