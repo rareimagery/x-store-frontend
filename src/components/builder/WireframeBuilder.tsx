@@ -390,9 +390,12 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
   /* ---------- Save ---------- */
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const saveLayout = useCallback(async () => {
     setSaving(true);
     setSaved(false);
+    setSaveError(null);
     try {
       const doc = {
         schemaVersion: 1,
@@ -400,7 +403,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
         layout,
         updatedAt: new Date().toISOString(),
       };
-      await fetch("/api/builds", {
+      const res = await fetch("/api/builds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -409,9 +412,16 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
           published: true,
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        setSaveError(err.error || `Save failed (${res.status})`);
+        console.error("Save failed:", err);
+        return;
+      }
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
+      setSaveError("Network error — could not save");
       console.error("Save failed:", err);
     } finally {
       setSaving(false);
@@ -466,6 +476,9 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
           >
             {saving ? "Saving..." : saved ? "Saved!" : "Save & Publish"}
           </button>
+          {saveError && (
+            <span className="text-xs text-red-400">{saveError}</span>
+          )}
         </div>
 
         {/* Wireframe Grid */}
