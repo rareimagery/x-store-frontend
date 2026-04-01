@@ -128,12 +128,28 @@ async function attachProductImageFile(
 // ─── GET — list products for a store (all types) ──────────────────────────────
 
 export async function GET(req: NextRequest) {
-  const storeId = req.nextUrl.searchParams.get("storeId");
-  if (!storeId) {
-    return NextResponse.json({ error: "storeId required" }, { status: 400 });
+  let storeId = req.nextUrl.searchParams.get("storeId");
+  const slug = req.nextUrl.searchParams.get("slug");
+
+  // Resolve slug to storeId if provided
+  if (!storeId && slug && DRUPAL_API) {
+    try {
+      const slugRes = await fetch(
+        `${DRUPAL_API}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(slug)}&fields[commerce_store--online]=drupal_internal__store_id`,
+        { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
+      );
+      if (slugRes.ok) {
+        const slugJson = await slugRes.json();
+        storeId = String(slugJson.data?.[0]?.attributes?.drupal_internal__store_id ?? "");
+      }
+    } catch {}
   }
 
-  const productTypes = ["default", "digital_download", "crafts"];
+  if (!storeId) {
+    return NextResponse.json({ error: "storeId or slug required" }, { status: 400 });
+  }
+
+  const productTypes = ["default", "clothing", "digital_download", "crafts"];
   const allProducts: unknown[] = [];
 
   await Promise.all(

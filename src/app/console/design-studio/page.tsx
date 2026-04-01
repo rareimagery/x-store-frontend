@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
+
+interface StoreProduct {
+  id: string;
+  title: string;
+  price: string;
+  image_url: string | null;
+  description: string;
+  sku: string;
+}
 
 const PRODUCT_TYPES = [
   { value: "t_shirt", label: "T-Shirt", emoji: "👕", price: "$24.99" },
@@ -34,6 +43,65 @@ export default function DesignStudioPage() {
     design_url: string | null;
     printful_synced: boolean;
   } | null>(null);
+
+  // Printful connection
+  const [printfulKey, setPrintfulKey] = useState("");
+  const [printfulConnected, setPrintfulConnected] = useState<string | null>(null);
+  const [storeUuid, setStoreUuid] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+
+  // Store products
+  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Check Printful status and load products on mount
+  useEffect(() => {
+    if (!hasStore) return;
+
+    // Check Printful connection
+    fetch(`/api/printful/status?slug=${encodeURIComponent(storeSlug || "")}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.store_uuid) setStoreUuid(d.store_uuid);
+        if (d.connected) setPrintfulConnected(d.printful_store_id ? `Store #${d.printful_store_id}` : "Connected");
+      })
+      .catch(() => {});
+
+    // Load store products from Drupal
+    fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const products = d.products ?? d ?? [];
+        setStoreProducts(Array.isArray(products) ? products : []);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProducts(false));
+  }, [hasStore, storeSlug]);
+
+  const connectPrintful = useCallback(async () => {
+    if (!printfulKey.trim()) return;
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      const res = await fetch("/api/printful/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: printfulKey.trim(), storeId: storeUuid }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setConnectError(data.error || "Connection failed");
+        return;
+      }
+      setPrintfulConnected(data.printful_store || "Connected");
+      setPrintfulKey("");
+    } catch {
+      setConnectError("Connection failed");
+    } finally {
+      setConnecting(false);
+    }
+  }, [printfulKey]);
 
   if (!hasStore || !storeSlug) {
     return (
@@ -369,6 +437,95 @@ export default function DesignStudioPage() {
           )}
         </div>
       )}
+      {/* Printful Connection */}
+      <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <h2 className="text-sm font-semibold text-white">Printful</h2>
+          </div>
+          {printfulConnected && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              {printfulConnected}
+            </span>
+          )}
+        </div>
+
+        {printfulConnected ? (
+          <p className="text-xs text-zinc-500">
+            Printful is connected. Designs you publish will auto-sync for print-on-demand fulfillment.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-500">
+              Connect your Printful account to enable print-on-demand fulfillment for your designs.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={printfulKey}
+                onChange={(e) => setPrintfulKey(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && connectPrintful()}
+                placeholder="Paste your Printful API key..."
+                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+              />
+              <button
+                onClick={connectPrintful}
+                disabled={connecting || !printfulKey.trim()}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition"
+              >
+                {connecting ? "Connecting..." : "Connect"}
+              </button>
+            </div>
+            {connectError && <p className="text-xs text-red-400">{connectError}</p>}
+            <p className="text-[10px] text-zinc-600">
+              Get your API key from{" "}
+              <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+                Printful Dashboard &rarr; Settings &rarr; API
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Store Products */}
+      <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <h2 className="text-sm font-semibold text-white mb-3">Your Store Products</h2>
+        {loadingProducts ? (
+          <p className="text-xs text-zinc-500">Loading products...</p>
+        ) : storeProducts.length === 0 ? (
+          <p className="text-xs text-zinc-500">No products yet. Generate a design above and publish it to create your first product.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {storeProducts.map((p) => (
+              <a
+                key={p.id}
+                href={`/products/${p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
+                className="group rounded-xl border border-zinc-800 bg-zinc-800/50 overflow-hidden transition hover:border-zinc-600"
+              >
+                {p.image_url ? (
+                  <div className="aspect-square overflow-hidden">
+                    <img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                  </div>
+                ) : (
+                  <div className="aspect-square flex items-center justify-center bg-zinc-800">
+                    <svg className="h-8 w-8 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                )}
+                <div className="p-2">
+                  <p className="text-xs font-medium text-white truncate">{p.title}</p>
+                  <p className="text-xs text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
