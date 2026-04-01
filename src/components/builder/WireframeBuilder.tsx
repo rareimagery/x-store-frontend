@@ -373,6 +373,39 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     setSelectedBlockId((prev) => (prev === instanceId ? null : prev));
   }, []);
 
+  const moveBlockInColumn = useCallback((instanceId: string, direction: -1 | 1) => {
+    setLayout((prev) => {
+      const next = { left: [...prev.left], center: [...prev.center], right: [...prev.right] };
+      for (const col of ["left", "center", "right"] as const) {
+        const idx = next[col].findIndex((b) => b.instanceId === instanceId);
+        if (idx === -1) continue;
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= next[col].length) return prev;
+        [next[col][idx], next[col][newIdx]] = [next[col][newIdx], next[col][idx]];
+        return next;
+      }
+      return prev;
+    });
+  }, []);
+
+  const moveBlockToColumn = useCallback((instanceId: string, targetColumn: "left" | "center" | "right") => {
+    setLayout((prev) => {
+      const next = { left: [...prev.left], center: [...prev.center], right: [...prev.right] };
+      let block: PlacedBlock | undefined;
+      for (const col of ["left", "center", "right"] as const) {
+        const idx = next[col].findIndex((b) => b.instanceId === instanceId);
+        if (idx !== -1) {
+          block = next[col].splice(idx, 1)[0];
+          break;
+        }
+      }
+      if (!block) return prev;
+      block.column = targetColumn;
+      next[targetColumn].push(block);
+      return next;
+    });
+  }, []);
+
   const updateBlockProps = useCallback(
     (instanceId: string, props: PlacedBlock["props"]) => {
       // Handle column move via __column meta prop
@@ -585,16 +618,65 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
                         }`}
                       >
                         <BlockPreview block={block} catalog={catalog} />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBlock(block.instanceId);
-                          }}
-                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100 [div:hover>&]:opacity-100"
-                          title="Remove block"
-                        >
-                          x
-                        </button>
+
+                        {/* Touch-friendly move controls — visible when selected */}
+                        {selectedBlockId === block.instanceId && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5 rounded-full border border-zinc-700 bg-zinc-900 px-1 py-0.5 shadow-lg z-10">
+                            {column !== "left" && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, column === "right" ? "center" : "left"); }}
+                                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                title="Move left"
+                              >
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveBlockInColumn(block.instanceId, -1); }}
+                              className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                              title="Move up"
+                            >
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveBlockInColumn(block.instanceId, 1); }}
+                              className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                              title="Move down"
+                            >
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            {column !== "right" && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, column === "left" ? "center" : "right"); }}
+                                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                title="Move right"
+                              >
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); removeBlock(block.instanceId); }}
+                              className="rounded-full p-1 text-red-400 hover:bg-red-900/50 hover:text-red-300"
+                              title="Remove"
+                            >
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Remove button — desktop hover */}
+                        {selectedBlockId !== block.instanceId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeBlock(block.instanceId);
+                            }}
+                            className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100 [div:hover>&]:opacity-100"
+                            title="Remove block"
+                          >
+                            x
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
