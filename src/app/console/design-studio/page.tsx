@@ -19,11 +19,14 @@ export default function DesignStudioPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState<{
     product_type: string;
     mockup_url: string | null;
     retail_price: string;
+    design_url: string | null;
+    printful_synced: boolean;
   } | null>(null);
 
   if (!hasStore || !storeSlug) {
@@ -83,6 +86,7 @@ export default function DesignStudioPage() {
           image_url: designUrl,
           product_type: productType,
           title: title.trim(),
+          description: description.trim() || undefined,
         }),
       });
 
@@ -96,6 +100,8 @@ export default function DesignStudioPage() {
         product_type: data.product_type,
         mockup_url: data.mockup_url,
         retail_price: data.retail_price,
+        design_url: data.design_url,
+        printful_synced: !!data.printful_product_id,
       });
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -200,6 +206,13 @@ export default function DesignStudioPage() {
                 placeholder="Product title..."
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
               />
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Short description (optional)..."
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+              />
               <div className="flex gap-3">
                 <button
                   onClick={handlePublish}
@@ -222,16 +235,22 @@ export default function DesignStudioPage() {
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-semibold">Published to Printful!</span>
+                <span className="font-semibold">Product Created in Your Store!</span>
               </div>
               <div className="text-sm text-zinc-400 space-y-1">
-                <p>Product: {published.product_type} &middot; {published.retail_price}</p>
+                <p>{published.product_type} &middot; ${published.retail_price}</p>
+                {published.printful_synced && (
+                  <p className="text-indigo-400">Synced to Printful for fulfillment</p>
+                )}
+                {!published.printful_synced && (
+                  <p className="text-amber-400">Printful not connected &mdash; product saved to store only</p>
+                )}
                 {published.mockup_url && (
                   <img src={published.mockup_url} alt="Mockup" className="mt-2 rounded-lg max-h-48 object-contain" />
                 )}
               </div>
               <button
-                onClick={() => { setDesignUrl(null); setTitle(""); setPublished(null); setPrompt(""); }}
+                onClick={() => { setDesignUrl(null); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); }}
                 className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition"
               >
                 Create Another Design
