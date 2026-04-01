@@ -692,20 +692,31 @@ export async function getCreatorStoreBySlug(
 export async function getStoreProducts(storeId: string): Promise<Product[]> {
   // Query all product types for this store
   const productTypes = ["default", "clothing", "digital_download", "crafts", "printful"];
+  // Include candidates: try full includes first, fall back to simpler ones on 400
+  const includeCandidates = [
+    "variations,variations.field_variation_image,field_images,field_images.field_media_image",
+    "variations,field_images",
+    "variations",
+  ];
   const allProducts: Product[] = [];
 
   for (const type of productTypes) {
     try {
-      const params = new URLSearchParams({
-        "filter[stores.meta.drupal_internal__target_id]": storeId,
-        include: "variations,variations.field_variation_image,field_images,field_images.field_media_image",
-        "page[limit]": "50",
-      });
+      let res: Response | null = null;
+      for (const include of includeCandidates) {
+        const params = new URLSearchParams({
+          "filter[stores.meta.drupal_internal__target_id]": storeId,
+          include,
+          "page[limit]": "50",
+        });
 
-      const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
-      const res = await fetch(url, { next: { revalidate: 60 } });
+        const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
+        res = await fetch(url, { next: { revalidate: 60 } });
 
-      if (!res.ok) continue;
+        if (res.ok || res.status !== 400) break;
+      }
+
+      if (!res || !res.ok) continue;
 
       const json = await res.json();
       const products = json.data ?? [];

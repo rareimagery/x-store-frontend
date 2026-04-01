@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getToken } from "next-auth/jwt";
 import {
   getStorePrintfulKey,
@@ -223,6 +224,11 @@ export async function POST(req: NextRequest) {
         console.warn("[design-studio] Image attachment failed:", err);
       }
     })();
+
+    // Revalidate store pages so new product appears immediately
+    revalidatePath(`/${slug}/store`);
+    revalidatePath(`/${slug}`);
+    revalidatePath(`/stores/${slug}`);
 
     return NextResponse.json({
       success: true,
