@@ -2,6 +2,7 @@ import type { PlacedBlock, WireframeLayout } from "./WireframeBuilder";
 import type { CreatorProfile, Product } from "@/lib/drupal";
 import DonationCampaignCard from "@/components/DonationCampaign";
 import type { DonationCampaign } from "@/app/api/donations/route";
+import StorePlayer from "@/components/StorePlayer";
 
 export interface FavoriteCreator {
   username: string;
@@ -276,6 +277,20 @@ function DonationBlock({ block }: { block: PlacedBlock }) {
   return <DonationCampaignCard campaign={campaign} />;
 }
 
+function MusicPlayerBlock({ block }: { block: PlacedBlock }) {
+  const url = String(block.props.music_url || "");
+  const heading = block.props.heading;
+
+  if (!url) return <StillBuilding label="Music Player" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <StorePlayer url={url} theme="dark" />
+    </div>
+  );
+}
+
 function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XArticle[] }) {
   const maxItems = Number(block.props.max_items) || 5;
   const heading = block.props.heading;
@@ -398,6 +413,7 @@ function RenderBlock({
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
+    case "music_player": return <MusicPlayerBlock block={block} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
