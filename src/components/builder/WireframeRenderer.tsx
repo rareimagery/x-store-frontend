@@ -177,6 +177,10 @@ function Testimonial({ block }: { block: PlacedBlock }) {
   );
 }
 
+function productSlug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function ProductGrid({ block, products }: { block: PlacedBlock; products: Product[] }) {
   const maxItems = Number(block.props.max_items) || 6;
   const cols = Number(block.props.gallery_columns) || 2;
@@ -188,17 +192,30 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
       <div className={`grid gap-3 ${cols === 3 ? "grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
         {shown.map((p) => (
-          <div key={p.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-            {p.image_url && (
-              <div className="aspect-square bg-zinc-800">
-                <img src={p.image_url} alt={p.title} className="h-full w-full object-cover" />
+          <a
+            key={p.id}
+            href={`/products/${productSlug(p.title)}`}
+            className="group rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+          >
+            {p.image_url ? (
+              <div className="aspect-square bg-zinc-800 overflow-hidden">
+                <img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+              </div>
+            ) : (
+              <div className="aspect-square bg-zinc-800 flex items-center justify-center">
+                <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
               </div>
             )}
             <div className="p-3">
-              <p className="text-xs font-medium text-zinc-200 truncate">{p.title}</p>
-              <p className="text-xs text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
+              <p className="text-sm font-medium text-zinc-200 truncate">{p.title}</p>
+              {p.description && (
+                <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{p.description}</p>
+              )}
+              <p className="mt-1 text-sm font-semibold text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>

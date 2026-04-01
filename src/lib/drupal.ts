@@ -980,7 +980,7 @@ const PRODUCT_TYPES = ["default", "clothing", "digital_download", "crafts", "pri
 
 const PRODUCT_INCLUDES: Record<string, string> = {
   default: "variations,field_images,stores",
-  clothing: "variations,variations.field_variation_image,variations.field_color_swatch,field_images,stores,field_categories,field_tags",
+  clothing: "variations,field_images,stores",
   digital_download: "variations,field_images,field_preview_images,stores,field_categories,field_tags",
   crafts: "variations,variations.field_variation_image,field_images,stores,field_categories,field_tags",
   printful: "variations,variations.field_variation_image,variations.field_color_swatch,field_images,stores,field_categories,field_tags",
