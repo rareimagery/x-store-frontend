@@ -598,15 +598,6 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           <p className="mt-4 max-w-xl text-sm text-zinc-400 leading-relaxed">{bio}</p>
         )}
 
-        {profile.follower_count > 0 && (
-          <div className="mt-3 flex gap-6 text-sm text-zinc-500">
-            <span><strong className="text-white">{profile.follower_count >= 1000 ? `${(profile.follower_count / 1000).toFixed(1)}K` : profile.follower_count}</strong> Followers</span>
-            {profile.top_posts.length > 0 && (
-              <span><strong className="text-white">{profile.top_posts.length}</strong> Posts</span>
-            )}
-          </div>
-        )}
-
         {/* ── 3-column wireframe blocks ── */}
         <div className="mt-8 pb-12 flex gap-6">
           {hasLeft && (
