@@ -174,17 +174,18 @@ export default async function CreatorStorePage({
   const publishedBuilderBuilds = publishedBuilds.filter((build) => parseStoredBuilderDocument(build.code));
 
   // Detect wireframe builds
-  const wireframeLayout: WireframeLayout | null = (() => {
+  const wireframeBuild = (() => {
     for (const build of publishedBuilds) {
       try {
         const parsed = JSON.parse(build.code);
         if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
-          return parsed.layout as WireframeLayout;
+          return { layout: parsed.layout as WireframeLayout, colorScheme: parsed.colorScheme as string | undefined };
         }
       } catch { /* not wireframe JSON */ }
     }
     return null;
   })();
+  const wireframeLayout = wireframeBuild?.layout ?? null;
 
   if (profile.store_theme === "myspace") {
     return (
@@ -226,7 +227,7 @@ export default async function CreatorStorePage({
       <>
         <StoreNav creator={creator} />
         <div className="min-h-screen bg-zinc-950 pt-12">
-          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={storeData.favorites} articles={storeData.articles} musicTracks={storeData.musicTracks} communities={storeData.communities} grokGallery={storeData.grokGallery} />
+          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={storeData.favorites} articles={storeData.articles} musicTracks={storeData.musicTracks} communities={storeData.communities} grokGallery={storeData.grokGallery} colorScheme={wireframeBuild?.colorScheme} />
           <StoreRareProjectConversations creator={creator} />
         </div>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />

@@ -94,17 +94,18 @@ export default async function CreatorLandingPage({
   }
 
   // Check for published wireframe layout
-  const wireframeLayout: WireframeLayout | null = (() => {
+  const wireframeBuild = (() => {
     for (const build of publishedBuilds) {
       try {
         const parsed = JSON.parse(build.code);
         if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
-          return parsed.layout as WireframeLayout;
+          return { layout: parsed.layout as WireframeLayout, colorScheme: parsed.colorScheme as string | undefined };
         }
       } catch { /* not wireframe JSON */ }
     }
     return null;
   })();
+  const wireframeLayout = wireframeBuild?.layout ?? null;
 
   // If there's a published wireframe, render it as the main page
   if (wireframeLayout) {
@@ -119,6 +120,7 @@ export default async function CreatorLandingPage({
           musicTracks={storeData.musicTracks}
           communities={storeData.communities}
           grokGallery={storeData.grokGallery}
+          colorScheme={wireframeBuild?.colorScheme}
         />
         <BuilderGate storeSlug={normalized} />
       </div>

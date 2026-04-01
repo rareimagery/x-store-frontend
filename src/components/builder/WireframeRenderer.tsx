@@ -59,6 +59,7 @@ interface WireframeRendererProps {
   musicTracks?: MusicTrack[];
   communities?: XCommunity[];
   grokGallery?: GrokGalleryItem[];
+  colorScheme?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -670,15 +671,24 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [] }: WireframeRendererProps) {
+const COLOR_SCHEMES: Record<string, { bg: string; surface: string; border: string; accent: string; text: string; textMuted: string }> = {
+  midnight: { bg: "#09090b", surface: "rgba(24,24,27,0.5)", border: "#27272a", accent: "#6366f1", text: "#ffffff", textMuted: "#a1a1aa" },
+  ocean:    { bg: "#0c1222", surface: "rgba(26,35,50,0.5)", border: "#1e3a5f", accent: "#38bdf8", text: "#e0f2fe", textMuted: "#7dd3fc" },
+  forest:   { bg: "#0a0f0a", surface: "rgba(26,46,26,0.5)", border: "#1a3a1a", accent: "#4ade80", text: "#dcfce7", textMuted: "#86efac" },
+  sunset:   { bg: "#1a0a0a", surface: "rgba(46,26,26,0.5)", border: "#3a1a1a", accent: "#fb923c", text: "#fff7ed", textMuted: "#fdba74" },
+  royal:    { bg: "#0f0a1a", surface: "rgba(30,21,46,0.5)", border: "#2e1a4a", accent: "#a78bfa", text: "#ede9fe", textMuted: "#c4b5fd" },
+};
+
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], colorScheme }: WireframeRendererProps) {
+  const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen" style={{ backgroundColor: colors.bg, color: colors.text }}>
       {/* ── X-style profile header ── */}
-      <div className="relative h-48 sm:h-64 w-full bg-zinc-900 overflow-hidden">
+      <div className="relative h-48 sm:h-64 w-full overflow-hidden" style={{ backgroundColor: colors.surface }}>
         {profile.banner_url && (
           <img src={profile.banner_url} alt="" className="h-full w-full object-cover" />
         )}
@@ -702,7 +712,8 @@ export default function WireframeRenderer({ layout, profile, products, favorites
               href={`https://x.com/${profile.x_username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-indigo-400 hover:text-indigo-300"
+              className="text-sm hover:opacity-80"
+              style={{ color: colors.accent }}
             >
               @{profile.x_username}
             </a>
@@ -710,40 +721,35 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         </div>
 
         {bio && (
-          <p className="mt-4 max-w-xl text-sm text-zinc-400 leading-relaxed">{bio}</p>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed" style={{ color: colors.textMuted }}>{bio}</p>
         )}
 
         {/* ── Navigation menu ── */}
-        <nav className="mt-6 flex items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900/50 p-1.5 overflow-x-auto">
-          <a
-            href={`/${profile.x_username}`}
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-white bg-zinc-800 transition hover:bg-zinc-700"
-          >
-            Home
-          </a>
-          <a
-            href={`/${profile.x_username}/store`}
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-          >
-            Store
-          </a>
-          <a
-            href={`/${profile.x_username}/favorites`}
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-          >
-            Favorites
-          </a>
-          <a
-            href={`/${profile.x_username}/gallery`}
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-          >
-            Gallery
-          </a>
+        <nav className="mt-6 flex items-center gap-1 rounded-xl border p-1.5 overflow-x-auto" style={{ borderColor: colors.border, backgroundColor: colors.surface }}>
+          {[
+            { href: `/${profile.x_username}`, label: "Home", active: true },
+            { href: `/${profile.x_username}/store`, label: "Store" },
+            { href: `/${profile.x_username}/favorites`, label: "Favorites" },
+            { href: `/${profile.x_username}/gallery`, label: "Gallery" },
+          ].map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition"
+              style={link.active
+                ? { backgroundColor: colors.accent, color: "#fff" }
+                : { color: colors.textMuted }
+              }
+            >
+              {link.label}
+            </a>
+          ))}
           <a
             href={`https://x.com/${profile.x_username}/articles`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition"
+            style={{ color: colors.textMuted }}
           >
             Articles
           </a>
