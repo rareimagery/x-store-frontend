@@ -162,6 +162,10 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max Articles to Show", type: "number" },
     ],
+    grok_gallery: [
+      { key: "heading", label: "Section Heading", type: "text" },
+      { key: "max_items", label: "Max to Show (up to 5)", type: "number" },
+    ],
     x_communities: [
       { key: "heading", label: "Section Heading", type: "text" },
     ],

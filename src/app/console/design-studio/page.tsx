@@ -99,6 +99,23 @@ export default function DesignStudioPage() {
       if (!title) {
         setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
       }
+
+      // Auto-save to gallery
+      fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          item: {
+            id: `grok_${Date.now()}`,
+            url: data.image_url,
+            prompt: prompt.trim(),
+            type: "image",
+            created_at: new Date().toISOString(),
+            product_type: productType,
+          },
+        }),
+      }).catch(() => {});
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {

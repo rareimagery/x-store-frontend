@@ -13,6 +13,15 @@ export interface FavoriteCreator {
   verified: boolean;
 }
 
+export interface GrokGalleryItem {
+  id: string;
+  url: string;
+  prompt: string;
+  type: "image" | "video";
+  created_at: string;
+  product_type?: string;
+}
+
 export interface XCommunity {
   id: string;
   name: string;
@@ -49,6 +58,7 @@ interface WireframeRendererProps {
   articles?: XArticle[];
   musicTracks?: MusicTrack[];
   communities?: XCommunity[];
+  grokGallery?: GrokGalleryItem[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -478,6 +488,45 @@ function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XAr
   );
 }
 
+function GrokGalleryBlock({ block, gallery, creatorUsername }: { block: PlacedBlock; gallery: GrokGalleryItem[]; creatorUsername: string }) {
+  const maxItems = Math.min(Number(block.props.max_items) || 5, 5);
+  const heading = block.props.heading;
+  const shown = gallery.slice(0, maxItems);
+
+  if (shown.length === 0) return <StillBuilding label="Grok Gallery" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="grid grid-cols-2 gap-2">
+        {shown.map((item, i) => (
+          <div
+            key={item.id}
+            className={`relative rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden ${i === 0 && shown.length > 2 ? "col-span-2" : ""}`}
+          >
+            {item.type === "video" ? (
+              <video src={item.url} className={`w-full object-cover ${i === 0 && shown.length > 2 ? "h-48" : "aspect-square"}`} muted playsInline preload="metadata" />
+            ) : (
+              <img src={item.url} alt={item.prompt} className={`w-full object-cover ${i === 0 && shown.length > 2 ? "h-48" : "aspect-square"}`} loading="lazy" />
+            )}
+            {item.type === "video" && (
+              <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] text-white">Video</div>
+            )}
+          </div>
+        ))}
+      </div>
+      {gallery.length > maxItems && (
+        <a
+          href={`/${creatorUsername}/gallery`}
+          className="mt-3 block text-center text-xs text-indigo-400 hover:text-indigo-300"
+        >
+          View all {gallery.length} creations &rarr;
+        </a>
+      )}
+    </div>
+  );
+}
+
 function XCommunitiesBlock({ block, communities }: { block: PlacedBlock; communities: XCommunity[] }) {
   const heading = block.props.heading;
 
@@ -579,6 +628,7 @@ function RenderBlock({
   articles,
   musicTracks,
   communities,
+  grokGallery,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
@@ -587,6 +637,7 @@ function RenderBlock({
   articles: XArticle[];
   musicTracks: MusicTrack[];
   communities: XCommunity[];
+  grokGallery: GrokGalleryItem[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -603,6 +654,7 @@ function RenderBlock({
     case "pinned_post": return <PinnedPostBlock block={block} profile={profile} />;
     case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
+    case "grok_gallery": return <GrokGalleryBlock block={block} gallery={grokGallery} creatorUsername={profile.x_username} />;
     case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
@@ -618,7 +670,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [] }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [] }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
@@ -682,6 +734,12 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             Favorites
           </a>
           <a
+            href={`/${profile.x_username}/gallery`}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Gallery
+          </a>
+          <a
             href={`https://x.com/${profile.x_username}/articles`}
             target="_blank"
             rel="noopener noreferrer"
@@ -696,21 +754,21 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
               ))}
             </div>
           )}
