@@ -231,6 +231,8 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
   const [dragOver, setDragOver] = useState<{ column: string; index: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // Touch: tap a palette item to select it, then tap a column to place it
+  const [touchPendingType, setTouchPendingType] = useState<string | null>(null);
 
   // Fetch block catalog
   useEffect(() => {
@@ -328,6 +330,33 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
       });
     },
     [catalog]
+  );
+
+  /* ---------- Touch: tap palette → tap column to place ---------- */
+
+  const handleTouchPaletteTap = useCallback((blockType: string) => {
+    setTouchPendingType((prev) => (prev === blockType ? null : blockType));
+  }, []);
+
+  const handleTouchColumnTap = useCallback(
+    (column: "left" | "center" | "right") => {
+      if (!touchPendingType) return;
+      const def = catalog.find((c) => c.type === touchPendingType);
+      const newBlock: PlacedBlock = {
+        instanceId: uid(),
+        type: touchPendingType,
+        column,
+        order: layout[column].length,
+        props: { heading: def?.label || "" },
+      };
+      setLayout((prev) => ({
+        ...prev,
+        [column]: [...prev[column], newBlock],
+      }));
+      setTouchPendingType(null);
+      setSelectedBlockId(newBlock.instanceId);
+    },
+    [touchPendingType, catalog, layout]
   );
 
   /* ---------- Block Actions ---------- */
@@ -445,7 +474,12 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
               key={def.id}
               draggable
               onDragStart={(e) => handleDragStart(e, def.type)}
-              className="flex items-center gap-2.5 rounded-lg border border-zinc-800 bg-zinc-800/50 px-3 py-2 text-xs cursor-grab transition hover:border-zinc-600 hover:bg-zinc-800 active:cursor-grabbing"
+              onClick={() => handleTouchPaletteTap(def.type)}
+              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-xs cursor-grab transition active:cursor-grabbing ${
+                touchPendingType === def.type
+                  ? "border-indigo-500 bg-indigo-950/40 ring-1 ring-indigo-500/50"
+                  : "border-zinc-800 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800"
+              }`}
             >
               <svg className="h-4 w-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={def.icon} />
@@ -481,6 +515,21 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
           )}
         </div>
 
+        {/* Touch placement hint */}
+        {touchPendingType && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-950/30 px-4 py-2">
+            <p className="text-xs text-indigo-300">
+              Tap a column below to place <strong>{catalog.find((c) => c.type === touchPendingType)?.label || touchPendingType}</strong>
+            </p>
+            <button
+              onClick={() => setTouchPendingType(null)}
+              className="text-xs text-zinc-400 hover:text-white"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {/* Wireframe Grid */}
         <div className="flex gap-3 min-h-[600px]">
           {(["left", "center", "right"] as const).map((column) => (
@@ -500,15 +549,18 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
                 className={`flex-1 rounded-xl border-2 border-dashed p-2 transition-colors ${
                   dragOver?.column === column
                     ? "border-indigo-500/60 bg-indigo-500/5"
-                    : "border-zinc-800 bg-zinc-900/30"
+                    : touchPendingType
+                      ? "border-indigo-400/40 bg-indigo-500/5 cursor-pointer"
+                      : "border-zinc-800 bg-zinc-900/30"
                 }`}
                 onDragOver={(e) => handleDragOver(e, column, layout[column].length)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, column, layout[column].length)}
+                onClick={() => handleTouchColumnTap(column)}
               >
                 {layout[column].length === 0 ? (
                   <div className="flex h-full items-center justify-center text-xs text-zinc-700">
-                    Drop blocks here
+                    {touchPendingType ? "Tap to place here" : "Drop blocks here"}
                   </div>
                 ) : (
                   <div className="space-y-2">
