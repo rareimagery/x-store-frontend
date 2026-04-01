@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
 
     const result = await saveBuildsDetailed(slug, updated);
     if (result.ok) {
+      revalidatePath(`/${slug}`);
       revalidatePath(`/${slug}/store`);
       revalidatePath(`/stores/${slug}`);
       return NextResponse.json({ build: newBuild, builds: updated, slug });
