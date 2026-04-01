@@ -63,6 +63,15 @@ const BLOCK_CATALOG: BlockComponentDef[] = [
     defaultSpan: 6,
   },
   {
+    id: "x_communities",
+    type: "x_communities",
+    label: "X Communities",
+    description: "Communities you belong to on X",
+    icon: "M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584m12-1.697a5.971 5.971 0 00-.941-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z",
+    defaultColumn: "right",
+    defaultSpan: 3,
+  },
+  {
     id: "my_favorites",
     type: "my_favorites",
     label: "My Favorites",

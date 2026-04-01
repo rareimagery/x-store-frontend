@@ -12,7 +12,7 @@ import {
 } from "@/lib/drupal";
 import { getPublishedBuilds } from "@/lib/drupalBuilds";
 import WireframeRenderer from "@/components/builder/WireframeRenderer";
-import type { FavoriteCreator, XArticle, MusicTrack } from "@/components/builder/WireframeRenderer";
+import type { FavoriteCreator, XArticle, MusicTrack, XCommunity } from "@/components/builder/WireframeRenderer";
 import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
 import BuilderGate from "@/components/builder/BuilderGate";
 
@@ -65,23 +65,25 @@ export default async function CreatorLandingPage({
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
     getPublishedBuilds(normalized),
-    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[] }> => {
+    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[]; communities: XCommunity[] }> => {
       try {
         const res = await fetch(
-          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player`,
+          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities`,
           { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
         );
-        if (!res.ok) return { favorites: [], articles: [], musicTracks: [] };
+        if (!res.ok) return { favorites: [], articles: [], musicTracks: [], communities: [] };
         const json = await res.json();
         const attrs = json.data?.[0]?.attributes ?? {};
         let favorites: FavoriteCreator[] = [];
         let articles: XArticle[] = [];
         let musicTracks: MusicTrack[] = [];
+        let communities: XCommunity[] = [];
         try { favorites = JSON.parse(attrs.field_my_favorites || "[]"); } catch {}
         try { articles = JSON.parse(attrs.field_x_articles || "[]"); } catch {}
         try { musicTracks = JSON.parse(attrs.field_music_player || "[]"); } catch {}
-        return { favorites, articles, musicTracks };
-      } catch { return { favorites: [], articles: [], musicTracks: [] }; }
+        try { communities = JSON.parse(attrs.field_x_communities || "[]"); } catch {}
+        return { favorites, articles, musicTracks, communities };
+      } catch { return { favorites: [], articles: [], musicTracks: [], communities: [] }; }
     })(),
   ]);
 
@@ -113,6 +115,7 @@ export default async function CreatorLandingPage({
           favorites={storeData.favorites}
           articles={storeData.articles}
           musicTracks={storeData.musicTracks}
+          communities={storeData.communities}
         />
         <BuilderGate storeSlug={normalized} />
       </div>

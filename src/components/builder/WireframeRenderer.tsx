@@ -13,6 +13,14 @@ export interface FavoriteCreator {
   verified: boolean;
 }
 
+export interface XCommunity {
+  id: string;
+  name: string;
+  description: string;
+  member_count: number;
+  url: string;
+}
+
 export interface MusicTrack {
   id: string;
   title: string;
@@ -40,6 +48,7 @@ interface WireframeRendererProps {
   favorites?: FavoriteCreator[];
   articles?: XArticle[];
   musicTracks?: MusicTrack[];
+  communities?: XCommunity[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -452,6 +461,40 @@ function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XAr
   );
 }
 
+function XCommunitiesBlock({ block, communities }: { block: PlacedBlock; communities: XCommunity[] }) {
+  const heading = block.props.heading;
+
+  if (communities.length === 0) return <StillBuilding label="X Communities" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <div className="space-y-2">
+        {communities.map((c) => (
+          <a
+            key={c.id}
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 transition hover:border-zinc-600"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600/20 text-indigo-400 shrink-0">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584m12-1.697a5.971 5.971 0 00-.941-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">{c.name}</p>
+              {c.description && <p className="text-[11px] text-zinc-500 truncate">{c.description}</p>}
+            </div>
+            <span className="text-[10px] text-indigo-400 shrink-0">Join</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
   const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
   const heading = block.props.heading;
@@ -518,6 +561,7 @@ function RenderBlock({
   favorites,
   articles,
   musicTracks,
+  communities,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
@@ -525,6 +569,7 @@ function RenderBlock({
   favorites: FavoriteCreator[];
   articles: XArticle[];
   musicTracks: MusicTrack[];
+  communities: XCommunity[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -541,6 +586,7 @@ function RenderBlock({
     case "pinned_post": return <PinnedPostBlock block={block} profile={profile} />;
     case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
+    case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
     default:
       return (
@@ -555,7 +601,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [] }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [] }: WireframeRendererProps) {
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
@@ -633,21 +679,21 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} />
               ))}
             </div>
           )}

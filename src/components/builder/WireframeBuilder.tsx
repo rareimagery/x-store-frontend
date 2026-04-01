@@ -162,6 +162,9 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max Articles to Show", type: "number" },
     ],
+    x_communities: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
     my_favorites: [
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 10)", type: "number" },

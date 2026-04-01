@@ -25,7 +25,7 @@ import { getTemplateDefinition } from "@/templates/registry";
 import type { TemplatePreviewProps } from "@/templates/types";
 import { parseStoredBuilderDocument, type BuilderPreviewData } from "@/lib/builderDocument";
 import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
-import type { FavoriteCreator, XArticle, MusicTrack } from "@/components/builder/WireframeRenderer";
+import type { FavoriteCreator, XArticle, MusicTrack, XCommunity } from "@/components/builder/WireframeRenderer";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -65,24 +65,26 @@ export default async function CreatorStorePage({
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
     getPublishedBuilds(normalized),
-    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[] }> => {
+    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[]; communities: XCommunity[] }> => {
       try {
         const { DRUPAL_API_URL, drupalAuthHeaders } = await import("@/lib/drupal");
         const res = await fetch(
-          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player`,
+          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities`,
           { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
         );
-        if (!res.ok) return { favorites: [], articles: [], musicTracks: [] };
+        if (!res.ok) return { favorites: [], articles: [], musicTracks: [], communities: [] };
         const json = await res.json();
         const attrs = json.data?.[0]?.attributes ?? {};
         let favorites: FavoriteCreator[] = [];
         let articles: XArticle[] = [];
         let musicTracks: MusicTrack[] = [];
+        let communities: XCommunity[] = [];
         try { favorites = JSON.parse(attrs.field_my_favorites || "[]"); } catch {}
         try { articles = JSON.parse(attrs.field_x_articles || "[]"); } catch {}
         try { musicTracks = JSON.parse(attrs.field_music_player || "[]"); } catch {}
-        return { favorites, articles, musicTracks };
-      } catch { return { favorites: [], articles: [], musicTracks: [] }; }
+        try { communities = JSON.parse(attrs.field_x_communities || "[]"); } catch {}
+        return { favorites, articles, musicTracks, communities };
+      } catch { return { favorites: [], articles: [], musicTracks: [], communities: [] }; }
     })(),
   ]);
 
@@ -222,7 +224,7 @@ export default async function CreatorStorePage({
       <>
         <StoreNav creator={creator} />
         <div className="min-h-screen bg-zinc-950 pt-12">
-          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={storeData.favorites} articles={storeData.articles} musicTracks={storeData.musicTracks} />
+          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={storeData.favorites} articles={storeData.articles} musicTracks={storeData.musicTracks} communities={storeData.communities} />
           <StoreRareProjectConversations creator={creator} />
         </div>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
