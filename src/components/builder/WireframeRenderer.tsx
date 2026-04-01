@@ -204,11 +204,60 @@ function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorPr
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {posts.map((post) => (
-          <div key={post.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.text}</p>
-          </div>
+          <a
+            key={post.id}
+            href={`https://x.com/${profile.x_username}/status/${post.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+          >
+            {post.image_url && (
+              <div className="relative">
+                <img src={post.image_url} alt="" className="w-full h-48 object-cover" />
+                {/* Video play indicator — most posts with amplify_video_thumb are videos */}
+                {post.image_url.includes("amplify_video") && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
+                      <svg className="h-5 w-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="p-3">
+              <div className="flex items-center gap-2 mb-2">
+                {profile.profile_picture_url && (
+                  <img src={profile.profile_picture_url} alt="" className="h-5 w-5 rounded-full" />
+                )}
+                <span className="text-[11px] font-medium text-zinc-400">@{profile.x_username}</span>
+                {post.date && (
+                  <span className="text-[10px] text-zinc-600">{new Date(post.date).toLocaleDateString()}</span>
+                )}
+              </div>
+              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.text}</p>
+              <div className="mt-2 flex items-center gap-4 text-[10px] text-zinc-600">
+                {post.likes > 0 && (
+                  <span className="flex items-center gap-1">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                    {post.likes}
+                  </span>
+                )}
+                {post.retweets > 0 && (
+                  <span className="flex items-center gap-1">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    {post.retweets}
+                  </span>
+                )}
+                {post.views > 0 && (
+                  <span>{post.views >= 1000 ? `${(post.views / 1000).toFixed(1)}K` : post.views} views</span>
+                )}
+              </div>
+            </div>
+          </a>
         ))}
         {posts.length === 0 && (
           <p className="text-xs text-zinc-600">No posts yet</p>
