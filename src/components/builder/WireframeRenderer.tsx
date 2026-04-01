@@ -286,6 +286,46 @@ function DonationBlock({ block }: { block: PlacedBlock }) {
   return <DonationCampaignCard campaign={campaign} />;
 }
 
+function PinnedPostBlock({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+  const heading = block.props.heading;
+  const post = profile.pinned_post;
+
+  if (!post) return <StillBuilding label="Pinned Post" />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <a
+        href={`https://x.com/${profile.x_username}/status/${post.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-xl border border-indigo-500/30 bg-indigo-950/10 overflow-hidden transition hover:border-indigo-400/50"
+      >
+        <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+          <svg className="h-3.5 w-3.5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Pinned</span>
+        </div>
+
+        {post.image_url && (
+          <img src={post.image_url} alt="" className="w-full max-h-48 object-cover" />
+        )}
+
+        <div className="p-4">
+          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-4">{post.text}</p>
+          <div className="mt-3 flex items-center gap-4 text-[11px] text-zinc-500">
+            {post.likes > 0 && <span>{post.likes >= 1000 ? `${(post.likes / 1000).toFixed(1)}K` : post.likes} likes</span>}
+            {post.retweets > 0 && <span>{post.retweets} reposts</span>}
+            {post.views > 0 && <span>{post.views >= 1000 ? `${(post.views / 1000).toFixed(1)}K` : post.views} views</span>}
+            {post.date && <span>{new Date(post.date).toLocaleDateString()}</span>}
+          </div>
+        </div>
+      </a>
+    </div>
+  );
+}
+
 function MusicPlayerBlock({ block, musicTracks }: { block: PlacedBlock; musicTracks: MusicTrack[] }) {
   // Use inspector URL if set, otherwise use first saved track from console
   const url = String(block.props.music_url || "") || musicTracks[0]?.url || "";
@@ -449,6 +489,7 @@ function RenderBlock({
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
+    case "pinned_post": return <PinnedPostBlock block={block} profile={profile} />;
     case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;

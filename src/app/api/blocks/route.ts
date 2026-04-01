@@ -27,6 +27,15 @@ const BLOCK_CATALOG: BlockComponentDef[] = [
     defaultSpan: 6,
   },
   {
+    id: "pinned_post",
+    type: "pinned_post",
+    label: "Pinned Post",
+    description: "Your pinned X post, auto-synced",
+    icon: "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z",
+    defaultColumn: "center",
+    defaultSpan: 6,
+  },
+  {
     id: "social_feed",
     type: "social_feed",
     label: "Social Feed",

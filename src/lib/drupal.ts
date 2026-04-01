@@ -308,6 +308,7 @@ export interface CreatorProfile {
   store_status: "pending" | "approved" | "rejected" | "suspended" | null;
   subscription_tiers: import("@/lib/payments").SubscriptionTier[];
   x_subscription_tier: string | null;
+  pinned_post: TopPost | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -555,6 +556,7 @@ function mapCreatorProfile(node: any, included: any[] = []): CreatorProfile {
       try { return JSON.parse(raw); } catch { return []; }
     })(),
     x_subscription_tier: attrs.field_x_subscription_tier ?? null,
+    pinned_post: parseJsonField<TopPost>(attrs.field_pinned_post),
   };
 }
 

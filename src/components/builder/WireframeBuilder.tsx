@@ -151,6 +151,9 @@ function BlockInspector({
       { key: "campaign_image_url", label: "Campaign Image URL", type: "url" },
       { key: "suggested_amounts", label: "Suggested Amounts (comma-separated)", type: "text" },
     ],
+    pinned_post: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
     music_player: [
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "music_url", label: "Spotify or Apple Music URL", type: "url" },
