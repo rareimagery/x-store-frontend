@@ -16,7 +16,13 @@ export default function DesignStudioPage() {
   const [generating, setGenerating] = useState(false);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
   const [usedPfp, setUsedPfp] = useState<{ used: boolean; username?: string }>({ used: false });
+  const [usedUpload, setUsedUpload] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reference image upload
+  const [refPreview, setRefPreview] = useState<string | null>(null);
+  const [refDataUrl, setRefDataUrl] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,11 +46,33 @@ export default function DesignStudioPage() {
     );
   }
 
+  const handleFileSelect = (file: File) => {
+    if (file.size > 4 * 1024 * 1024) {
+      setError("Image too large (max 4MB)");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Only JPEG, PNG, or WebP images");
+      return;
+    }
+    setError(null);
+    setRefPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => setRefDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearReference = () => {
+    setRefPreview(null);
+    setRefDataUrl(null);
+  };
+
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() && !refDataUrl) return;
     setGenerating(true);
     setDesignUrl(null);
     setUsedPfp({ used: false });
+    setUsedUpload(false);
     setError(null);
     setPublished(null);
 
@@ -52,7 +80,11 @@ export default function DesignStudioPage() {
       const res = await fetch("/api/design-studio/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), product_type: productType }),
+        body: JSON.stringify({
+          prompt: prompt.trim() || "create a design from this image",
+          product_type: productType,
+          reference_image: refDataUrl || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -63,6 +95,7 @@ export default function DesignStudioPage() {
 
       setDesignUrl(data.image_url);
       setUsedPfp({ used: data.used_pfp || false, username: data.pfp_username });
+      setUsedUpload(data.used_upload || false);
       if (!title) {
         setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
       }
@@ -118,6 +151,59 @@ export default function DesignStudioPage() {
       <p className="text-sm text-zinc-400 mb-8">
         Describe your design, Grok Imagine creates it, publish to Printful in one click.
       </p>
+
+      {/* Reference image upload */}
+      <div
+        className={`rounded-xl border-2 border-dashed p-5 text-center transition-colors ${
+          dragActive
+            ? "border-indigo-500 bg-indigo-500/5"
+            : refPreview
+              ? "border-zinc-700 bg-zinc-900/50"
+              : "border-zinc-700 bg-zinc-900/30 hover:border-zinc-600"
+        }`}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          const file = e.dataTransfer.files[0];
+          if (file) handleFileSelect(file);
+        }}
+      >
+        {refPreview ? (
+          <div className="flex items-center gap-4">
+            <img src={refPreview} alt="Reference" className="h-20 w-20 rounded-lg object-cover" />
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-white">Reference image attached</p>
+              <p className="text-xs text-zinc-500">Grok will use this as the base for your design</p>
+            </div>
+            <button
+              onClick={clearReference}
+              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-red-500/50 hover:text-red-400 transition"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <>
+            <svg className="mx-auto h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <p className="text-sm text-zinc-400">Drag &amp; drop a reference image</p>
+            <p className="text-[10px] text-zinc-600 mb-3">Logo, artwork, photo, sketch — JPEG/PNG/WebP, max 4MB</p>
+            <label className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition">
+              Choose file
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+              />
+            </label>
+            <p className="mt-2 text-[10px] text-zinc-600">Optional — or just type a prompt below</p>
+          </>
+        )}
+      </div>
 
       {/* Prompt input */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
@@ -190,13 +276,15 @@ export default function DesignStudioPage() {
             />
           </div>
 
-          {usedPfp.used && (
+          {(usedPfp.used || usedUpload) && (
             <div className="px-4 py-2 border-t border-zinc-800 flex items-center gap-1.5">
               <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-xs text-emerald-400">
-                Used @{usedPfp.username} PFP as reference
+                {usedUpload
+                  ? "Used uploaded reference image"
+                  : `Used @${usedPfp.username} PFP as reference`}
               </span>
             </div>
           )}
@@ -255,7 +343,7 @@ export default function DesignStudioPage() {
                 )}
               </div>
               <button
-                onClick={() => { setDesignUrl(null); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); }}
+                onClick={() => { setDesignUrl(null); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); clearReference(); }}
                 className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition"
               >
                 Create Another Design

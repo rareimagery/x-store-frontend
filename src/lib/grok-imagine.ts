@@ -10,6 +10,7 @@ const X_BEARER = process.env.X_API_BEARER_TOKEN;
 export interface GrokImageResult {
   url: string;
   usedPfp: boolean;
+  usedUpload: boolean;
   pfpUsername?: string;
 }
 
@@ -64,23 +65,27 @@ function cleanPrompt(prompt: string, productType: string): string {
 export async function generateDesign(
   prompt: string,
   productType: string,
-  currentUsername?: string
+  currentUsername?: string,
+  referenceImageDataUrl?: string
 ): Promise<GrokImageResult> {
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY / GROK_API_KEY not configured");
   }
 
-  // Detect PFP reference
-  let pfpUrl: string | null = null;
+  // Priority: uploaded reference > @username PFP > text-only
+  let referenceUrl: string | null = referenceImageDataUrl || null;
   let pfpUsername: string | undefined;
+  let usedUpload = !!referenceImageDataUrl;
 
-  const atMatch = prompt.match(PFP_PATTERN);
-  if (atMatch) {
-    pfpUsername = atMatch[1];
-    pfpUrl = await fetchPfpUrl(pfpUsername);
-  } else if (MY_PFP_PATTERN.test(prompt) && currentUsername) {
-    pfpUsername = currentUsername;
-    pfpUrl = await fetchPfpUrl(currentUsername);
+  if (!referenceUrl) {
+    const atMatch = prompt.match(PFP_PATTERN);
+    if (atMatch) {
+      pfpUsername = atMatch[1];
+      referenceUrl = await fetchPfpUrl(pfpUsername);
+    } else if (MY_PFP_PATTERN.test(prompt) && currentUsername) {
+      pfpUsername = currentUsername;
+      referenceUrl = await fetchPfpUrl(currentUsername);
+    }
   }
 
   const cleanedPrompt = cleanPrompt(prompt, productType);
@@ -89,16 +94,14 @@ export async function generateDesign(
   type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
   let content: string | ContentPart[];
 
-  if (pfpUrl) {
+  if (referenceUrl) {
+    const instruction = usedUpload
+      ? `Use this uploaded image as a reference to create a design. ${cleanedPrompt}. Transform it into a ${productType} design while keeping the core visual elements.`
+      : `Use this profile picture as a reference to create a design. ${cleanedPrompt}. Keep the original style and likeness from the reference image.`;
+
     content = [
-      {
-        type: "image_url" as const,
-        image_url: { url: pfpUrl },
-      },
-      {
-        type: "text" as const,
-        text: `Use this profile picture as a reference to create a design. ${cleanedPrompt}. Keep the original style and likeness from the reference image.`,
-      },
+      { type: "image_url" as const, image_url: { url: referenceUrl } },
+      { type: "text" as const, text: instruction },
     ];
   } else {
     content = cleanedPrompt;
@@ -153,7 +156,8 @@ export async function generateDesign(
 
   return {
     url: imageUrl,
-    usedPfp: !!pfpUrl,
+    usedPfp: !!referenceUrl && !usedUpload,
+    usedUpload,
     pfpUsername,
   };
 }
