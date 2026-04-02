@@ -33,6 +33,15 @@ export async function generateMetadata({
   return {
     title: `@${profile.x_username} Store | RareImagery`,
     description: `Shop @${profile.x_username}'s store on RareImagery`,
+    openGraph: {
+      title: `@${profile.x_username} Store | RareImagery`,
+      description: `Shop @${profile.x_username}'s store on RareImagery`,
+      images: profile.profile_picture_url ? [{ url: profile.profile_picture_url, width: 400, height: 400 }] : [],
+    },
+    twitter: {
+      card: "summary",
+      images: profile.profile_picture_url ? [profile.profile_picture_url] : [],
+    },
   };
 }
 

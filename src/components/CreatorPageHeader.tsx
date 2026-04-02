@@ -21,14 +21,22 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
 
   return (
     <div className="border-b border-zinc-800">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+      {/* Banner */}
+      {profile.banner_url && (
+        <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+          <img src={profile.banner_url} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
+        </div>
+      )}
+
+      <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${profile.banner_url ? "-mt-10 relative" : "pt-8"} pb-6`}>
         <div className="flex items-center gap-4">
           {profile.profile_picture_url ? (
             <Link href={`/${handle}` as Route}>
               <img
                 src={profile.profile_picture_url}
                 alt={`@${handle}`}
-                className="h-16 w-16 rounded-full object-cover border-2 border-zinc-800"
+                className="h-16 w-16 rounded-full object-cover border-3 border-zinc-950 shadow-lg"
               />
             </Link>
           ) : (

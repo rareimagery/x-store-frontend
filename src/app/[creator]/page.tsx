@@ -43,9 +43,21 @@ export async function generateMetadata({
   if (RESERVED.has(creator.toLowerCase())) return {};
   const profile = await getCreatorProfile(creator.toLowerCase());
   if (!profile) return { title: "Creator Not Found" };
+  const desc = profile.bio?.replace(/<[^>]*>/g, "").slice(0, 160) || `Check out @${profile.x_username} on RareImagery`;
   return {
     title: `@${profile.x_username} | RareImagery`,
-    description: profile.bio?.replace(/<[^>]*>/g, "").slice(0, 160) || `Check out @${profile.x_username} on RareImagery`,
+    description: desc,
+    openGraph: {
+      title: `@${profile.x_username} | RareImagery`,
+      description: desc,
+      images: profile.profile_picture_url ? [{ url: profile.profile_picture_url, width: 400, height: 400 }] : [],
+    },
+    twitter: {
+      card: "summary",
+      title: `@${profile.x_username} | RareImagery`,
+      description: desc,
+      images: profile.profile_picture_url ? [profile.profile_picture_url] : [],
+    },
   };
 }
 
