@@ -88,6 +88,22 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
               </Link>
             );
           })}
+
+          {/* Share on X */}
+          <a
+            href={`https://x.com/intent/tweet?${new URLSearchParams({
+              text: `Check out @${handle}'s page on RareImagery`,
+              url: `https://www.rareimagery.net/${handle}`,
+            }).toString()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 ml-auto flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white hover:bg-zinc-800"
+          >
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            Share
+          </a>
         </nav>
       </div>
     </div>
