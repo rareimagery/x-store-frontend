@@ -164,23 +164,6 @@ export default async function LandingPage() {
     (c) => c.store_status === "approved"
   );
 
-  const totalFollowers = creators.reduce(
-    (sum, c) => sum + (c.follower_count ?? 0),
-    0
-  );
-  const totalPosts = creators.reduce(
-    (sum, c) => sum + (c.top_posts?.length ?? 0),
-    0
-  );
-  const avgEngagement =
-    creators.length > 0
-      ? Math.round(
-          creators.reduce(
-            (sum, c) => sum + (c.metrics?.engagement_score ?? 0),
-            0
-          ) / creators.length
-        )
-      : 0;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -265,24 +248,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Platform stats ── */}
-      {creators.length > 0 && (
-        <section className="border-b border-zinc-800/60 bg-zinc-900/30">
-          <div className="mx-auto grid max-w-4xl grid-cols-2 divide-x divide-zinc-800 sm:grid-cols-4">
-            {[
-              { label: "Creators", value: formatCount(creators.length) },
-              { label: "Followers Tracked", value: formatCount(totalFollowers) },
-              { label: "Posts Analyzed", value: formatCount(totalPosts) },
-              { label: "Avg Engagement", value: `${avgEngagement}%` },
-            ].map(({ label, value }) => (
-              <div key={label} className="px-6 py-5 text-center">
-                <p className="text-2xl font-bold text-white">{value}</p>
-                <p className="mt-0.5 text-xs text-zinc-500">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ── How it works ── */}
       <section className="mx-auto max-w-5xl px-6 py-20">
