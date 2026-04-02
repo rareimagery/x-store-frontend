@@ -754,11 +754,22 @@ export default function WireframeRenderer({ layout, profile, products, favorites
       } as React.CSSProperties}
     >
       <style>{`
-        .wf-card { background: var(--wf-surface); border-color: var(--wf-border); }
-        .wf-card:hover { border-color: color-mix(in srgb, var(--wf-border) 50%, var(--wf-accent) 50%); }
-        .wf-accent { color: var(--wf-accent); }
-        .wf-muted { color: var(--wf-text-muted); }
-        .wf-border { border-color: var(--wf-border); }
+        .wf-card { background: var(--wf-surface) !important; border-color: var(--wf-border) !important; }
+        .wf-card:hover { border-color: var(--wf-accent) !important; }
+        .wf-accent { color: var(--wf-accent) !important; }
+        .wf-muted { color: var(--wf-text-muted) !important; }
+        .wf-border { border-color: var(--wf-border) !important; }
+        .wf-text { color: var(--wf-text) !important; }
+        [style*="--wf-bg"] .text-white { color: var(--wf-text) !important; }
+        [style*="--wf-bg"] .text-zinc-300 { color: var(--wf-text) !important; }
+        [style*="--wf-bg"] .text-zinc-200 { color: var(--wf-text) !important; }
+        [style*="--wf-bg"] .bg-zinc-800,
+        [style*="--wf-bg"] .bg-zinc-900\\/50 { background: var(--wf-surface) !important; }
+        [style*="--wf-bg"] .border-zinc-800 { border-color: var(--wf-border) !important; }
+        [style*="--wf-bg"] .hover\\:border-zinc-600:hover { border-color: var(--wf-accent) !important; }
+        [style*="--wf-bg"] .bg-indigo-600\\/20 { background: color-mix(in srgb, var(--wf-accent) 20%, transparent) !important; }
+        [style*="--wf-bg"] .text-indigo-400 { color: var(--wf-accent) !important; }
+        [style*="--wf-bg"] .bg-black\\/60 { background: color-mix(in srgb, var(--wf-bg) 80%, transparent) !important; }
       `}</style>
       {/* ── X-style profile header ── */}
       <div className="relative h-48 sm:h-64 w-full overflow-hidden" style={{ backgroundColor: colors.surface }}>
