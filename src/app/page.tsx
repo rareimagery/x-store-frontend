@@ -3,6 +3,10 @@ import Link from "next/link";
 import { getAllCreatorProfiles, CreatorProfile } from "@/lib/drupal";
 import AuthButton from "@/components/AuthButton";
 
+// Hero background — hardcoded from @RareImagery's X profile
+const HERO_BANNER = "https://pbs.twimg.com/profile_banners/1524882641358508032/1734409768/1500x500";
+const HERO_PFP = "https://pbs.twimg.com/profile_images/2018074722630807552/sM0xa2fB_400x400.jpg";
+
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -203,24 +207,20 @@ export default async function LandingPage() {
       {/* ── Hero with @rareimagery banner + pfp ── */}
       <section className="relative overflow-hidden border-b border-zinc-800/60">
         {/* Banner background */}
-        {creators[0]?.banner_url && (
-          <div className="absolute inset-0">
-            <img src={creators[0].banner_url} alt="" className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-zinc-950/75 backdrop-blur-sm" />
-          </div>
-        )}
+        <div className="absolute inset-0">
+          <img src={HERO_BANNER} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm" />
+        </div>
 
         <div className="relative mx-auto max-w-5xl px-6 pb-24 pt-40 text-center">
           {/* PFP */}
-          {creators[0]?.profile_picture_url && (
-            <div className="mb-6 flex justify-center">
-              <img
-                src={creators[0].profile_picture_url}
-                alt="RareImagery"
-                className="h-20 w-20 rounded-full object-cover border-3 border-zinc-800 shadow-2xl shadow-indigo-500/20"
-              />
-            </div>
-          )}
+          <div className="mb-6 flex justify-center">
+            <img
+              src={HERO_PFP}
+              alt="RareImagery"
+              className="h-24 w-24 rounded-full object-cover border-4 border-zinc-800 shadow-2xl shadow-indigo-500/20"
+            />
+          </div>
 
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm text-indigo-300 backdrop-blur-sm">
             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
