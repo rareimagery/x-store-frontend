@@ -6,26 +6,8 @@ import { notFound } from "next/navigation";
 import {
   getCreatorProfile,
   getProductsByStoreSlug,
-  fetchCreatorData,
 } from "@/lib/drupal";
-import { getPublishedBuilds } from "@/lib/drupalBuilds";
-import MySpaceTheme from "@/components/themes/MySpaceTheme";
-import MinimalTheme from "@/components/themes/MinimalTheme";
-import NeonTheme from "@/components/themes/NeonTheme";
-import EditorialTheme from "@/components/themes/EditorialTheme";
-import Xai3Theme from "@/components/themes/Xai3Theme";
-import XMimicTheme from "@/components/themes/XMimicTheme";
-import Sidebar from "@/components/Sidebar";
-import StoreNav from "@/components/StoreNav";
 import BuilderGate from "@/components/builder/BuilderGate";
-import StoreBuildRenderer from "@/components/builder/StoreBuildRenderer";
-import WireframeRenderer from "@/components/builder/WireframeRenderer";
-import StoreRareProjectConversations from "@/components/StoreRareProjectConversations";
-import { getTemplateDefinition } from "@/templates/registry";
-import type { TemplatePreviewProps } from "@/templates/types";
-import { parseStoredBuilderDocument, type BuilderPreviewData } from "@/lib/builderDocument";
-import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
-import type { FavoriteCreator, XArticle, MusicTrack, XCommunity, GrokGalleryItem } from "@/components/builder/WireframeRenderer";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -33,6 +15,10 @@ const RESERVED = new Set([
   "onboarding", "maintenance", "eula", "privacy", "terms",
   "sitemap.xml", "robots.txt", "favicon.ico",
 ]);
+
+function productSlug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 export async function generateMetadata({
   params,
@@ -61,33 +47,9 @@ export default async function CreatorStorePage({
     notFound();
   }
 
-  const [profile, products, publishedBuilds, storeData] = await Promise.all([
+  const [profile, products] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
-    getPublishedBuilds(normalized),
-    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[]; communities: XCommunity[]; grokGallery: GrokGalleryItem[] }> => {
-      try {
-        const { DRUPAL_API_URL, drupalAuthHeaders } = await import("@/lib/drupal");
-        const res = await fetch(
-          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities,field_grok_gallery`,
-          { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
-        );
-        if (!res.ok) return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [] };
-        const json = await res.json();
-        const attrs = json.data?.[0]?.attributes ?? {};
-        let favorites: FavoriteCreator[] = [];
-        let articles: XArticle[] = [];
-        let musicTracks: MusicTrack[] = [];
-        let communities: XCommunity[] = [];
-        let grokGallery: GrokGalleryItem[] = [];
-        try { favorites = JSON.parse(attrs.field_my_favorites || "[]"); } catch {}
-        try { articles = JSON.parse(attrs.field_x_articles || "[]"); } catch {}
-        try { musicTracks = JSON.parse(attrs.field_music_player || "[]"); } catch {}
-        try { communities = JSON.parse(attrs.field_x_communities || "[]"); } catch {}
-        try { grokGallery = JSON.parse(attrs.field_grok_gallery || "[]"); } catch {}
-        return { favorites, articles, musicTracks, communities, grokGallery };
-      } catch { return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [] }; }
-    })(),
   ]);
 
   if (!profile) {
@@ -98,240 +60,112 @@ export default async function CreatorStorePage({
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
         <div className="max-w-md text-center px-6">
-          <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20">
-            <svg className="h-8 w-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
           <h1 className="mb-3 text-2xl font-bold">Store Coming Soon</h1>
           <p className="mb-2 text-zinc-400">
             @{profile.x_username}&apos;s store is being set up.
           </p>
-          <div className="mt-8 flex gap-3 justify-center">
-            <Link href={`/${profile.x_username}` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
-              &larr; Back to profile
-            </Link>
-          </div>
+          <Link href={`/${profile.x_username}` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
+            &larr; Back to profile
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Template preview props
-  const templateProps: TemplatePreviewProps = {
-    handle: profile.x_username,
-    avatar: profile.profile_picture_url ?? undefined,
-    banner: profile.banner_url ?? undefined,
-    bio: profile.bio ?? undefined,
-    products: products.map((product) => ({
-      id: product.id,
-      title: product.title,
-      price: Number.parseFloat(product.price || "0") || 0,
-      image: product.image_url ?? undefined,
-      description: product.description ?? undefined,
-    })),
-    posts: (profile.top_posts || []).map((post) => ({
-      id: post.id,
-      text: post.text,
-    })),
-    videos: (profile.top_posts || [])
-      .filter((post) => !!post.image_url)
-      .slice(0, 6)
-      .map((post) => ({
-        id: post.id,
-        url: post.image_url || "",
-        thumbnail: post.image_url,
-      })),
-  };
+  const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
-  const builderPreviewData: BuilderPreviewData = {
-    handle: profile.x_username,
-    bio: profile.bio ?? "",
-    avatar: profile.profile_picture_url ?? null,
-    banner: profile.banner_url ?? null,
-    followerCount: profile.follower_count ?? 0,
-    friends: (profile.top_followers || []).map((friend, index) => ({
-      id: `${friend.username || "friend"}-${index}`,
-      username: friend.username,
-      displayName: friend.display_name,
-      avatar: friend.profile_image_url ?? undefined,
-      followerCount: friend.follower_count,
-    })),
-    posts: (profile.top_posts || []).map((post) => ({
-      id: post.id,
-      text: post.text,
-      image: post.image_url ?? undefined,
-    })),
-    products: products.map((product) => ({
-      id: product.id,
-      title: product.title,
-      price: Number.parseFloat(product.price || "0") || 0,
-      image: product.image_url ?? undefined,
-      description: product.description ?? undefined,
-    })),
-  };
-
-  const publishedBuilderBuilds = publishedBuilds.filter((build) => parseStoredBuilderDocument(build.code));
-
-  // Detect wireframe builds
-  const wireframeBuild = (() => {
-    for (const build of publishedBuilds) {
-      try {
-        const parsed = JSON.parse(build.code);
-        if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
-          return { layout: parsed.layout as WireframeLayout, colorScheme: parsed.colorScheme as string | undefined };
-        }
-      } catch { /* not wireframe JSON */ }
-    }
-    return null;
-  })();
-  const wireframeLayout = wireframeBuild?.layout ?? null;
-
-  if (profile.store_theme === "myspace") {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <MySpaceTheme
-            profile={profile}
-            products={products}
-            backgroundUrl={profile.myspace_background ?? undefined}
-            musicUrl={profile.myspace_music_url ?? undefined}
-            glitterColor={profile.myspace_glitter_color ?? undefined}
-            accentColor={profile.myspace_accent_color ?? undefined}
-            themeConfig={profile.store_theme_config ?? undefined}
-          />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (publishedBuilderBuilds.length > 0) {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <StoreBuildRenderer builds={publishedBuilderBuilds} previewData={builderPreviewData} />
-          <StoreRareProjectConversations creator={creator} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (wireframeLayout) {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="min-h-screen bg-zinc-950 pt-12">
-          <WireframeRenderer layout={wireframeLayout} profile={profile} products={products} favorites={storeData.favorites} articles={storeData.articles} musicTracks={storeData.musicTracks} communities={storeData.communities} grokGallery={storeData.grokGallery} colorScheme={wireframeBuild?.colorScheme} />
-          <StoreRareProjectConversations creator={creator} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  const templateId =
-    typeof profile.store_theme_config?.templateId === "string"
-      ? profile.store_theme_config.templateId
-      : null;
-
-  const templateDefinition = getTemplateDefinition(templateId);
-
-  if (templateDefinition) {
-    const TemplateComponent = templateDefinition.StorefrontComponent;
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <TemplateComponent {...templateProps} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (profile.store_theme === "minimal") {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <MinimalTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (profile.store_theme === "neon") {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <NeonTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (profile.store_theme === "editorial") {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <div className="pt-12">
-          <EditorialTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  if (profile.store_theme === "xmimic") {
-    const data = await fetchCreatorData(normalized);
-    return (
-      <>
-        <div className="bg-black text-white min-h-screen flex">
-          <Sidebar
-            handle={creator}
-            recentPosts={data?.recentPosts ?? []}
-            profilePictureUrl={profile.profile_picture_url}
-            displayName={profile.title || profile.x_username}
-            productCount={products.length}
-          />
-          <main className="ml-72 flex-1">
-            <XMimicTheme profile={profile} products={products} />
-            <StoreRareProjectConversations creator={creator} />
-            <StoreBuildRenderer builds={publishedBuilds} />
-          </main>
-        </div>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
-
-  // Default: Xai3 theme
   return (
-    <>
-      <StoreNav creator={creator} />
-      <div className="pt-12">
-        <Xai3Theme profile={profile} products={products} />
-        <StoreRareProjectConversations creator={creator} />
-        <StoreBuildRenderer builds={publishedBuilds} />
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* Store header */}
+      <div className="border-b border-zinc-800">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+          <div className="flex items-center gap-4">
+            {profile.profile_picture_url ? (
+              <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-16 w-16 rounded-full object-cover border-2 border-zinc-800" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-xl font-bold text-zinc-500">
+                {profile.x_username?.[0]?.toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold">{profile.title || `@${profile.x_username}`}&apos;s Store</h1>
+              <div className="flex items-center gap-3 mt-1">
+                <Link href={`/${profile.x_username}` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
+                  @{profile.x_username}
+                </Link>
+                {bio && <span className="text-sm text-zinc-500 hidden sm:inline">&middot; {bio.slice(0, 80)}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav className="mt-6 flex items-center gap-1">
+            <Link href={`/${profile.x_username}` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
+              Profile
+            </Link>
+            <span className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-zinc-800">
+              Store
+            </span>
+            <Link href={`/${profile.x_username}/favorites` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
+              Favorites
+            </Link>
+            <Link href={`/${profile.x_username}/gallery` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
+              Gallery
+            </Link>
+          </nav>
+        </div>
       </div>
-      <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-    </>
+
+      {/* Product grid */}
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold">{products.length} {products.length === 1 ? "Product" : "Products"}</h2>
+        </div>
+
+        {products.length === 0 ? (
+          <div className="text-center py-20">
+            <svg className="mx-auto h-16 w-16 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <p className="mt-4 text-zinc-500">No products yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product) => (
+              <Link
+                key={product.id}
+                href={`/products/${productSlug(product.title)}` as Route}
+                className="group rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+              >
+                {product.image_url ? (
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={product.image_url}
+                      alt={product.title}
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-square flex items-center justify-center bg-zinc-800">
+                    <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                )}
+                <div className="p-4">
+                  <h3 className="text-sm font-medium text-white truncate">{product.title}</h3>
+                  {product.description && (
+                    <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{product.description}</p>
+                  )}
+                  <p className="mt-2 text-sm font-semibold text-indigo-400">${parseFloat(product.price).toFixed(2)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <BuilderGate storeSlug={normalized} />
+    </div>
   );
 }
