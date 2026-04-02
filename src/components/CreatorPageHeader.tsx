@@ -38,7 +38,7 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
           )}
           <div>
             <h1 className="text-2xl font-bold text-white">
-              {profile.title || `@${handle}`}
+              {(profile.title || handle).replace(/\s*X\s*Profile\s*/i, "")}
             </h1>
             <div className="flex items-center gap-3 mt-1">
               <a

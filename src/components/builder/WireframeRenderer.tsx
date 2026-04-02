@@ -726,7 +726,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             )}
           </div>
           <div className="pb-1">
-            <h1 className="text-2xl sm:text-3xl font-bold">{profile.title || `@${profile.x_username}`}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">{(profile.title || profile.x_username).replace(/\s*X\s*Profile\s*/i, "")}</h1>
             <a
               href={`https://x.com/${profile.x_username}`}
               target="_blank"

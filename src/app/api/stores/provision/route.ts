@@ -31,7 +31,7 @@ async function createProfile(
   const writeHeaders = await drupalWriteHeaders();
 
   const attributes: Record<string, any> = {
-    title: `${username} X Profile`,
+    title: username,
     field_x_username: username,
     field_x_user_id: xId,
     field_store_theme: "xai3",
