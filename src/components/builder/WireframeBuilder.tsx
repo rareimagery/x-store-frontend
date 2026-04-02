@@ -162,6 +162,15 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max Articles to Show", type: "number" },
     ],
+    tiktok_feed: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
+    instagram_feed: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
+    youtube_feed: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
     grok_gallery: [
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 5)", type: "number" },

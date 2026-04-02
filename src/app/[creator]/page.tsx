@@ -12,7 +12,7 @@ import {
 } from "@/lib/drupal";
 import { getPublishedBuilds } from "@/lib/drupalBuilds";
 import WireframeRenderer from "@/components/builder/WireframeRenderer";
-import type { FavoriteCreator, XArticle, MusicTrack, XCommunity, GrokGalleryItem } from "@/components/builder/WireframeRenderer";
+import type { FavoriteCreator, XArticle, MusicTrack, XCommunity, GrokGalleryItem, SocialFeedAccount } from "@/components/builder/WireframeRenderer";
 import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
 import BuilderGate from "@/components/builder/BuilderGate";
 
@@ -77,13 +77,13 @@ export default async function CreatorLandingPage({
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
     getPublishedBuilds(normalized),
-    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[]; communities: XCommunity[]; grokGallery: GrokGalleryItem[] }> => {
+    (async (): Promise<{ favorites: FavoriteCreator[]; articles: XArticle[]; musicTracks: MusicTrack[]; communities: XCommunity[]; grokGallery: GrokGalleryItem[]; socialFeeds: SocialFeedAccount[] }> => {
       try {
         const res = await fetch(
-          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities,field_grok_gallery`,
+          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(normalized)}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities,field_grok_gallery,field_social_feeds`,
           { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
         );
-        if (!res.ok) return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [] };
+        if (!res.ok) return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [], socialFeeds: [] };
         const json = await res.json();
         const attrs = json.data?.[0]?.attributes ?? {};
         let favorites: FavoriteCreator[] = [];
@@ -95,9 +95,11 @@ export default async function CreatorLandingPage({
         try { musicTracks = JSON.parse(attrs.field_music_player || "[]"); } catch {}
         try { communities = JSON.parse(attrs.field_x_communities || "[]"); } catch {}
         let grokGallery: GrokGalleryItem[] = [];
+        let socialFeeds: SocialFeedAccount[] = [];
         try { grokGallery = JSON.parse(attrs.field_grok_gallery || "[]"); } catch {}
-        return { favorites, articles, musicTracks, communities, grokGallery };
-      } catch { return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [] }; }
+        try { socialFeeds = JSON.parse(attrs.field_social_feeds || "[]"); } catch {}
+        return { favorites, articles, musicTracks, communities, grokGallery, socialFeeds };
+      } catch { return { favorites: [], articles: [], musicTracks: [], communities: [], grokGallery: [], socialFeeds: [] }; }
     })(),
   ]);
 
@@ -132,6 +134,7 @@ export default async function CreatorLandingPage({
           musicTracks={storeData.musicTracks}
           communities={storeData.communities}
           grokGallery={storeData.grokGallery}
+          socialFeeds={storeData.socialFeeds}
           colorScheme={wireframeBuild?.colorScheme}
         />
         <BuilderGate storeSlug={normalized} />

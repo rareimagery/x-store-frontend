@@ -13,6 +13,14 @@ export interface FavoriteCreator {
   verified: boolean;
 }
 
+export interface SocialFeedAccount {
+  id: string;
+  platform: "tiktok" | "instagram" | "youtube";
+  username: string;
+  url: string;
+  embed_url?: string;
+}
+
 export interface GrokGalleryItem {
   id: string;
   url: string;
@@ -59,6 +67,7 @@ interface WireframeRendererProps {
   musicTracks?: MusicTrack[];
   communities?: XCommunity[];
   grokGallery?: GrokGalleryItem[];
+  socialFeeds?: SocialFeedAccount[];
   colorScheme?: string;
 }
 
@@ -489,6 +498,46 @@ function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XAr
   );
 }
 
+function SocialPlatformBlock({ block, socialFeeds, platformId, platformLabel, platformColor, platformIcon }: {
+  block: PlacedBlock; socialFeeds: SocialFeedAccount[]; platformId: string; platformLabel: string; platformColor: string; platformIcon: string;
+}) {
+  const heading = block.props.heading;
+  const account = socialFeeds.find((f) => f.platform === platformId);
+
+  if (!account) return <StillBuilding label={platformLabel} />;
+
+  return (
+    <div>
+      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      <a
+        href={account.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
+      >
+        <div className="flex items-center gap-3 p-4">
+          <svg className="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill={platformColor}>
+            <path d={platformIcon} />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-white">@{account.username}</p>
+            <p className="text-xs wf-muted">Follow on {platformLabel}</p>
+          </div>
+        </div>
+        {account.embed_url && (
+          <iframe
+            src={account.embed_url}
+            className="w-full h-80 border-0 border-t wf-border"
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media"
+            title={`${platformLabel} embed`}
+          />
+        )}
+      </a>
+    </div>
+  );
+}
+
 function GrokGalleryBlock({ block, gallery, creatorUsername }: { block: PlacedBlock; gallery: GrokGalleryItem[]; creatorUsername: string }) {
   const maxItems = Math.min(Number(block.props.max_items) || 5, 5);
   const heading = block.props.heading;
@@ -630,6 +679,7 @@ function RenderBlock({
   musicTracks,
   communities,
   grokGallery,
+  socialFeeds,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
@@ -639,6 +689,7 @@ function RenderBlock({
   musicTracks: MusicTrack[];
   communities: XCommunity[];
   grokGallery: GrokGalleryItem[];
+  socialFeeds: SocialFeedAccount[];
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -655,6 +706,9 @@ function RenderBlock({
     case "pinned_post": return <PinnedPostBlock block={block} profile={profile} />;
     case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
     case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
+    case "tiktok_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="tiktok" platformLabel="TikTok" platformColor="#00f2ea" platformIcon="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.87a8.28 8.28 0 004.77 1.52V6.94a4.85 4.85 0 01-1.01-.25z" />;
+    case "instagram_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="instagram" platformLabel="Instagram" platformColor="#E4405F" platformIcon="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />;
+    case "youtube_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="youtube" platformLabel="YouTube" platformColor="#FF0000" platformIcon="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />;
     case "grok_gallery": return <GrokGalleryBlock block={block} gallery={grokGallery} creatorUsername={profile.x_username} />;
     case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
@@ -679,7 +733,7 @@ const COLOR_SCHEMES: Record<string, { bg: string; surface: string; border: strin
   royal:    { bg: "#0f0a1a", surface: "rgba(30,21,46,0.5)", border: "#2e1a4a", accent: "#a78bfa", text: "#ede9fe", textMuted: "#c4b5fd" },
 };
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], colorScheme }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme }: WireframeRendererProps) {
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
@@ -796,21 +850,21 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           {hasLeft && (
             <div className="w-1/4 space-y-4">
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
               ))}
             </div>
           )}
 
           <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
             {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
+              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
             ))}
           </div>
 
           {hasRight && (
             <div className="w-1/4 space-y-4">
               {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
               ))}
             </div>
           )}
