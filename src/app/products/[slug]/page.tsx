@@ -5,9 +5,11 @@ import {
   getAllProductSlugs,
   getProductBySlug,
   getRelatedProducts,
+  getCreatorProfile,
   type ProductDetail,
   type Product,
 } from "@/lib/drupal";
+import CreatorPageHeader from "@/components/CreatorPageHeader";
 import ProductGallery from "@/components/ProductGallery";
 import ProductTabs from "@/components/ProductTabs";
 import AddToCartBlock from "@/components/AddToCartBlock";
@@ -356,9 +358,20 @@ export default async function ProductPage({
 
   const relatedProducts = await getRelatedProducts(product);
 
+  // Load creator profile for the header if product belongs to a store
+  const creatorProfile = product.store_slug
+    ? await getCreatorProfile(product.store_slug).catch(() => null)
+    : null;
+
   return (
     <div className="min-h-screen bg-white text-zinc-900">
       <StructuredData product={product} />
+
+      {creatorProfile && (
+        <div className="bg-zinc-950">
+          <CreatorPageHeader profile={creatorProfile} activePage="store" />
+        </div>
+      )}
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumb */}

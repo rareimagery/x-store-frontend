@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import type { FavoriteCreator } from "@/components/builder/WireframeRenderer";
+import CreatorPageHeader from "@/components/CreatorPageHeader";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -54,20 +54,10 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <Link href={`/${profile.x_username}/store` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
-          &larr; Back to store
-        </Link>
+      <CreatorPageHeader profile={profile} activePage="favorites" />
 
-        <div className="mt-6 flex items-center gap-4">
-          {profile.profile_picture_url && (
-            <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-12 w-12 rounded-full object-cover" />
-          )}
-          <div>
-            <h1 className="text-2xl font-bold">@{profile.x_username}&apos;s Favorites</h1>
-            <p className="text-sm text-zinc-400">{favorites.length} {favorites.length === 1 ? "person" : "people"}</p>
-          </div>
-        </div>
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <h2 className="text-lg font-semibold mb-4">{favorites.length} {favorites.length === 1 ? "Favorite" : "Favorites"}</h2>
 
         {favorites.length === 0 ? (
           <p className="mt-8 text-center text-zinc-500">No favorites added yet.</p>

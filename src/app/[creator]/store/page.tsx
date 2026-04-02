@@ -8,6 +8,7 @@ import {
   getProductsByStoreSlug,
 } from "@/lib/drupal";
 import BuilderGate from "@/components/builder/BuilderGate";
+import CreatorPageHeader from "@/components/CreatorPageHeader";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -72,49 +73,9 @@ export default async function CreatorStorePage({
     );
   }
 
-  const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
-
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Store header */}
-      <div className="border-b border-zinc-800">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
-          <div className="flex items-center gap-4">
-            {profile.profile_picture_url ? (
-              <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-16 w-16 rounded-full object-cover border-2 border-zinc-800" />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-xl font-bold text-zinc-500">
-                {profile.x_username?.[0]?.toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold">{profile.title || `@${profile.x_username}`}&apos;s Store</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <Link href={`/${profile.x_username}` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
-                  @{profile.x_username}
-                </Link>
-                {bio && <span className="text-sm text-zinc-500 hidden sm:inline">&middot; {bio.slice(0, 80)}</span>}
-              </div>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="mt-6 flex items-center gap-1">
-            <Link href={`/${profile.x_username}` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
-              Profile
-            </Link>
-            <span className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-zinc-800">
-              Store
-            </span>
-            <Link href={`/${profile.x_username}/favorites` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
-              Favorites
-            </Link>
-            <Link href={`/${profile.x_username}/gallery` as Route} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition">
-              Gallery
-            </Link>
-          </nav>
-        </div>
-      </div>
+      <CreatorPageHeader profile={profile} activePage="store" />
 
       {/* Product grid */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">

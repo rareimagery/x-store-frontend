@@ -1,7 +1,7 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getCreatorProfile, DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
+import CreatorPageHeader from "@/components/CreatorPageHeader";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -58,23 +58,13 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <Link href={`/${profile.x_username}` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
-          &larr; Back to profile
-        </Link>
+      <CreatorPageHeader profile={profile} activePage="gallery" />
 
-        <div className="mt-6 flex items-center gap-4">
-          {profile.profile_picture_url && (
-            <img src={profile.profile_picture_url} alt="" className="h-12 w-12 rounded-full object-cover" />
-          )}
-          <div>
-            <h1 className="text-2xl font-bold">@{profile.x_username}&apos;s Gallery</h1>
-            <p className="text-sm text-zinc-400">{gallery.length} AI-generated {gallery.length === 1 ? "creation" : "creations"}</p>
-          </div>
-        </div>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <h2 className="text-lg font-semibold mb-4">{gallery.length} AI-generated {gallery.length === 1 ? "creation" : "creations"}</h2>
 
         {gallery.length === 0 ? (
-          <p className="mt-12 text-center text-zinc-500">No creations yet.</p>
+          <p className="text-center text-zinc-500 py-12">No creations yet.</p>
         ) : (
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
             {gallery.map((item) => (
