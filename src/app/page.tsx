@@ -200,15 +200,29 @@ export default async function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero ── */}
+      {/* ── Hero with @rareimagery banner + pfp ── */}
       <section className="relative overflow-hidden border-b border-zinc-800/60">
-        {/* Background glow */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-        </div>
+        {/* Banner background */}
+        {creators[0]?.banner_url && (
+          <div className="absolute inset-0">
+            <img src={creators[0].banner_url} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-zinc-950/75 backdrop-blur-sm" />
+          </div>
+        )}
 
         <div className="relative mx-auto max-w-5xl px-6 pb-24 pt-40 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm text-indigo-300">
+          {/* PFP */}
+          {creators[0]?.profile_picture_url && (
+            <div className="mb-6 flex justify-center">
+              <img
+                src={creators[0].profile_picture_url}
+                alt="RareImagery"
+                className="h-20 w-20 rounded-full object-cover border-3 border-zinc-800 shadow-2xl shadow-indigo-500/20"
+              />
+            </div>
+          )}
+
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm text-indigo-300 backdrop-blur-sm">
             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
@@ -223,7 +237,7 @@ export default async function LandingPage() {
             <span className="text-white">Your creator store.</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300">
             RareImagery imports your X profile, runs Grok AI analytics on your
             audience, and launches your branded storefront — complete with
             AI-generated themes and product suggestions.
@@ -242,7 +256,7 @@ export default async function LandingPage() {
             {approvedCreators.length > 0 && (
               <a
                 href="#creators"
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-3.5 text-base font-medium text-white backdrop-blur-sm transition hover:bg-white/10"
               >
                 Browse Creators
               </a>
