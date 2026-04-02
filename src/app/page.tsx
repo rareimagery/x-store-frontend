@@ -238,9 +238,9 @@ export default async function LandingPage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300">
-            RareImagery imports your X profile, runs Grok AI analytics on your
-            audience, and launches your branded storefront — complete with
-            AI-generated themes and product suggestions.
+            RareImagery imports your X profile and gives you a full creator
+            page — build your layout, showcase your content, design merch
+            with Grok Imagine AI, and connect with your community.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
