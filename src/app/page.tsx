@@ -134,23 +134,6 @@ function PipelineStep({
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
-      <div className="mb-4">{icon}</div>
-      <h3 className="mb-2 font-semibold text-white">{title}</h3>
-      <p className="text-sm leading-relaxed text-zinc-500">{description}</p>
-    </div>
-  );
-}
 
 export default async function LandingPage() {
   let creators: CreatorProfile[] = [];
@@ -309,89 +292,6 @@ export default async function LandingPage() {
               </svg>
             }
           />
-        </div>
-      </section>
-
-      {/* ── Features grid ── */}
-      <section className="border-t border-zinc-800/60 bg-zinc-900/20">
-        <div className="mx-auto max-w-5xl px-6 py-20">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold text-white">
-              Built for X creators
-            </h2>
-            <p className="mt-3 text-zinc-500">
-              Every feature is designed around your social presence.
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              title="X API v2 Import"
-              description="Automatic profile sync — followers, top posts, media, engagement metrics, and audience data pulled directly from X."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/15">
-                  <svg className="h-5 w-5 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Grok 3 Intelligence"
-              description="Audience sentiment scoring, content theme detection, product category recommendations, and engagement analysis."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/15">
-                  <svg className="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Grok Site Generation"
-              description="Grok writes your hero copy, about section, custom CSS, layout config, and brand color system automatically."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-fuchsia-500/15">
-                  <svg className="h-5 w-5 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="6 Creator Themes"
-              description="Xai3 dark, MySpace retro, Neon glow, Editorial magazine, Minimal clean, and XMimic — each AI-matched to your brand."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-500/15">
-                  <svg className="h-5 w-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Printful POD + Commerce"
-              description="Connect Printful, add print-on-demand products, manage orders, and accept payments via Stripe — all in one place."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15">
-                  <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Subdomain Storefronts"
-              description="Every creator gets creator.rareimagery.net — your own domain, your own brand, with full social and follow graph."
-              icon={
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15">
-                  <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                  </svg>
-                </div>
-              }
-            />
-          </div>
         </div>
       </section>
 
