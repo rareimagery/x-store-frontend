@@ -78,7 +78,13 @@ export async function POST(req: NextRequest) {
           ? await getSellerStripeAccountId(handle)
           : null;
 
-        const baseUrl = process.env.NEXTAUTH_URL ?? "https://rareimagery.net";
+        const baseUrl = process.env.NEXTAUTH_URL ?? "https://www.rareimagery.net";
+        const firstItemName = items[0]?.title || "merch";
+        const successParams = new URLSearchParams({
+          seller: handle || "",
+          product: firstItemName,
+          session_id: "{CHECKOUT_SESSION_ID}",
+        });
         const paymentIntent = await stripeProvider.createCheckout({
           items,
           storeId,
@@ -86,8 +92,8 @@ export async function POST(req: NextRequest) {
           sellerXId: sellerXId ?? null,
           sellerStripeAccountId: sellerStripeAccountId ?? undefined,
           metadata: checkoutMetadata,
-          successUrl: `${baseUrl}/stores/${handle ?? storeId}?order_success=1`,
-          cancelUrl: `${baseUrl}/stores/${handle ?? storeId}`,
+          successUrl: `${baseUrl}/purchase-success?${successParams.toString()}`,
+          cancelUrl: `${baseUrl}/${handle ?? storeId}/store`,
         });
 
         return NextResponse.json({
