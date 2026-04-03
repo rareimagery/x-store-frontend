@@ -3,6 +3,7 @@ import type { CreatorProfile, Product } from "@/lib/drupal";
 import DonationCampaignCard from "@/components/DonationCampaign";
 import type { DonationCampaign } from "@/app/api/donations/route";
 import StorePlayer from "@/components/StorePlayer";
+import MobileColumnLayout from "./MobileColumnLayout";
 
 export interface FavoriteCreator {
   username: string;
@@ -856,30 +857,45 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           </a>
         </nav>
 
-        {/* ── 3-column wireframe blocks ── */}
-        <div className="mt-6 pb-12 flex gap-6">
-          {hasLeft && (
-            <div className="w-1/4 space-y-4">
-              {layout.left.map((block) => (
+        {/* ── 3-column wireframe blocks with mobile support ── */}
+        <MobileColumnLayout
+          layout={layout}
+          hasLeft={hasLeft}
+          hasRight={hasRight}
+          profile={profile}
+          products={products}
+          favorites={favorites}
+          articles={articles}
+          musicTracks={musicTracks}
+          communities={communities}
+          grokGallery={grokGallery}
+          socialFeeds={socialFeeds}
+          colors={colors}
+        >
+          <div className="mt-6 pb-12 flex gap-6 wf-columns">
+            {hasLeft && (
+              <div className="w-1/4 space-y-4 wf-col-left">
+                {layout.left.map((block) => (
+                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+                ))}
+              </div>
+            )}
+
+            <div className={`space-y-4 wf-col-center ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
+              {layout.center.map((block) => (
                 <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
               ))}
             </div>
-          )}
 
-          <div className={`space-y-4 ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
-            {layout.center.map((block) => (
-              <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
-            ))}
+            {hasRight && (
+              <div className="w-1/4 space-y-4 wf-col-right">
+                {layout.right.map((block) => (
+                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+                ))}
+              </div>
+            )}
           </div>
-
-          {hasRight && (
-            <div className="w-1/4 space-y-4">
-              {layout.right.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
-              ))}
-            </div>
-          )}
-        </div>
+        </MobileColumnLayout>
       </div>
     </div>
   );
