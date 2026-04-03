@@ -74,12 +74,12 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-4 py-3">
                       <a
-                        href={`https://${slug}.${base}`}
+                        href={`https://www.rareimagery.net/${slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-400 hover:text-indigo-300"
                       >
-                        {slug}.{base}
+                        {slug}
                       </a>
                     </td>
                     <td className="px-4 py-3 text-zinc-400">
