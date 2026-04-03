@@ -232,6 +232,47 @@ export default async function LandingPage() {
       </section>
 
 
+      {/* ── Stores ── */}
+      {approvedCreators.length > 0 && (
+        <section className="border-b border-zinc-800/60">
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-bold text-white">Stores</h2>
+              <p className="mt-2 text-zinc-500">Creator storefronts built on RareImagery</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-8">
+              {approvedCreators.map((creator) => (
+                <Link
+                  key={creator.id}
+                  href={`/${creator.x_username}`}
+                  className="group flex flex-col items-center gap-3 transition"
+                >
+                  {creator.profile_picture_url ? (
+                    <Image
+                      src={creator.profile_picture_url}
+                      alt={creator.x_username}
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 rounded-full object-cover ring-2 ring-zinc-700 transition group-hover:ring-indigo-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-2xl font-bold text-white ring-2 ring-zinc-700 transition group-hover:ring-indigo-500">
+                      {creator.x_username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-white group-hover:text-indigo-400 transition">
+                      {(creator.title || creator.x_username).replace(/\s*X\s*Profile\s*/i, "")}
+                    </p>
+                    <p className="text-xs text-zinc-500">@{creator.x_username}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── How it works ── */}
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="mb-12 text-center">
