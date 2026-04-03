@@ -24,10 +24,44 @@ async function profileExists(username: string): Promise<string | null> {
   return null;
 }
 
+async function createDrupalUser(username: string): Promise<string | null> {
+  try {
+    const writeHeaders = await drupalWriteHeaders();
+    const res = await fetch(`${DRUPAL_API}/jsonapi/user/user`, {
+      method: "POST",
+      headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+      body: JSON.stringify({
+        data: {
+          type: "user--user",
+          attributes: {
+            name: username,
+            mail: `${username.toLowerCase()}@rareimagery.net`,
+            status: true,
+            pass: { value: `ri_${username}_${Date.now()}` },
+          },
+        },
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      console.log(`[provision] Created Drupal user for @${username}: uid ${json.data?.attributes?.drupal_internal__uid}`);
+      return json.data?.id ?? null;
+    }
+    console.warn(`[provision] Drupal user creation failed (${res.status}) — continuing without user`);
+    return null;
+  } catch (err) {
+    console.warn("[provision] Drupal user creation error:", err);
+    return null;
+  }
+}
+
 async function createProfile(
   username: string,
   xId: string,
 ): Promise<{ id: string }> {
+  // Create Drupal user first
+  const userUuid = await createDrupalUser(username);
+
   const writeHeaders = await drupalWriteHeaders();
 
   const attributes: Record<string, any> = {
@@ -37,11 +71,16 @@ async function createProfile(
     field_store_theme: "xai3",
   };
 
+  const relationships: Record<string, any> = {};
+  if (userUuid) {
+    relationships.uid = { data: { type: "user--user", id: userUuid } };
+  }
+
   const res = await fetch(`${DRUPAL_API}/jsonapi/node/x_user_profile`, {
     method: "POST",
     headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
     body: JSON.stringify({
-      data: { type: "node--x_user_profile", attributes },
+      data: { type: "node--x_user_profile", attributes, ...(Object.keys(relationships).length > 0 ? { relationships } : {}) },
     }),
   });
 
