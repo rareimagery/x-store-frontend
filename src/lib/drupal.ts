@@ -636,8 +636,9 @@ export async function getCreatorProfile(
 
 export async function getAllCreatorProfiles(): Promise<CreatorProfile[]> {
   const includeCandidates = [
-    "field_x_pfp,field_x_pfp.field_media_image,field_x_background,field_x_background.field_media_image",
-    "field_x_pfp,field_x_background",
+    "field_linked_store,field_x_pfp,field_x_pfp.field_media_image,field_x_background,field_x_background.field_media_image",
+    "field_linked_store,field_x_pfp,field_x_background",
+    "field_linked_store",
   ];
 
   for (const include of includeCandidates) {
