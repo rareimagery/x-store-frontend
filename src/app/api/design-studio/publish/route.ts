@@ -58,8 +58,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "image_url, product_type, and title required" }, { status: 400 });
   }
 
-  const productConfig = PRINTFUL_PRODUCTS[product_type];
-  if (!productConfig) {
+  const isDigital = product_type === "digital_drop";
+  const productConfig = isDigital ? null : PRINTFUL_PRODUCTS[product_type];
+  if (!isDigital && !productConfig) {
     return NextResponse.json({ error: "Unsupported product type" }, { status: 400 });
   }
 
@@ -80,15 +81,89 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Store not found" }, { status: 404 });
   }
 
-  const retailPrice = price || (product_type === "hoodie" ? "44.99" : product_type === "ballcap" ? "29.99" : "24.99");
+  const retailPrice = price || (isDigital ? "4.99" : product_type === "hoodie" ? "44.99" : product_type === "ballcap" ? "29.99" : "24.99");
 
-  // --- Step 1: Sync to Printful (if connected) ---
+  // --- Digital Drop path (no Printful) ---
+  if (isDigital) {
+    const writeHeaders = await drupalWriteHeaders();
+    const sku = `${slug}-digital-${Date.now()}`;
+
+    try {
+      // Create variation
+      const variationRes = await fetch(
+        `${DRUPAL_API_URL}/jsonapi/commerce_product_variation/default`,
+        {
+          method: "POST",
+          headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+          body: JSON.stringify({
+            data: {
+              type: "commerce_product_variation--default",
+              attributes: { sku, price: { number: String(retailPrice), currency_code: "USD" }, status: true },
+            },
+          }),
+        }
+      );
+
+      if (!variationRes.ok) {
+        return NextResponse.json({ error: "Failed to create digital product variation" }, { status: 500 });
+      }
+      const variationId = (await variationRes.json()).data.id as string;
+
+      // Create product
+      const productAttrs: Record<string, unknown> = { title, status: true };
+      if (description) productAttrs.body = { value: description, format: "basic_html" };
+      productAttrs.field_product_image_url = image_url;
+
+      const productRes = await fetch(
+        `${DRUPAL_API_URL}/jsonapi/commerce_product/default`,
+        {
+          method: "POST",
+          headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+          body: JSON.stringify({
+            data: {
+              type: "commerce_product--default",
+              attributes: productAttrs,
+              relationships: {
+                stores: { data: [{ type: "commerce_store--online", id: storeUuid }] },
+                variations: { data: [{ type: "commerce_product_variation--default", id: variationId }] },
+              },
+            },
+          }),
+        }
+      );
+
+      if (!productRes.ok) {
+        return NextResponse.json({ error: "Failed to create digital product" }, { status: 500 });
+      }
+      const drupalProductId = (await productRes.json()).data.id as string;
+
+      revalidatePath(`/${slug}/store`);
+      revalidatePath(`/${slug}`);
+
+      return NextResponse.json({
+        success: true,
+        drupal_product_id: drupalProductId,
+        printful_product_id: null,
+        title,
+        product_type: "Digital Drop",
+        variation_type: "default",
+        retail_price: retailPrice,
+        sku,
+        mockup_url: null,
+        design_url: image_url,
+      });
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message || "Digital drop creation failed" }, { status: 500 });
+    }
+  }
+
+  // --- POD Merch path (Printful + clothing) ---
   let printfulProductId: string | null = null;
   let mockupUrl: string | null = null;
   let designFileUrl = image_url;
 
   const apiKey = await getStorePrintfulKey(storeUuid);
-  if (apiKey) {
+  if (apiKey && productConfig) {
     try {
       const file = await uploadFile(apiKey, image_url, `${slug}-${product_type}-${Date.now()}.png`);
       designFileUrl = file.preview_url || image_url;
@@ -125,7 +200,7 @@ export async function POST(req: NextRequest) {
 
   // --- Step 2: Create product in Drupal Commerce ---
   const writeHeaders = await drupalWriteHeaders();
-  const variationBundle = productConfig.variationBundle;
+  const variationBundle = productConfig!.variationBundle;
   const sku = `${slug}-ai-${Date.now()}`;
 
   try {
@@ -235,7 +310,7 @@ export async function POST(req: NextRequest) {
       drupal_product_id: drupalProductId,
       printful_product_id: printfulProductId,
       title,
-      product_type: productConfig.label,
+      product_type: productConfig!.label,
       variation_type: variationBundle,
       retail_price: retailPrice,
       sku,

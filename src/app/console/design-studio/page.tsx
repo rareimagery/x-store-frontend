@@ -16,6 +16,7 @@ const PRODUCT_TYPES = [
   { value: "t_shirt", label: "T-Shirt", emoji: "👕", price: "$24.99" },
   { value: "hoodie", label: "Hoodie", emoji: "🧥", price: "$44.99" },
   { value: "ballcap", label: "Ballcap", emoji: "🧢", price: "$29.99" },
+  { value: "digital_drop", label: "Digital Drop", emoji: "⚡", price: "$4.99" },
 ];
 
 export default function DesignStudioPage() {
@@ -420,16 +421,36 @@ export default function DesignStudioPage() {
                 {published.printful_synced && (
                   <p className="text-indigo-400">Synced to Printful for fulfillment</p>
                 )}
-                {!published.printful_synced && (
+                {!published.printful_synced && productType !== "digital_drop" && (
                   <p className="text-amber-400">Printful not connected &mdash; product saved to store only</p>
+                )}
+                {productType === "digital_drop" && (
+                  <p className="text-emerald-400">Digital drop — instant delivery on purchase</p>
                 )}
                 {published.mockup_url && (
                   <img src={published.mockup_url} alt="Mockup" className="mt-2 rounded-lg max-h-48 object-contain" />
                 )}
               </div>
+
+              {/* Share to X */}
+              <a
+                href={`https://x.com/intent/tweet?${new URLSearchParams({
+                  text: `Just dropped "${title}" on RareImagery! Check it out`,
+                  url: `https://www.rareimagery.net/${storeSlug}/store`,
+                }).toString()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                Share Drop to X
+              </a>
+
               <button
                 onClick={() => { setDesignUrl(null); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); clearReference(); }}
-                className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition"
+                className="mt-2 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition w-full"
               >
                 Create Another Design
               </button>
