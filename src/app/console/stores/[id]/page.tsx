@@ -103,21 +103,6 @@ export default async function StoreDetailPage({
       </div>
 
       <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-zinc-300">
-          Store Template
-        </h2>
-        <p className="mb-4 text-sm text-zinc-500">
-          Template selection and layout edits now happen in the builder. The current template is shown here for reference.
-        </p>
-        <ThemeSelector
-          currentTheme={
-            xProfile?.attributes?.field_store_theme ?? "default"
-          }
-          sellerHandle={xProfile?.attributes?.field_x_username ?? ""}
-        />
-      </section>
-
-      <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
         <ProductManager
           storeId={store.id}
           storeDrupalId={String(store.attributes.drupal_internal__store_id)}
