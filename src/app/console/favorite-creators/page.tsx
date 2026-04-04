@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
 
 interface FavoriteCreator {
@@ -32,6 +32,9 @@ export default function FavoriteCreatorsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [autoResult, setAutoResult] = useState<Omit<FavoriteCreator, "tags"> | null>(null);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load favorites and tags
   useEffect(() => {
@@ -53,6 +56,50 @@ export default function FavoriteCreatorsPage() {
       .finally(() => setLoading(false));
   }, [hasStore]);
 
+  // Auto-lookup as user types (debounced)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setSearchError(null);
+    setSearchResult(null);
+    setAutoResult(null);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const username = value.trim().replace(/^@/, "");
+    if (username.length < 2) {
+      setAutoLoading(false);
+      return;
+    }
+
+    setAutoLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(username)}`);
+        if (res.ok) {
+          setAutoResult(await res.json());
+        } else {
+          setAutoResult(null);
+        }
+      } catch {
+        setAutoResult(null);
+      } finally {
+        setAutoLoading(false);
+      }
+    }, 500);
+  }, []);
+
+  // Select the auto-result
+  const selectAutoResult = useCallback(() => {
+    if (!autoResult) return;
+    if (favorites.some((f) => f.username.toLowerCase() === autoResult.username.toLowerCase())) {
+      setSearchError("Already in your favorites");
+      return;
+    }
+    setSearchResult(autoResult);
+    setAutoResult(null);
+    setSelectedTags([]);
+  }, [autoResult, favorites]);
+
   const lookupUser = useCallback(async () => {
     const username = search.trim().replace(/^@/, "");
     if (!username) return;
@@ -63,6 +110,7 @@ export default function FavoriteCreatorsPage() {
     setSearching(true);
     setSearchResult(null);
     setSearchError(null);
+    setAutoResult(null);
     try {
       const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(username)}`);
       if (!res.ok) {
@@ -168,11 +216,51 @@ export default function FavoriteCreatorsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setSearchError(null); setSearchResult(null); }}
-              onKeyDown={(e) => e.key === "Enter" && lookupUser()}
-              placeholder="username"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (autoResult) selectAutoResult();
+                  else lookupUser();
+                }
+              }}
+              placeholder="Start typing a username..."
               className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
             />
+
+            {/* Auto-result dropdown */}
+            {(autoResult || autoLoading) && !searchResult && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg border border-zinc-700 bg-zinc-800 shadow-xl overflow-hidden">
+                {autoLoading && !autoResult && (
+                  <div className="px-3 py-2 text-xs text-zinc-500">Searching...</div>
+                )}
+                {autoResult && (
+                  <button
+                    onClick={selectAutoResult}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition hover:bg-zinc-700"
+                  >
+                    {autoResult.profile_image_url ? (
+                      <img src={autoResult.profile_image_url} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold text-indigo-400 shrink-0">
+                        {autoResult.display_name?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-white truncate">{autoResult.display_name}</p>
+                        {autoResult.verified && (
+                          <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500">@{autoResult.username} &middot; {autoResult.follower_count >= 1000 ? `${(autoResult.follower_count / 1000).toFixed(1)}K` : autoResult.follower_count} followers</p>
+                    </div>
+                    <span className="text-[10px] text-indigo-400 shrink-0">Select</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={lookupUser}
