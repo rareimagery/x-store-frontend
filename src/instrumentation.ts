@@ -28,6 +28,12 @@ export function register() {
     ["X_CLIENT_SECRET", "X OAuth 2.0 client secret"],
     ["X_API_BEARER_TOKEN", "X API app-only bearer token"],
     ["CRON_SECRET", "Vercel cron job authorization token"],
+    ["FACEBOOK_CLIENT_ID", "Facebook OAuth app ID (social login)"],
+    ["FACEBOOK_CLIENT_SECRET", "Facebook OAuth app secret"],
+    ["TIKTOK_CLIENT_KEY", "TikTok Login Kit client key"],
+    ["TIKTOK_CLIENT_SECRET", "TikTok Login Kit client secret"],
+    ["INSTAGRAM_CLIENT_ID", "Instagram/Meta OAuth app ID"],
+    ["INSTAGRAM_CLIENT_SECRET", "Instagram/Meta OAuth app secret"],
   ];
 
   const missingRecommended = recommended.filter(([key]) => !process.env[key]);

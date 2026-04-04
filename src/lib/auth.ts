@@ -3,6 +3,9 @@ import type { Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import TwitterProvider from "next-auth/providers/twitter";
+import FacebookProvider from "next-auth/providers/facebook";
+import TikTokProvider from "@/lib/auth-providers/tiktok";
+import InstagramProvider from "@/lib/auth-providers/instagram";
 
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { findProfileByUsername } from "@/lib/x-import";
@@ -48,6 +51,8 @@ type AuthUser = User & {
   storeSlug?: string | null;
 };
 
+type SocialProviderType = "twitter" | "facebook" | "tiktok" | "instagram" | "credentials" | null;
+
 type AppToken = JWT & {
   xUsername?: string | null;
   handle?: string | null;
@@ -63,6 +68,10 @@ type AppToken = JWT & {
   role?: string | null;
   shopName?: string | null;
   storeSlug?: string | null;
+  providerType?: SocialProviderType;
+  socialDisplayName?: string | null;
+  socialProfileImage?: string | null;
+  socialEmail?: string | null;
 };
 
 type AppSession = Session & {
@@ -78,6 +87,9 @@ type AppSession = Session & {
   role?: string | null;
   shopName?: string | null;
   storeSlug?: string | null;
+  providerType?: SocialProviderType;
+  socialDisplayName?: string | null;
+  socialProfileImage?: string | null;
 };
 
 if (!X_OAUTH_CLIENT_ID || !X_OAUTH_CLIENT_SECRET) {
@@ -305,6 +317,21 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID || "",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
+      authorization: {
+        params: { scope: "public_profile,email" },
+      },
+    }),
+    TikTokProvider({
+      clientId: process.env.TIKTOK_CLIENT_KEY || "",
+      clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
+    }),
+    InstagramProvider({
+      clientId: process.env.INSTAGRAM_CLIENT_ID || "",
+      clientSecret: process.env.INSTAGRAM_CLIENT_SECRET || "",
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -349,6 +376,15 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ account, profile }) {
+      // Social providers (Facebook, TikTok, Instagram) — allow login, store association via email
+      if (account?.provider === "facebook" || account?.provider === "tiktok" || account?.provider === "instagram") {
+        const email = (profile as any)?.email;
+        if (!email && account.provider === "facebook") {
+          return "/signup?error=MissingEmail&provider=facebook";
+        }
+        return true;
+      }
+
       if (account?.provider !== "twitter") {
         return true;
       }
@@ -420,6 +456,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile, user }) {
       const appToken = token as AppToken;
       if (account?.provider === "twitter" && profile) {
+        appToken.providerType = "twitter";
         const xProfile = profile as XProfile;
         appToken.xUsername =
           xProfile.username ??
@@ -481,6 +518,24 @@ export const authOptions: NextAuthOptions = {
           );
         }
       }
+      // Social providers: Facebook, TikTok, Instagram
+      if (account && ["facebook", "tiktok", "instagram"].includes(account.provider) && profile) {
+        const socialProfile = profile as any;
+        appToken.providerType = account.provider as SocialProviderType;
+        appToken.socialDisplayName = socialProfile.name || socialProfile.display_name || null;
+        appToken.socialProfileImage = socialProfile.image || socialProfile.picture?.data?.url || socialProfile.avatar_url || null;
+        appToken.socialEmail = socialProfile.email || null;
+        appToken.role = "creator";
+
+        // Set user-facing display fields so console shows something
+        if (!appToken.name && appToken.socialDisplayName) {
+          appToken.name = appToken.socialDisplayName;
+        }
+        if (!appToken.picture && appToken.socialProfileImage) {
+          appToken.picture = appToken.socialProfileImage;
+        }
+      }
+
       if (account?.provider === "credentials" && user) {
         const authUser = user as AuthUser;
         appToken.role = authUser.role || "admin";
@@ -510,6 +565,9 @@ export const authOptions: NextAuthOptions = {
       appSession.role = appToken.role ?? "creator";
       appSession.shopName = appToken.shopName ?? null;
       appSession.storeSlug = appToken.storeSlug ?? null;
+      appSession.providerType = appToken.providerType ?? null;
+      appSession.socialDisplayName = appToken.socialDisplayName ?? null;
+      appSession.socialProfileImage = appToken.socialProfileImage ?? null;
       if (session.user) {
         (session.user as typeof session.user & { handle?: string; bio?: string; verified?: boolean }).handle =
           appToken.handle ??
