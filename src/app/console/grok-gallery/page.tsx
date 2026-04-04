@@ -28,6 +28,7 @@ export default function GrokGalleryPage() {
   const [newUrl, setNewUrl] = useState("");
   const [newPrompt, setNewPrompt] = useState("");
   const [newType, setNewType] = useState<"image" | "video">("image");
+  const [sellingId, setSellingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasStore) return;
@@ -96,6 +97,35 @@ export default function GrokGalleryPage() {
     setGallery(updated);
     await save(updated);
   }, [gallery]);
+
+  const sellAsDrop = useCallback(async (item: GalleryItem) => {
+    setSellingId(item.id);
+    try {
+      const res = await fetch("/api/design-studio/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_url: item.url,
+          product_type: "digital_drop",
+          title: item.prompt || "Grok AI Creation",
+          description: `AI-generated ${item.type} by Grok Imagine`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSavedMessage("Published as Digital Drop!");
+        setTimeout(() => setSavedMessage(null), 3000);
+      } else {
+        setSavedMessage(data.error || "Publish failed");
+        setTimeout(() => setSavedMessage(null), 3000);
+      }
+    } catch {
+      setSavedMessage("Publish failed");
+      setTimeout(() => setSavedMessage(null), 3000);
+    } finally {
+      setSellingId(null);
+    }
+  }, []);
 
   async function save(list: GalleryItem[]) {
     setSaving(true);
@@ -246,10 +276,34 @@ export default function GrokGalleryPage() {
               ) : (
                 <img src={item.url} alt={item.prompt} className="aspect-square w-full object-cover" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition">
-                <div className="absolute bottom-0 left-0 right-0 p-3">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition">
+                <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
                   <p className="text-xs text-white line-clamp-2">{item.prompt}</p>
-                  <div className="flex items-center justify-between mt-1">
+
+                  {/* Action buttons */}
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => sellAsDrop(item)}
+                      disabled={sellingId === item.id}
+                      className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition"
+                    >
+                      {sellingId === item.id ? "Publishing..." : "Sell as Drop"}
+                    </button>
+                    <a
+                      href={`https://x.com/intent/tweet?${new URLSearchParams({
+                        text: `Check out my Grok AI creation on RareImagery`,
+                        url: item.url,
+                      }).toString()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 rounded-lg bg-zinc-700 px-2 py-1.5 text-[10px] font-medium text-white hover:bg-zinc-600 transition"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                      Share
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between">
                     <span className="text-[10px] text-zinc-400">
                       {item.type === "video" ? "Video" : "Image"}
                       {item.product_type ? ` · ${item.product_type}` : ""}

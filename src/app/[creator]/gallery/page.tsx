@@ -83,10 +83,23 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
                 )}
                 <div className="p-3">
                   <p className="text-xs text-zinc-300 line-clamp-2">{item.prompt}</p>
-                  <div className="mt-1 flex items-center gap-2 text-[10px] text-zinc-600">
-                    <span>{item.type === "video" ? "Video" : "Image"}</span>
-                    {item.product_type && <span>&middot; {item.product_type}</span>}
-                    {item.created_at && <span>&middot; {new Date(item.created_at).toLocaleDateString()}</span>}
+                  <div className="mt-2 flex items-center gap-2">
+                    <a
+                      href={`https://x.com/intent/tweet?${new URLSearchParams({
+                        text: `Check out this AI creation by @${profile.x_username} on RareImagery`,
+                        url: item.url,
+                      }).toString()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-1 text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-700 transition"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                      Share
+                    </a>
+                    <span className="text-[10px] text-zinc-600">
+                      {item.type === "video" ? "Video" : "Image"}
+                      {item.created_at ? ` · ${new Date(item.created_at).toLocaleDateString()}` : ""}
+                    </span>
                   </div>
                 </div>
               </div>
