@@ -12,6 +12,7 @@ export interface FavoriteCreator {
   profile_image_url: string | null;
   follower_count: number;
   verified: boolean;
+  tags?: string[];
 }
 
 export interface SocialFeedAccount {
@@ -612,49 +613,100 @@ function XCommunitiesBlock({ block, communities }: { block: PlacedBlock; communi
   );
 }
 
+function FavoriteCard({ fav }: { fav: FavoriteCreator }) {
+  return (
+    <a
+      href={`https://x.com/${fav.username}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-start gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
+    >
+      {fav.profile_image_url ? (
+        <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
+      ) : (
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold wf-accent shrink-0">
+          {fav.display_name?.[0]?.toUpperCase() || "?"}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-white truncate">{fav.display_name}</p>
+          {fav.verified && (
+            <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+        </div>
+        <p className="text-[11px] wf-muted">@{fav.username}</p>
+        {fav.tags && fav.tags.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {fav.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] font-medium wf-accent">{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </a>
+  );
+}
+
 function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
   const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
   const heading = block.props.heading;
-  const shown = favorites.slice(0, maxItems);
 
-  if (shown.length === 0) return <StillBuilding label="My Favorites" />;
+  if (favorites.length === 0) return <StillBuilding label="My Favorites" />;
+
+  // Group by tags
+  const tagGroups: Record<string, FavoriteCreator[]> = {};
+  const untagged: FavoriteCreator[] = [];
+  for (const fav of favorites) {
+    if (!fav.tags || fav.tags.length === 0) {
+      untagged.push(fav);
+    } else {
+      for (const tag of fav.tags) {
+        if (!tagGroups[tag]) tagGroups[tag] = [];
+        tagGroups[tag].push(fav);
+      }
+    }
+  }
+
+  const hasGroups = Object.keys(tagGroups).length > 0;
 
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="space-y-2">
-        {shown.map((fav) => (
-          <a
-            key={fav.username}
-            href={`https://x.com/${fav.username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
-          >
-            {fav.profile_image_url ? (
-              <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold wf-accent shrink-0">
-                {fav.display_name?.[0]?.toUpperCase() || "?"}
+
+      {hasGroups ? (
+        <div className="space-y-4">
+          {Object.entries(tagGroups).map(([tag, members]) => (
+            <div key={tag}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider wf-accent mb-2">{tag}</p>
+              <div className="space-y-1.5">
+                {members.slice(0, maxItems).map((fav) => (
+                  <FavoriteCard key={fav.username} fav={fav} />
+                ))}
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium text-white truncate">{fav.display_name}</p>
-                {fav.verified && (
-                  <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-              </div>
-              <p className="text-[11px] wf-muted">@{fav.username}</p>
-              {fav.bio && (
-                <p className="mt-1 text-xs wf-muted leading-relaxed line-clamp-2">{fav.bio}</p>
-              )}
             </div>
-          </a>
-        ))}
-      </div>
+          ))}
+          {untagged.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider wf-muted mb-2">Other</p>
+              <div className="space-y-1.5">
+                {untagged.slice(0, maxItems).map((fav) => (
+                  <FavoriteCard key={fav.username} fav={fav} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {favorites.slice(0, maxItems).map((fav) => (
+            <FavoriteCard key={fav.username} fav={fav} />
+          ))}
+        </div>
+      )}
+
       {favorites.length > maxItems && (
         <a
           href={`/${creatorUsername}/favorites`}
