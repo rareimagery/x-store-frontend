@@ -7,6 +7,7 @@ import { xApiHeaders, xUserHeaders, X_API_BASE } from "@/lib/x-api/client";
 import { fetchWithRetry } from "@/lib/x-api/fetch-with-retry";
 import { XApiError } from "@/lib/x-api/errors";
 import { isSafeImageUrl } from "@/lib/ownership";
+import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 import type { XUser, XPost, XMedia } from "@/lib/x-api/types";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
@@ -189,7 +190,7 @@ export async function fetchXData(
   const verifiedType: string = user.verified_type ?? "none";
   const verified: boolean = verifiedType !== "none";
   const profileImageUrl: string | null = user.profile_image_url
-    ? user.profile_image_url.replace("_normal", "_400x400")
+    ? upgradeProfileImageUrl(user.profile_image_url)
     : null;
   const bannerUrl: string | null = normalizeBannerUrl(user.profile_banner_url);
 
@@ -280,7 +281,7 @@ export async function fetchXData(
       username: f.username ?? "",
       display_name: f.name ?? f.username ?? "",
       profile_image_url: f.profile_image_url
-        ? f.profile_image_url.replace("_normal", "_400x400")
+        ? upgradeProfileImageUrl(f.profile_image_url)
         : undefined,
       follower_count: f.public_metrics?.followers_count ?? 0,
       verified: (f.verified_type ?? "none") !== "none",

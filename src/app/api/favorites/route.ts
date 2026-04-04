@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
   if (!slug) return NextResponse.json({ error: "No store" }, { status: 404 });
   const uuid = await resolveStoreUuid(slug);
   if (!uuid) return NextResponse.json({ favorites: [] });
-  return NextResponse.json({ favorites: await getFavorites(uuid) });
+  return NextResponse.json({ favorites: await getFavorites(uuid) }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 // POST — add or update favorites

@@ -58,7 +58,9 @@ export async function GET(req: NextRequest) {
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ tracks: [] });
   const store = await resolveStore(slug);
-  return NextResponse.json({ tracks: store?.tracks ?? [] });
+  return NextResponse.json({ tracks: store?.tracks ?? [] }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 // POST — add/save tracks

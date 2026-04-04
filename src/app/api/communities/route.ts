@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ communities: [] });
   const store = await resolveStore(slug);
-  return NextResponse.json({ communities: store?.communities ?? [] });
+  return NextResponse.json({ communities: store?.communities ?? [] }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 // POST — save communities

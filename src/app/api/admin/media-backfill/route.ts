@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSafeImageUrl } from "@/lib/ownership";
 import { drupalWriteHeaders } from "@/lib/drupal";
+import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 
-const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
+const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "";
 
 type ProfileNode = {
   id: string;
@@ -90,7 +91,7 @@ async function fetchXProfileMedia(handle: string): Promise<{ avatar: string | nu
 
   const avatar =
     typeof user.profile_image_url === "string"
-      ? user.profile_image_url.replace("_normal", "_400x400")
+      ? upgradeProfileImageUrl(user.profile_image_url)
       : null;
   const banner =
     typeof user.profile_banner_url === "string"

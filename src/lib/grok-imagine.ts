@@ -3,9 +3,11 @@
 // Supports text-to-image AND image-to-image (PFP/upload reference)
 // ---------------------------------------------------------------------------
 
+import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
+import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
+
 const XAI_API_URL = "https://api.x.ai/v1/images/generations";
 const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
-const X_BEARER = process.env.X_API_BEARER_TOKEN;
 
 export interface GrokImageResult {
   url: string;
@@ -24,16 +26,35 @@ const PFP_PATTERN = /@([A-Za-z0-9_]+)\s*(?:pfp|profile\s*pic|avatar|photo)/i;
 const MY_PFP_PATTERN = /\b(?:my|the)\s+(?:pfp|profile\s*pic|avatar|photo)\b/i;
 
 async function fetchPfpUrl(username: string): Promise<string | null> {
-  if (!X_BEARER) return null;
+  // Try Drupal first (owns the X API data)
+  if (DRUPAL_API_URL) {
+    try {
+      const res = await fetch(
+        `${DRUPAL_API_URL}/api/x-profile-sync/lookup?username=${encodeURIComponent(username)}`,
+        { headers: drupalAuthHeaders(), cache: "no-store", signal: AbortSignal.timeout(5000) }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.profile_image_url || data.data?.profile_image_url;
+        if (url) return upgradeProfileImageUrl(url);
+      }
+    } catch {
+      // Fall through to X API
+    }
+  }
+
+  // Fallback: direct X API call
+  const bearer = process.env.X_API_BEARER_TOKEN;
+  if (!bearer) return null;
   try {
     const res = await fetch(
       `https://api.x.com/2/users/by/username/${encodeURIComponent(username)}?user.fields=profile_image_url`,
-      { headers: { Authorization: `Bearer ${X_BEARER}` }, signal: AbortSignal.timeout(10000) }
+      { headers: { Authorization: `Bearer ${bearer}` }, signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return null;
     const data = await res.json();
     const url = data.data?.profile_image_url;
-    return url ? url.replace("_normal", "_400x400") : null;
+    return url ? upgradeProfileImageUrl(url) : null;
   } catch {
     return null;
   }

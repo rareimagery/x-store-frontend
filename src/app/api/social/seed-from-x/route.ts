@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // Mark X seed as imported on the user's store
     try {
-      const DRUPAL_API_URL = process.env.DRUPAL_API_URL || "http://72.62.80.155";
+      const { DRUPAL_API_URL } = await import("@/lib/drupal");
       const { drupalWriteHeaders } = await import("@/lib/drupal");
       const writeHeaders = await drupalWriteHeaders();
       await fetch(
@@ -136,11 +136,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** Fetch the user's X following list using X API v2 */
+/** Fetch the user's X following list using X API v2 with retry on rate limits */
 async function fetchXFollowing(
   xUserId: string,
   accessToken: string
 ): Promise<string[]> {
+  const { fetchWithRetry } = await import("@/lib/x-api/fetch-with-retry");
   const handles: string[] = [];
   let paginationToken: string | null = null;
 
@@ -155,11 +156,9 @@ async function fetchXFollowing(
         params.set("pagination_token", paginationToken);
       }
 
-      const res = await fetch(
+      const res = await fetchWithRetry(
         `https://api.x.com/2/users/${xUserId}/following?${params}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
       if (!res.ok) {

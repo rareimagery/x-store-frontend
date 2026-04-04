@@ -90,26 +90,34 @@ export async function POST(req: NextRequest) {
 
             if (printfulKey) {
               const { createOrder } = await import("@/lib/printful");
-              await createOrder(printfulKey, {
-                external_id: `ri_ord_${order_id}`,
-                recipient: {
-                  name: buyer_email || "Customer",
-                  email: buyer_email,
-                  address1: "TBD",
-                  city: "TBD",
-                  state_code: "CA",
-                  country_code: "US",
-                  zip: "00000",
-                },
-                items: items.map((item: any) => ({
-                  external_id: `ri_item_${item.id || item.sku}`,
-                  variant_id: item.printful_variant_id,
-                  quantity: item.quantity || 1,
-                  retail_price: String(item.price),
-                  name: item.name,
-                })),
-              });
-              console.log(`[webhook] Printful order created for ${seller_handle}, order ${order_id}`);
+
+              // Use shipping address from payload, or skip Printful if missing
+              const shipping = body.shipping_address;
+              if (!shipping?.address1 || !shipping?.city) {
+                console.warn("[webhook] Skipping Printful — no shipping address in payload");
+              } else {
+                await createOrder(printfulKey, {
+                  external_id: `ri_ord_${order_id}`,
+                  recipient: {
+                    name: shipping.name || buyer_email || "Customer",
+                    email: buyer_email,
+                    address1: shipping.address1,
+                    address2: shipping.address2 || "",
+                    city: shipping.city,
+                    state_code: shipping.state_code || "",
+                    country_code: shipping.country_code || "US",
+                    zip: shipping.zip || "",
+                  },
+                  items: items.map((item: any) => ({
+                    external_id: `ri_item_${item.id || item.sku}`,
+                    variant_id: item.printful_variant_id,
+                    quantity: item.quantity || 1,
+                    retail_price: String(item.price),
+                    name: item.name,
+                  })),
+                });
+                console.log(`[webhook] Printful order created for ${seller_handle}, order ${order_id}`);
+              }
             }
           }
         }

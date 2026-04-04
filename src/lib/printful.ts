@@ -258,6 +258,7 @@ export interface PrintfulWebhookPayload {
     order?: PrintfulOrder;
     shipment?: PrintfulShipment;
     sync_product?: PrintfulSyncProduct;
+    sync_variants?: { id: number; external_id?: string; availability_status?: string }[];
     reason?: string;
   };
 }

@@ -12,13 +12,20 @@ export function isValidUUID(s: string): boolean {
 }
 
 /** Allowed hostnames for image URL fetching (SSRF protection). */
-const ALLOWED_IMAGE_HOSTS = [
-  "pbs.twimg.com",
-  "72.62.80.155",
-  "rareimagery.net",
-  "api.printful.com",
-  "files.cdn.printful.com",
-];
+const ALLOWED_IMAGE_HOSTS = (() => {
+  const hosts = [
+    "pbs.twimg.com",
+    "rareimagery.net",
+    "api.printful.com",
+    "files.cdn.printful.com",
+  ];
+  // Include the Drupal API host dynamically
+  const drupalUrl = process.env.DRUPAL_API_URL;
+  if (drupalUrl) {
+    try { hosts.push(new URL(drupalUrl).hostname); } catch {}
+  }
+  return hosts;
+})();
 
 /** Check if an image URL is safe to fetch (not an internal/localhost address). */
 export function isSafeImageUrl(urlStr: string): boolean {

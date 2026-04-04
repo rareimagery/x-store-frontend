@@ -14,6 +14,21 @@ const securityHeaders = [
   },
 ];
 
+// Build dynamic remote patterns for Drupal API host
+const drupalImagePatterns: { protocol: "http" | "https"; hostname: string; port: string; pathname: string }[] = [];
+const drupalApiUrl = process.env.DRUPAL_API_URL;
+if (drupalApiUrl) {
+  try {
+    const u = new URL(drupalApiUrl);
+    drupalImagePatterns.push({
+      protocol: u.protocol.replace(":", "") as "http" | "https",
+      hostname: u.hostname,
+      port: u.port || "",
+      pathname: "/**",
+    });
+  } catch {}
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -22,12 +37,7 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24,
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "72.62.80.155",
-        port: "",
-        pathname: "/**",
-      },
+      ...drupalImagePatterns,
       {
         protocol: "https",
         hostname: "*.rareimagery.net",

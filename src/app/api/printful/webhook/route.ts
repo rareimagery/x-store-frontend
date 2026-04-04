@@ -186,12 +186,60 @@ async function handleStockUpdated(data: PrintfulWebhookPayload["data"]) {
 
     if (res.ok) {
       const json = await res.json();
-      if (json.data?.length > 0) {
+      const drupalProduct = json.data?.[0];
+      if (drupalProduct) {
         console.log(
-          `[printful-webhook] Found Drupal product for stock update: ${json.data[0].id}`
+          `[printful-webhook] Found Drupal product for stock update: ${drupalProduct.id}`
         );
-        // Stock level updates would require fetching variant-level data from Printful
-        // and updating each Drupal variation's field_stock — handled in a future iteration
+
+        // Fetch variant-level availability from Printful
+        const syncVariants = data.sync_variants ?? [];
+        if (syncVariants.length > 0) {
+          const writeHeaders = await getWriteHeaders();
+
+          for (const sv of syncVariants) {
+            if (!sv.external_id) continue;
+
+            // Find matching Drupal variation by external_id (ri_var_*)
+            const varParams = new URLSearchParams({
+              "filter[field_printful_variant_id]": String(sv.id),
+            });
+
+            try {
+              const varRes = await fetch(
+                `${DRUPAL_API}/jsonapi/commerce_product_variation/default?${varParams}`,
+                { headers: { ...writeHeaders, Accept: "application/vnd.api+json" }, cache: "no-store" }
+              );
+
+              if (varRes.ok) {
+                const varJson = await varRes.json();
+                const drupalVariation = varJson.data?.[0];
+                if (drupalVariation) {
+                  const isAvailable = sv.availability_status !== "discontinued";
+                  await fetch(
+                    `${DRUPAL_API}/jsonapi/commerce_product_variation/default/${drupalVariation.id}`,
+                    {
+                      method: "PATCH",
+                      headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+                      body: JSON.stringify({
+                        data: {
+                          type: drupalVariation.type,
+                          id: drupalVariation.id,
+                          attributes: { status: isAvailable },
+                        },
+                      }),
+                    }
+                  );
+                  console.log(
+                    `[printful-webhook] Updated variation ${drupalVariation.id} — available: ${isAvailable}`
+                  );
+                }
+              }
+            } catch (varErr) {
+              console.error(`[printful-webhook] Variation update error for ${sv.id}:`, varErr);
+            }
+          }
+        }
       }
     }
   } catch (err) {
