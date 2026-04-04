@@ -242,93 +242,102 @@ export default function FavoriteCreatorsPage() {
         )}
       </div>
 
-      {/* Filter tabs */}
-      {favorites.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => setActiveFilter(null)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              !activeFilter ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-            }`}
-          >
-            All ({favorites.length})
-          </button>
-          {tags.map((tag) => {
-            const count = tagCounts[tag.name] || 0;
-            if (count === 0) return null;
-            return (
-              <button
-                key={tag.id}
-                onClick={() => setActiveFilter(activeFilter === tag.name ? null : tag.name)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  activeFilter === tag.name ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                }`}
-              >
-                {tag.name} ({count})
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Favorites list */}
+      {/* Tagged grids */}
       {loading ? (
         <p className="text-sm text-zinc-500 text-center py-8">Loading...</p>
-      ) : filteredFavorites.length === 0 ? (
+      ) : favorites.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-zinc-500">
-            {activeFilter ? `No creators tagged "${activeFilter}" yet.` : "No favorites yet. Search for an X creator above to get started."}
-          </p>
+          <p className="text-zinc-500">No favorites yet. Search for an X creator above to get started.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filteredFavorites.map((fav) => (
-            <div key={fav.username} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 group">
-              <div className="flex items-center gap-3">
-                {fav.profile_image_url ? (
-                  <img src={fav.profile_image_url} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
+        <div className="space-y-8">
+          {tags.map((tag) => {
+            const members = favorites.filter((f) => f.tags.includes(tag.name));
+            return (
+              <section key={tag.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-indigo-400">{tag.name}</h3>
+                  <span className="text-xs text-zinc-600">{members.length}</span>
+                  <div className="flex-1 border-t border-zinc-800" />
+                </div>
+                {members.length === 0 ? (
+                  <p className="text-xs text-zinc-600 py-2">No creators in this list yet.</p>
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold text-indigo-400 shrink-0">
-                    {fav.display_name?.[0]?.toUpperCase() || "?"}
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                    {members.map((fav) => (
+                      <div key={fav.username} className="group relative flex flex-col items-center text-center">
+                        {fav.profile_image_url ? (
+                          <img src={fav.profile_image_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
+                            {fav.display_name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <p className="mt-1 text-[10px] font-medium text-white truncate max-w-[70px]">{fav.display_name}</p>
+                        <p className="text-[9px] text-zinc-600 truncate max-w-[70px]">@{fav.username}</p>
+                        {/* Remove from this tag */}
+                        <button
+                          onClick={() => toggleTag(fav.username, tag.name)}
+                          className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white opacity-0 group-hover:opacity-100 transition"
+                          title={`Remove from ${tag.name}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-medium text-white truncate">{fav.display_name}</p>
-                    {fav.verified && (
-                      <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-500">@{fav.username}</p>
-                </div>
-                <button
-                  onClick={() => removeFavorite(fav.username)}
-                  className="shrink-0 rounded-lg border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400 opacity-0 group-hover:opacity-100 hover:border-red-500/50 hover:text-red-400 transition"
-                >
-                  Remove
-                </button>
-              </div>
+              </section>
+            );
+          })}
 
-              {/* Tags */}
-              <div className="mt-2 flex flex-wrap gap-1">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => toggleTag(fav.username, tag.name)}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
-                      fav.tags.includes(tag.name)
-                        ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30"
-                        : "bg-zinc-800/50 text-zinc-600 hover:text-zinc-400 border border-transparent"
-                    }`}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+          {/* Untagged */}
+          {(() => {
+            const untagged = favorites.filter((f) => f.tags.length === 0);
+            if (untagged.length === 0) return null;
+            return (
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Uncategorized</h3>
+                  <span className="text-xs text-zinc-600">{untagged.length}</span>
+                  <div className="flex-1 border-t border-zinc-800" />
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                  {untagged.map((fav) => (
+                    <div key={fav.username} className="group relative flex flex-col items-center text-center">
+                      {fav.profile_image_url ? (
+                        <img src={fav.profile_image_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
+                          {fav.display_name?.[0]?.toUpperCase() || "?"}
+                        </div>
+                      )}
+                      <p className="mt-1 text-[10px] font-medium text-white truncate max-w-[70px]">{fav.display_name}</p>
+                      <p className="text-[9px] text-zinc-600 truncate max-w-[70px]">@{fav.username}</p>
+                      {/* Quick tag buttons */}
+                      <div className="mt-1 flex flex-wrap justify-center gap-0.5">
+                        {tags.slice(0, 3).map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => toggleTag(fav.username, t.name)}
+                            className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[7px] text-zinc-500 hover:bg-indigo-600/30 hover:text-indigo-300 transition"
+                          >
+                            +{t.name}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => removeFavorite(fav.username)}
+                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white opacity-0 group-hover:opacity-100 transition"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
         </div>
       )}
     </div>

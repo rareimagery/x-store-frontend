@@ -654,7 +654,14 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
   const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
   const heading = block.props.heading;
 
-  if (favorites.length === 0) return <StillBuilding label="My Favorites" />;
+  if (favorites.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed wf-border wf-card p-6 text-center">
+        <p className="text-xs wf-muted mb-2">My Favorites</p>
+        <a href="/console/favorite-creators" className="text-xs wf-accent hover:underline">+ Add creators to your lists</a>
+      </div>
+    );
+  }
 
   // Group by tags
   const tagGroups: Record<string, FavoriteCreator[]> = {};
