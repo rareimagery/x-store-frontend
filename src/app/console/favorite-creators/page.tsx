@@ -351,22 +351,31 @@ export default function FavoriteCreatorsPage() {
                 {members.length === 0 ? (
                   <p className="text-xs text-zinc-600 py-2">No creators in this list yet.</p>
                 ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                     {members.map((fav) => (
-                      <div key={fav.username} className="group relative flex flex-col items-center text-center">
+                      <div key={fav.username} className="group relative flex flex-col items-center text-center rounded-xl border border-zinc-800 bg-zinc-800/30 p-3 hover:border-zinc-600 transition">
                         {fav.profile_image_url ? (
-                          <img src={fav.profile_image_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
+                          <img src={fav.profile_image_url} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
                         ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
                             {fav.display_name?.[0]?.toUpperCase() || "?"}
                           </div>
                         )}
-                        <p className="mt-1 text-[10px] font-medium text-white truncate max-w-[70px]">{fav.display_name}</p>
-                        <p className="text-[9px] text-zinc-600 truncate max-w-[70px]">@{fav.username}</p>
-                        {/* Remove from this tag */}
+                        <p className="mt-2 text-[11px] font-medium text-white truncate max-w-full">{fav.display_name}</p>
+                        <p className="text-[10px] text-zinc-600 truncate max-w-full">@{fav.username}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <a href={`https://x.com/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-zinc-700/50 px-2 py-0.5 text-[9px] text-zinc-400 hover:text-white hover:bg-zinc-600 transition" title="View on X">
+                            <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                            X
+                          </a>
+                          <a href={`https://www.rareimagery.net/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] text-indigo-400 hover:text-white hover:bg-indigo-600/40 transition" title="View on RareImagery">
+                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                            Rare
+                          </a>
+                        </div>
                         <button
                           onClick={() => toggleTag(fav.username, tag.name)}
-                          className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white opacity-0 group-hover:opacity-100 transition"
+                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] text-white opacity-0 group-hover:opacity-100 transition"
                           title={`Remove from ${tag.name}`}
                         >
                           ×
@@ -390,20 +399,30 @@ export default function FavoriteCreatorsPage() {
                   <span className="text-xs text-zinc-600">{untagged.length}</span>
                   <div className="flex-1 border-t border-zinc-800" />
                 </div>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {untagged.map((fav) => (
-                    <div key={fav.username} className="group relative flex flex-col items-center text-center">
+                    <div key={fav.username} className="group relative flex flex-col items-center text-center rounded-xl border border-zinc-800 bg-zinc-800/30 p-3 hover:border-zinc-600 transition">
                       {fav.profile_image_url ? (
-                        <img src={fav.profile_image_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
+                        <img src={fav.profile_image_url} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
                       ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
                           {fav.display_name?.[0]?.toUpperCase() || "?"}
                         </div>
                       )}
-                      <p className="mt-1 text-[10px] font-medium text-white truncate max-w-[70px]">{fav.display_name}</p>
-                      <p className="text-[9px] text-zinc-600 truncate max-w-[70px]">@{fav.username}</p>
+                      <p className="mt-2 text-[11px] font-medium text-white truncate max-w-full">{fav.display_name}</p>
+                      <p className="text-[10px] text-zinc-600 truncate max-w-full">@{fav.username}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <a href={`https://x.com/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-zinc-700/50 px-2 py-0.5 text-[9px] text-zinc-400 hover:text-white hover:bg-zinc-600 transition">
+                          <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                          X
+                        </a>
+                        <a href={`https://www.rareimagery.net/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] text-indigo-400 hover:text-white hover:bg-indigo-600/40 transition">
+                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                          Rare
+                        </a>
+                      </div>
                       {/* Quick tag buttons */}
-                      <div className="mt-1 flex flex-wrap justify-center gap-0.5">
+                      <div className="mt-2 flex flex-wrap justify-center gap-0.5">
                         {tags.slice(0, 3).map((t) => (
                           <button
                             key={t.id}
@@ -416,7 +435,7 @@ export default function FavoriteCreatorsPage() {
                       </div>
                       <button
                         onClick={() => removeFavorite(fav.username)}
-                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white opacity-0 group-hover:opacity-100 transition"
+                        className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] text-white opacity-0 group-hover:opacity-100 transition"
                       >
                         ×
                       </button>
