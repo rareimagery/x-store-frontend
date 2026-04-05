@@ -32,6 +32,8 @@ export default function FavoriteCreatorsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [newTagName, setNewTagName] = useState("");
+  const [showNewTag, setShowNewTag] = useState(false);
   const [autoResult, setAutoResult] = useState<Omit<FavoriteCreator, "tags"> | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -155,6 +157,19 @@ export default function FavoriteCreatorsPage() {
     saveFavorites(updated);
   }, [favorites]);
 
+  const addCustomTag = useCallback(() => {
+    const name = newTagName.trim();
+    if (!name) return;
+    if (tags.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+      setNewTagName("");
+      setShowNewTag(false);
+      return;
+    }
+    setTags((prev) => [...prev, { id: `custom_${Date.now()}`, tid: 0, name }]);
+    setNewTagName("");
+    setShowNewTag(false);
+  }, [newTagName, tags]);
+
   async function saveFavorites(list: FavoriteCreator[]) {
     setSaving(true);
     setSavedMessage(null);
@@ -195,17 +210,71 @@ export default function FavoriteCreatorsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Favorite Creators</h1>
+          <h1 className="text-2xl font-bold text-white">Creator Collections</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Organize your favorite X creators into lists. They show on your public page grouped by category.
+            Curate your favorite X creators into collections. They show on your public page.
           </p>
         </div>
-        {savedMessage && <span className="text-sm text-green-400 font-medium">{savedMessage}</span>}
-        {saving && <span className="text-sm text-zinc-500">Saving...</span>}
+        <div className="flex items-center gap-2">
+          {savedMessage && <span className="text-sm text-green-400 font-medium">{savedMessage}</span>}
+          {saving && <span className="text-sm text-zinc-500">Saving...</span>}
+        </div>
       </div>
+
+      {/* Tag filter bar + create custom tag */}
+      {favorites.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-6 mt-4">
+          <button
+            onClick={() => setActiveFilter(null)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              !activeFilter
+                ? "bg-indigo-600 text-white"
+                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+            }`}
+          >
+            All ({favorites.length})
+          </button>
+          {tags.map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => setActiveFilter(activeFilter === tag.name ? null : tag.name)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                activeFilter === tag.name
+                  ? "bg-indigo-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+              }`}
+            >
+              {tag.name} ({tagCounts[tag.name] || 0})
+            </button>
+          ))}
+
+          {showNewTag ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") addCustomTag(); if (e.key === "Escape") setShowNewTag(false); }}
+                placeholder="Tag name..."
+                autoFocus
+                className="w-28 rounded-full border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+              />
+              <button onClick={addCustomTag} className="rounded-full bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Add</button>
+              <button onClick={() => setShowNewTag(false)} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewTag(true)}
+              className="rounded-full border border-dashed border-zinc-600 px-3 py-1.5 text-xs text-zinc-500 hover:border-indigo-500 hover:text-indigo-400 transition"
+            >
+              + New Collection
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Search / Add */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-6">
