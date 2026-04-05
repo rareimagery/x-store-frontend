@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
+import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 import type { XUser } from "@/lib/x-api/types";
 
 export async function syncCreatorProfile(
@@ -43,10 +44,7 @@ export async function syncCreatorProfile(
 
   if (updatedFields.profile_image_url !== undefined) {
     // Store the URL — actual image upload happens in the periodic sync
-    attributes.field_x_avatar_url = updatedFields.profile_image_url.replace(
-      "_normal",
-      "_400x400"
-    );
+    attributes.field_x_avatar_url = upgradeProfileImageUrl(updatedFields.profile_image_url);
   }
 
   if (updatedFields.public_metrics?.followers_count !== undefined) {
