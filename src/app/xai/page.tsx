@@ -72,7 +72,7 @@ export default async function XaiStorePage() {
       try {
         const parsed = JSON.parse(build.code);
         if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
-          return { layout: parsed.layout as WireframeLayout, colorScheme: parsed.colorScheme as string | undefined };
+          return { layout: parsed.layout as WireframeLayout, colorScheme: parsed.colorScheme as string | undefined, pageBackground: parsed.pageBackground as string | undefined };
         }
       } catch {}
     }
@@ -94,6 +94,7 @@ export default async function XaiStorePage() {
           grokGallery={storeData.grokGallery}
           socialFeeds={storeData.socialFeeds}
           colorScheme={wireframeBuild.colorScheme}
+          pageBackground={wireframeBuild.pageBackground}
         />
         <BuilderGate storeSlug="xai" />
       </div>

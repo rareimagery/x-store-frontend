@@ -35,3 +35,41 @@ export const COLOR_SCHEME_OPTIONS: ColorSchemeOption[] = [
 ];
 
 export const DEFAULT_SCHEME = "midnight";
+
+// ---------------------------------------------------------------------------
+// Page background presets
+// ---------------------------------------------------------------------------
+
+export interface PageBackgroundOption {
+  id: string;
+  label: string;
+  url: string;
+  thumbnail: string;
+}
+
+export const PAGE_BACKGROUNDS: PageBackgroundOption[] = [
+  {
+    id: "none",
+    label: "None",
+    url: "",
+    thumbnail: "",
+  },
+  {
+    id: "nature",
+    label: "Nature",
+    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80&auto=format",
+    thumbnail: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200&q=60&auto=format",
+  },
+  {
+    id: "mountain",
+    label: "Mountain",
+    url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80&auto=format",
+    thumbnail: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&q=60&auto=format",
+  },
+  {
+    id: "space",
+    label: "Space",
+    url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80&auto=format",
+    thumbnail: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=200&q=60&auto=format",
+  },
+];

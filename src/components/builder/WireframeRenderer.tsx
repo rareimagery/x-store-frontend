@@ -71,6 +71,7 @@ interface WireframeRendererProps {
   grokGallery?: GrokGalleryItem[];
   socialFeeds?: SocialFeedAccount[];
   colorScheme?: string;
+  pageBackground?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -787,7 +788,7 @@ function RenderBlock({
 
 import { COLOR_SCHEMES } from "@/lib/color-schemes";
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme, pageBackground }: WireframeRendererProps) {
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
   const hasLeft = layout.left.length > 0;
   const hasRight = layout.right.length > 0;
@@ -799,6 +800,12 @@ export default function WireframeRenderer({ layout, profile, products, favorites
       style={{
         backgroundColor: colors.bg,
         color: colors.text,
+        ...(pageBackground ? {
+          backgroundImage: `linear-gradient(to bottom, ${colors.bg}e6, ${colors.bg}cc), url(${pageBackground})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        } : {}),
         "--wf-bg": colors.bg,
         "--wf-surface": colors.surface,
         "--wf-border": colors.border,

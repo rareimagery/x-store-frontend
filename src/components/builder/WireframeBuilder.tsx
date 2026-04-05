@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { BlockComponentDef } from "@/app/api/blocks/route";
-import { COLOR_SCHEME_OPTIONS } from "@/lib/color-schemes";
+import { COLOR_SCHEME_OPTIONS, PAGE_BACKGROUNDS } from "@/lib/color-schemes";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -253,8 +253,10 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
   const [saved, setSaved] = useState(false);
   // Touch: tap a palette item to select it, then tap a column to place it
   const [touchPendingType, setTouchPendingType] = useState<string | null>(null);
-  // Color scheme
+  // Color scheme + page background
   const [colorScheme, setColorScheme] = useState("midnight");
+  const [pageBackground, setPageBackground] = useState("");
+  const [uploadingBg, setUploadingBg] = useState(false);
 
   // Fetch block catalog + load existing builds
   useEffect(() => {
@@ -276,6 +278,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
             if (doc.type === "wireframe" && doc.layout) {
               setLayout(doc.layout);
               if (doc.colorScheme) setColorScheme(doc.colorScheme);
+              if (doc.pageBackground) setPageBackground(doc.pageBackground);
             }
           } catch {}
         }
@@ -505,6 +508,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
         type: "wireframe",
         layout,
         colorScheme,
+        pageBackground,
         updatedAt: new Date().toISOString(),
       };
       const res = await fetch("/api/builds", {
@@ -530,7 +534,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     } finally {
       setSaving(false);
     }
-  }, [layout, colorScheme]);
+  }, [layout, colorScheme, pageBackground]);
 
   /* ---------- Render ---------- */
 
@@ -771,6 +775,80 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
             <p className="text-[9px] text-zinc-400">{scheme.label}</p>
           </button>
         ))}
+      </div>
+
+      {/* Page Background Picker */}
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3 mt-4">Page Background</p>
+      <div className="flex gap-2 max-w-2xl">
+        {PAGE_BACKGROUNDS.map((bg) => (
+          <button
+            key={bg.id}
+            onClick={() => setPageBackground(bg.id === "none" ? "" : bg.url)}
+            className={`flex-1 rounded-lg border overflow-hidden transition ${
+              (bg.id === "none" && !pageBackground) || pageBackground === bg.url
+                ? "border-indigo-500 ring-1 ring-indigo-500/50"
+                : "border-zinc-700 hover:border-zinc-600"
+            }`}
+          >
+            {bg.thumbnail ? (
+              <img src={bg.thumbnail} alt={bg.label} className="h-12 w-full object-cover" />
+            ) : (
+              <div className="h-12 w-full bg-zinc-800 flex items-center justify-center">
+                <svg className="h-4 w-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+            )}
+            <p className="text-[9px] text-zinc-400 py-1 text-center">{bg.label}</p>
+          </button>
+        ))}
+
+        {/* Custom upload */}
+        <label
+          className={`flex-1 rounded-lg border overflow-hidden transition cursor-pointer ${
+            pageBackground && !PAGE_BACKGROUNDS.some((bg) => bg.url === pageBackground)
+              ? "border-indigo-500 ring-1 ring-indigo-500/50"
+              : "border-zinc-700 hover:border-zinc-600"
+          }`}
+        >
+          {pageBackground && !PAGE_BACKGROUNDS.some((bg) => bg.url === pageBackground) ? (
+            <img src={pageBackground} alt="Custom" className="h-12 w-full object-cover" />
+          ) : (
+            <div className="h-12 w-full bg-zinc-800 flex items-center justify-center">
+              {uploadingBg ? (
+                <svg className="h-4 w-4 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+              )}
+            </div>
+          )}
+          <p className="text-[9px] text-zinc-400 py-1 text-center">Upload</p>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file || file.size > 5 * 1024 * 1024) return;
+              setUploadingBg(true);
+              try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  setPageBackground(reader.result as string);
+                  setUploadingBg(false);
+                };
+                reader.readAsDataURL(file);
+              } catch {
+                setUploadingBg(false);
+              }
+            }}
+          />
+        </label>
       </div>
     </div>
     </>
