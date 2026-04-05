@@ -53,6 +53,10 @@ export default function DesignStudioPage() {
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
+  // X Profile quick generate
+  const [xHandle, setXHandle] = useState("");
+  const [xLooking, setXLooking] = useState(false);
+
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -137,6 +141,38 @@ export default function DesignStudioPage() {
     setRefDataUrl(null);
   };
 
+  const handleXProfileGenerate = async () => {
+    const handle = xHandle.trim().replace(/^@/, "");
+    if (!handle) return;
+    setXLooking(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(handle)}`);
+      if (!res.ok) {
+        setError(`@${handle} not found on X`);
+        setXLooking(false);
+        return;
+      }
+      const profile = await res.json();
+      const productLabel = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "T-Shirt";
+      const bioSnippet = (profile.bio || "").slice(0, 100);
+      const autoPrompt = `Premium ${productLabel} merch design inspired by @${handle}. Theme: ${bioSnippet}. Print-ready, centered, vibrant, high contrast for fabric.`;
+      setPrompt(autoPrompt);
+      setTitle(`@${handle} ${productLabel}`);
+      // Use their PFP as reference
+      if (profile.profile_image_url) {
+        setRefPreview(profile.profile_image_url);
+        setRefDataUrl(null); // PFP detection in prompt handles this via @handle pfp pattern
+        setPrompt(`@${handle} pfp ${autoPrompt}`);
+      }
+      setXHandle("");
+    } catch {
+      setError("X lookup failed");
+    } finally {
+      setXLooking(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim() && !refDataUrl) return;
     setGenerating(true);
@@ -172,6 +208,18 @@ export default function DesignStudioPage() {
       if (!title) {
         setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
       }
+
+      // Log generation cost ($0.02 per image)
+      const imageCount = urls.length;
+      fetch("/api/console/cost-dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "grok_ai",
+          amount: imageCount * 0.02,
+          description: `Grok Imagine: ${imageCount} variants for "${prompt.trim().slice(0, 50)}"`,
+        }),
+      }).catch(() => {});
 
       // Auto-save to gallery
       fetch("/api/gallery", {
@@ -246,6 +294,47 @@ export default function DesignStudioPage() {
       <p className="text-sm text-zinc-400 mb-8">
         Describe your design. Grok Imagine creates 4 variants. Pick your favorite. Printful fulfills it.
       </p>
+
+      {/* Quick generate from X profile */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
+        <p className="text-xs font-medium text-zinc-400 mb-2">Quick: Generate merch from an X profile</p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+            <input
+              type="text"
+              value={xHandle}
+              onChange={(e) => setXHandle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleXProfileGenerate()}
+              placeholder="username"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={handleXProfileGenerate}
+            disabled={xLooking || !xHandle.trim()}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-500 disabled:opacity-50 transition"
+          >
+            {xLooking ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Looking up...
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                Generate from Profile
+              </>
+            )}
+          </button>
+        </div>
+        <p className="text-[10px] text-zinc-600 mt-1.5">Auto-fills prompt from their bio + uses their PFP as reference image</p>
+      </div>
 
       {/* Reference image upload */}
       <div
