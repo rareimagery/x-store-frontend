@@ -4,6 +4,7 @@ import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import TwitterProvider from "next-auth/providers/twitter";
 import FacebookProvider from "next-auth/providers/facebook";
+import GoogleProvider from "next-auth/providers/google";
 import TikTokProvider from "@/lib/auth-providers/tiktok";
 import InstagramProvider from "@/lib/auth-providers/instagram";
 
@@ -51,7 +52,7 @@ type AuthUser = User & {
   storeSlug?: string | null;
 };
 
-type SocialProviderType = "twitter" | "facebook" | "tiktok" | "instagram" | "credentials" | null;
+type SocialProviderType = "twitter" | "facebook" | "google" | "tiktok" | "instagram" | "credentials" | null;
 
 type AppToken = JWT & {
   xUsername?: string | null;
@@ -324,6 +325,13 @@ export const authOptions: NextAuthOptions = {
         params: { scope: "public_profile,email" },
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      authorization: {
+        params: { scope: "openid email profile https://www.googleapis.com/auth/youtube.readonly" },
+      },
+    }),
     TikTokProvider({
       clientId: process.env.TIKTOK_CLIENT_KEY || "",
       clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
@@ -377,10 +385,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       // Social providers (Facebook, TikTok, Instagram) — allow login, store association via email
-      if (account?.provider === "facebook" || account?.provider === "tiktok" || account?.provider === "instagram") {
+      if (["facebook", "google", "tiktok", "instagram"].includes(account?.provider || "")) {
         const email = (profile as any)?.email;
-        if (!email && account.provider === "facebook") {
-          return "/signup?error=MissingEmail&provider=facebook";
+        if (!email && (account?.provider === "facebook" || account?.provider === "google")) {
+          return `/signup?error=MissingEmail&provider=${account!.provider}`;
         }
         return true;
       }
@@ -519,7 +527,7 @@ export const authOptions: NextAuthOptions = {
         }
       }
       // Social providers: Facebook, TikTok, Instagram
-      if (account && ["facebook", "tiktok", "instagram"].includes(account.provider) && profile) {
+      if (account && ["facebook", "google", "tiktok", "instagram"].includes(account.provider) && profile) {
         const socialProfile = profile as any;
         appToken.providerType = account.provider as SocialProviderType;
         appToken.socialDisplayName = socialProfile.name || socialProfile.display_name || null;

@@ -28,6 +28,8 @@ export function register() {
     ["X_CLIENT_SECRET", "X OAuth 2.0 client secret"],
     ["X_API_BEARER_TOKEN", "X API app-only bearer token"],
     ["CRON_SECRET", "Vercel cron job authorization token"],
+    ["GOOGLE_CLIENT_ID", "Google OAuth client ID (Google/YouTube login)"],
+    ["GOOGLE_CLIENT_SECRET", "Google OAuth client secret"],
     ["FACEBOOK_CLIENT_ID", "Facebook OAuth app ID (social login)"],
     ["FACEBOOK_CLIENT_SECRET", "Facebook OAuth app secret"],
     ["TIKTOK_CLIENT_KEY", "TikTok Login Kit client key"],
