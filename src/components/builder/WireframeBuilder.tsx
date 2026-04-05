@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { BlockComponentDef } from "@/app/api/blocks/route";
+import { COLOR_SCHEME_OPTIONS } from "@/lib/color-schemes";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -529,7 +530,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     } finally {
       setSaving(false);
     }
-  }, [layout]);
+  }, [layout, colorScheme]);
 
   /* ---------- Render ---------- */
 
@@ -752,13 +753,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     <div className="border-t border-zinc-800 bg-zinc-900/80 px-6 py-4">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Page Color Scheme</p>
       <div className="flex gap-2 max-w-2xl">
-        {[
-          { id: "midnight", label: "Midnight", bg: "#09090b", surface: "#18181b", accent: "#6366f1" },
-          { id: "ocean", label: "Ocean", bg: "#0c1222", surface: "#1a2332", accent: "#38bdf8" },
-          { id: "forest", label: "Forest", bg: "#0a0f0a", surface: "#1a2e1a", accent: "#4ade80" },
-          { id: "sunset", label: "Sunset", bg: "#1a0a0a", surface: "#2e1a1a", accent: "#fb923c" },
-          { id: "royal", label: "Royal", bg: "#0f0a1a", surface: "#1e152e", accent: "#a78bfa" },
-        ].map((scheme) => (
+        {COLOR_SCHEME_OPTIONS.map((scheme) => (
           <button
             key={scheme.id}
             onClick={() => setColorScheme(scheme.id)}
@@ -769,9 +764,9 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
             }`}
           >
             <div className="flex justify-center gap-1 mb-1.5">
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.bg }} />
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.surface }} />
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.accent }} />
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.bg }} />
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.accent }} />
+              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.text }} />
             </div>
             <p className="text-[9px] text-zinc-400">{scheme.label}</p>
           </button>

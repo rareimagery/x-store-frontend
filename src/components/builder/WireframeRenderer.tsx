@@ -137,7 +137,7 @@ function CtaSection({ block }: { block: PlacedBlock }) {
   return (
     <div
       className="rounded-xl p-6 text-center"
-      style={{ backgroundColor: (background_color as string) || "#1e1b4b" }}
+      style={{ backgroundColor: (background_color as string) || "var(--wf-surface, #1e1b4b)" }}
     >
       {heading && <h3 className="text-lg font-bold text-white mb-2">{String(heading)}</h3>}
       {body_text && <p className="text-sm text-zinc-300 mb-4">{String(body_text)}</p>}
@@ -785,13 +785,7 @@ function RenderBlock({
 /*  Layout Renderer                                                    */
 /* ------------------------------------------------------------------ */
 
-const COLOR_SCHEMES: Record<string, { bg: string; surface: string; border: string; accent: string; text: string; textMuted: string }> = {
-  midnight: { bg: "#09090b", surface: "rgba(24,24,27,0.5)", border: "#27272a", accent: "#6366f1", text: "#ffffff", textMuted: "#a1a1aa" },
-  ocean:    { bg: "#0c1222", surface: "rgba(26,35,50,0.5)", border: "#1e3a5f", accent: "#38bdf8", text: "#e0f2fe", textMuted: "#7dd3fc" },
-  forest:   { bg: "#0a0f0a", surface: "rgba(26,46,26,0.5)", border: "#1a3a1a", accent: "#4ade80", text: "#dcfce7", textMuted: "#86efac" },
-  sunset:   { bg: "#1a0a0a", surface: "rgba(46,26,26,0.5)", border: "#3a1a1a", accent: "#fb923c", text: "#fff7ed", textMuted: "#fdba74" },
-  royal:    { bg: "#0f0a1a", surface: "rgba(30,21,46,0.5)", border: "#2e1a4a", accent: "#a78bfa", text: "#ede9fe", textMuted: "#c4b5fd" },
-};
+import { COLOR_SCHEMES } from "@/lib/color-schemes";
 
 export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme }: WireframeRendererProps) {
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
@@ -820,16 +814,33 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         .wf-muted { color: var(--wf-text-muted) !important; }
         .wf-border { border-color: var(--wf-border) !important; }
         .wf-text { color: var(--wf-text) !important; }
+        /* Text color overrides */
         [style*="--wf-bg"] .text-white { color: var(--wf-text) !important; }
-        [style*="--wf-bg"] .text-zinc-300 { color: var(--wf-text) !important; }
         [style*="--wf-bg"] .text-zinc-200 { color: var(--wf-text) !important; }
+        [style*="--wf-bg"] .text-zinc-300 { color: var(--wf-text-muted) !important; }
+        [style*="--wf-bg"] .text-zinc-400 { color: var(--wf-text-muted) !important; }
+        [style*="--wf-bg"] .text-zinc-500 { color: color-mix(in srgb, var(--wf-text-muted) 60%, transparent) !important; }
+        [style*="--wf-bg"] .text-zinc-700 { color: color-mix(in srgb, var(--wf-text-muted) 40%, transparent) !important; }
+        /* Background overrides */
         [style*="--wf-bg"] .bg-zinc-800,
         [style*="--wf-bg"] .bg-zinc-900\\/50 { background: var(--wf-surface) !important; }
+        [style*="--wf-bg"] .bg-zinc-950 { background: var(--wf-bg) !important; }
+        /* Border overrides */
         [style*="--wf-bg"] .border-zinc-800 { border-color: var(--wf-border) !important; }
+        [style*="--wf-bg"] .border-zinc-700 { border-color: var(--wf-border) !important; }
+        [style*="--wf-bg"] .border-zinc-950 { border-color: var(--wf-bg) !important; }
         [style*="--wf-bg"] .hover\\:border-zinc-600:hover { border-color: var(--wf-accent) !important; }
+        /* Accent overrides */
+        [style*="--wf-bg"] .bg-indigo-600 { background: var(--wf-accent) !important; }
         [style*="--wf-bg"] .bg-indigo-600\\/20 { background: color-mix(in srgb, var(--wf-accent) 20%, transparent) !important; }
+        [style*="--wf-bg"] .hover\\:bg-indigo-500:hover { background: color-mix(in srgb, var(--wf-accent) 85%, white) !important; }
         [style*="--wf-bg"] .text-indigo-400 { color: var(--wf-accent) !important; }
+        /* Overlay overrides */
+        [style*="--wf-bg"] .bg-black\\/50 { background: color-mix(in srgb, var(--wf-bg) 70%, transparent) !important; }
         [style*="--wf-bg"] .bg-black\\/60 { background: color-mix(in srgb, var(--wf-bg) 80%, transparent) !important; }
+        /* Gradient override for header */
+        [style*="--wf-bg"] .from-zinc-950 { --tw-gradient-from: var(--wf-bg) !important; }
+        [style*="--wf-bg"] .via-zinc-950\\/40 { --tw-gradient-via: color-mix(in srgb, var(--wf-bg) 40%, transparent) !important; }
       `}</style>
       {/* ── X-style profile header ── */}
       <div className="relative h-48 sm:h-64 w-full overflow-hidden" style={{ backgroundColor: colors.surface }}>
