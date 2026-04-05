@@ -503,12 +503,14 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     setSaved(false);
     setSaveError(null);
     try {
+      // Strip data URLs from background — only save real URLs (data URLs are too large for Drupal)
+      const safeBg = pageBackground && !pageBackground.startsWith("data:") ? pageBackground : "";
       const doc = {
         schemaVersion: 1,
         type: "wireframe",
         layout,
         colorScheme,
-        pageBackground,
+        pageBackground: safeBg,
         updatedAt: new Date().toISOString(),
       };
       const res = await fetch("/api/builds", {
