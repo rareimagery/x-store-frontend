@@ -11,6 +11,7 @@ const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
 
 export interface GrokImageResult {
   url: string;
+  urls: string[];
   usedPfp: boolean;
   usedUpload: boolean;
   pfpUsername?: string;
@@ -74,7 +75,8 @@ export async function generateDesign(
   prompt: string,
   productType: string,
   currentUsername?: string,
-  referenceImageDataUrl?: string
+  referenceImageDataUrl?: string,
+  variants: number = 1
 ): Promise<GrokImageResult> {
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY / GROK_API_KEY not configured");
@@ -106,7 +108,7 @@ export async function generateDesign(
           ? `Use this uploaded image as a reference to create a design. ${cleanedPrompt}. Transform it while keeping the core visual elements.`
           : `Use this profile picture as a reference to create a design. ${cleanedPrompt}. Keep the original style and likeness.`)
       : cleanedPrompt,
-    n: 1,
+    n: Math.min(Math.max(variants, 1), 4),
     response_format: "url",
   };
 
@@ -131,14 +133,15 @@ export async function generateDesign(
   }
 
   const data = await res.json();
-  const imageUrl = data.data?.[0]?.url;
+  const allUrls: string[] = (data.data ?? []).map((d: any) => d.url).filter(Boolean);
 
-  if (!imageUrl) {
-    throw new Error("Grok Imagine returned no image URL");
+  if (allUrls.length === 0) {
+    throw new Error("Grok Imagine returned no image URLs");
   }
 
   return {
-    url: imageUrl,
+    url: allUrls[0],
+    urls: allUrls,
     usedPfp: !!referenceUrl && !usedUpload,
     usedUpload,
     pfpUsername,

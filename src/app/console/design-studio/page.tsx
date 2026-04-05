@@ -25,6 +25,7 @@ export default function DesignStudioPage() {
   const [productType, setProductType] = useState("t_shirt");
   const [generating, setGenerating] = useState(false);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
+  const [designVariants, setDesignVariants] = useState<string[]>([]);
   const [usedPfp, setUsedPfp] = useState<{ used: boolean; username?: string }>({ used: false });
   const [usedUpload, setUsedUpload] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +141,7 @@ export default function DesignStudioPage() {
     if (!prompt.trim() && !refDataUrl) return;
     setGenerating(true);
     setDesignUrl(null);
+    setDesignVariants([]);
     setUsedPfp({ used: false });
     setUsedUpload(false);
     setError(null);
@@ -162,7 +164,9 @@ export default function DesignStudioPage() {
         return;
       }
 
-      setDesignUrl(data.image_url);
+      const urls: string[] = data.image_urls || [data.image_url];
+      setDesignVariants(urls);
+      setDesignUrl(urls[0]);
       setUsedPfp({ used: data.used_pfp || false, username: data.pfp_username });
       setUsedUpload(data.used_upload || false);
       if (!title) {
@@ -233,9 +237,14 @@ export default function DesignStudioPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-1">Design Studio</h1>
+      <div className="flex items-center gap-3 mb-1">
+        <svg className="h-7 w-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+        </svg>
+        <h1 className="text-2xl font-bold text-white">Grok Creator Studio</h1>
+      </div>
       <p className="text-sm text-zinc-400 mb-8">
-        Describe your design, Grok Imagine creates it, publish to Printful in one click.
+        Describe your design. Grok Imagine creates 4 variants. Pick your favorite. Printful fulfills it.
       </p>
 
       {/* Reference image upload */}
@@ -337,10 +346,10 @@ export default function DesignStudioPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Generating with Grok Imagine...
+              Generating 4 variants with Grok Imagine...
             </span>
           ) : (
-            "Generate Design"
+            "Generate 4 Design Variants"
           )}
         </button>
       </div>
@@ -351,13 +360,48 @@ export default function DesignStudioPage() {
         </div>
       )}
 
-      {/* Generated design preview */}
-      {designUrl && (
+      {/* Generated design variants */}
+      {designVariants.length > 0 && (
         <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+          {/* Variant selection grid */}
+          {designVariants.length > 1 && (
+            <div className="p-4 border-b border-zinc-800">
+              <p className="text-xs font-medium text-zinc-400 mb-3">
+                {designVariants.length} variants generated — select your favorite
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {designVariants.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setDesignUrl(url)}
+                    className={`relative rounded-xl overflow-hidden border-2 transition ${
+                      designUrl === url
+                        ? "border-purple-500 ring-2 ring-purple-500/30 scale-[1.02]"
+                        : "border-zinc-700 hover:border-zinc-500"
+                    }`}
+                  >
+                    <img src={url} alt={`Variant ${i + 1}`} className="aspect-square w-full object-cover" />
+                    {designUrl === url && (
+                      <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-purple-500">
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1 left-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] text-white">
+                      {i + 1}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Selected design large preview */}
           <div className="relative bg-zinc-800">
             <img
-              src={designUrl}
-              alt="Generated design"
+              src={designUrl!}
+              alt="Selected design"
               className="w-full max-h-[512px] object-contain mx-auto"
             />
           </div>
@@ -401,7 +445,7 @@ export default function DesignStudioPage() {
                   {publishing ? "Publishing to Printful..." : `Publish ${selectedProduct?.emoji} to Printful`}
                 </button>
                 <button
-                  onClick={() => { setDesignUrl(null); setTitle(""); }}
+                  onClick={() => { setDesignUrl(null); setDesignVariants([]); setTitle(""); }}
                   className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition"
                 >
                   Discard
@@ -449,7 +493,7 @@ export default function DesignStudioPage() {
               </a>
 
               <button
-                onClick={() => { setDesignUrl(null); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); clearReference(); }}
+                onClick={() => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); clearReference(); }}
                 className="mt-2 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition w-full"
               >
                 Create Another Design
