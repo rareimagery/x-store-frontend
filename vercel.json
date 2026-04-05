@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/x-money-watcher",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/code-audit",
+      "schedule": "0 */8 * * *"
     }
   ],
   "headers": [
