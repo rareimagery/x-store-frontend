@@ -837,13 +837,16 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
               if (!file || file.size > 5 * 1024 * 1024) return;
               setUploadingBg(true);
               try {
-                const reader = new FileReader();
-                reader.onload = () => {
-                  setPageBackground(reader.result as string);
-                  setUploadingBg(false);
-                };
-                reader.readAsDataURL(file);
+                const formData = new FormData();
+                formData.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                  setPageBackground(data.url);
+                }
               } catch {
+                // Upload failed silently
+              } finally {
                 setUploadingBg(false);
               }
             }}
