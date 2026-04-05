@@ -756,7 +756,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
     {/* Color Scheme Picker — below the builder */}
     <div className="border-t border-zinc-800 bg-zinc-900/80 px-6 py-4">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Page Color Scheme</p>
-      <div className="flex gap-2 max-w-2xl">
+      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
         {COLOR_SCHEME_OPTIONS.map((scheme) => (
           <button
             key={scheme.id}
@@ -779,7 +779,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
       {/* Page Background Picker */}
       <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3 mt-4">Page Background</p>
-      <div className="flex gap-2 max-w-2xl">
+      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
         {PAGE_BACKGROUNDS.map((bg) => (
           <button
             key={bg.id}
