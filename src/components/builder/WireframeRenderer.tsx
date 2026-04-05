@@ -801,7 +801,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         backgroundColor: colors.bg,
         color: colors.text,
         ...(pageBackground ? {
-          backgroundImage: `linear-gradient(to bottom, ${colors.bg}e6, ${colors.bg}cc), url(${pageBackground})`,
+          backgroundImage: `linear-gradient(to bottom, ${colors.bg}c0, ${colors.bg}a0), url(${pageBackground})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
