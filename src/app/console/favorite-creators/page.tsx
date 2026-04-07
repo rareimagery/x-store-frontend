@@ -214,7 +214,7 @@ export default function FavoriteCreatorsPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Favorite Creators</h1>
+          <h1 className="text-2xl font-bold text-white">My Favorites</h1>
           <p className="text-sm text-zinc-400 mt-1">
             Add creators and organize them into categories for your public favorites page.
           </p>
