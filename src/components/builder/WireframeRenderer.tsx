@@ -206,14 +206,14 @@ function productSlug(title: string): string {
 
 function ProductGrid({ block, products }: { block: PlacedBlock; products: Product[] }) {
   const maxItems = Number(block.props.max_items) || 6;
-  const cols = Number(block.props.gallery_columns) || 2;
+  const cols = Number(block.props.gallery_columns) || 3;
   const heading = block.props.heading;
   const shown = products.slice(0, maxItems);
 
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className={`grid gap-3 ${cols === 3 ? "grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      <div className={`grid gap-3 ${cols >= 3 ? "grid-cols-2 sm:grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
         {shown.map((p) => (
           <a
             key={p.id}
@@ -221,22 +221,19 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
             className="group rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
           >
             {p.image_url ? (
-              <div className="aspect-square wf-card overflow-hidden">
+              <div className="aspect-[4/3] wf-card overflow-hidden">
                 <img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
               </div>
             ) : (
-              <div className="aspect-square wf-card flex items-center justify-center">
-                <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <div className="aspect-[4/3] wf-card flex items-center justify-center">
+                <svg className="h-8 w-8 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
             )}
-            <div className="p-3">
-              <p className="text-sm font-medium text-zinc-200 truncate">{p.title}</p>
-              {p.description && (
-                <p className="mt-1 text-xs wf-muted line-clamp-2">{p.description}</p>
-              )}
-              <p className="mt-1 text-sm font-semibold wf-accent">${parseFloat(p.price).toFixed(2)}</p>
+            <div className="p-2">
+              <p className="text-xs font-medium text-zinc-200 truncate">{p.title}</p>
+              <p className="mt-0.5 text-xs font-semibold wf-accent">${parseFloat(p.price).toFixed(2)}</p>
             </div>
           </a>
         ))}
@@ -246,30 +243,29 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
 }
 
 function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
-  const maxItems = Number(block.props.max_items) || 5;
+  const maxItems = Number(block.props.max_items) || 6;
   const heading = block.props.heading;
   const posts = (profile.top_posts || []).slice(0, maxItems);
 
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="space-y-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((post) => (
           <a
             key={post.id}
             href={`https://x.com/${profile.x_username}/status/${post.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
+            className="flex flex-col rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
           >
             {post.image_url && (
-              <div className="relative">
-                <img src={post.image_url} alt="" className="w-full h-48 object-cover" />
-                {/* Video play indicator — most posts with amplify_video_thumb are videos */}
+              <div className="relative aspect-video overflow-hidden">
+                <img src={post.image_url} alt="" className="h-full w-full object-cover" />
                 {post.image_url.includes("amplify_video") && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
-                      <svg className="h-5 w-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
+                      <svg className="h-4 w-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     </div>
@@ -277,18 +273,18 @@ function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorPr
                 )}
               </div>
             )}
-            <div className="p-3">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="p-2.5 flex-1 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-1.5">
                 {profile.profile_picture_url && (
-                  <img src={profile.profile_picture_url} alt="" className="h-5 w-5 rounded-full" />
+                  <img src={profile.profile_picture_url} alt="" className="h-4 w-4 rounded-full" />
                 )}
-                <span className="text-[11px] font-medium wf-muted">@{profile.x_username}</span>
+                <span className="text-[10px] font-medium wf-muted">@{profile.x_username}</span>
                 {post.date && (
-                  <span className="text-[10px] wf-muted">{new Date(post.date).toLocaleDateString()}</span>
+                  <span className="text-[10px] wf-muted ml-auto">{new Date(post.date).toLocaleDateString()}</span>
                 )}
               </div>
-              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.text}</p>
-              <div className="mt-2 flex items-center gap-4 text-[10px] wf-muted">
+              <p className="text-xs text-zinc-300 leading-relaxed line-clamp-3 flex-1">{post.text}</p>
+              <div className="mt-1.5 flex items-center gap-3 text-[10px] wf-muted">
                 {post.likes > 0 && (
                   <span className="flex items-center gap-1">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
