@@ -14,7 +14,7 @@ export interface PlacedBlock {
   /** Block type from catalog */
   type: string;
   /** Column placement */
-  column: "left" | "center" | "right";
+  column: "left" | "center" | "right"; // "left" is legacy — migrated to "center" on load
   /** Order within the column */
   order: number;
   /** User-editable props (heading, body text, urls, etc.) */
@@ -44,14 +44,12 @@ function uid(): string {
 }
 
 const COLUMN_LABELS: Record<string, string> = {
-  left: "Left Sidebar",
   center: "Main Content",
   right: "Right Sidebar",
 };
 
 const COLUMN_WIDTHS: Record<string, string> = {
-  left: "w-1/4",
-  center: "w-1/2",
+  center: "w-3/4",
   right: "w-1/4",
 };
 
@@ -183,6 +181,10 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 10)", type: "number" },
     ],
+    top_followers: [
+      { key: "heading", label: "Section Heading", type: "text" },
+      { key: "max_items", label: "Max to Show (up to 8)", type: "number" },
+    ],
   };
 
   const fields = fieldDefs[block.type] || [];
@@ -229,7 +231,6 @@ function BlockInspector({
           onChange={(e) => onUpdate({ ...block.props, __column: e.target.value })}
           className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
         >
-          <option value="left">Left Sidebar</option>
           <option value="center">Main Content</option>
           <option value="right">Right Sidebar</option>
         </select>
@@ -244,9 +245,14 @@ function BlockInspector({
 
 export default function WireframeBuilder({ storeSlug, initialLayout, onChange }: WireframeBuilderProps) {
   const [catalog, setCatalog] = useState<BlockComponentDef[]>([]);
-  const [layout, setLayout] = useState<WireframeLayout>(
-    initialLayout || { left: [], center: [], right: [] }
-  );
+  const [layout, setLayout] = useState<WireframeLayout>(() => {
+    const init = initialLayout || { left: [], center: [], right: [] };
+    // Migrate any legacy left-sidebar blocks into center
+    if (init.left.length > 0) {
+      return { left: [], center: [...init.left.map(b => ({ ...b, column: "center" as const })), ...init.center], right: init.right };
+    }
+    return init;
+  });
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ column: string; index: number } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -276,7 +282,13 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
           try {
             const doc = JSON.parse(latest.code);
             if (doc.type === "wireframe" && doc.layout) {
-              setLayout(doc.layout);
+              const loaded = doc.layout as WireframeLayout;
+              // Migrate legacy left-sidebar blocks into center
+              if (loaded.left?.length > 0) {
+                setLayout({ left: [], center: [...loaded.left.map((b: PlacedBlock) => ({ ...b, column: "center" as const })), ...loaded.center], right: loaded.right });
+              } else {
+                setLayout(loaded);
+              }
               if (doc.colorScheme) setColorScheme(doc.colorScheme);
               if (doc.pageBackground) setPageBackground(doc.pageBackground);
             }
@@ -540,7 +552,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
   /* ---------- Render ---------- */
 
-  const totalBlocks = layout.left.length + layout.center.length + layout.right.length;
+  const totalBlocks = layout.center.length + layout.right.length;
 
   return (
     <>
@@ -625,7 +637,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
         {/* Wireframe Grid */}
         <div className="flex gap-3 min-h-[600px]">
-          {(["left", "center", "right"] as const).map((column) => (
+          {(["center", "right"] as const).map((column) => (
             <div
               key={column}
               className={`${COLUMN_WIDTHS[column]} flex flex-col`}
@@ -679,9 +691,9 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
                         {/* Touch-friendly move controls — visible when selected */}
                         {selectedBlockId === block.instanceId && (
                           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5 rounded-full border border-zinc-700 bg-zinc-900 px-1 py-0.5 shadow-lg z-10">
-                            {column !== "left" && (
+                            {column === "right" && (
                               <button
-                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, column === "right" ? "center" : "left"); }}
+                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, "center"); }}
                                 className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                 title="Move left"
                               >
@@ -702,9 +714,9 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
                             >
                               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                             </button>
-                            {column !== "right" && (
+                            {column === "center" && (
                               <button
-                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, column === "left" ? "center" : "right"); }}
+                                onClick={(e) => { e.stopPropagation(); moveBlockToColumn(block.instanceId, "right"); }}
                                 className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                 title="Move right"
                               >

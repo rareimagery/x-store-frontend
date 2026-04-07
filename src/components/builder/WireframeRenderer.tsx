@@ -1,5 +1,5 @@
 import type { PlacedBlock, WireframeLayout } from "./WireframeBuilder";
-import type { CreatorProfile, Product } from "@/lib/drupal";
+import type { CreatorProfile, Product, TopFollower } from "@/lib/drupal";
 import DonationCampaignCard from "@/components/DonationCampaign";
 import type { DonationCampaign } from "@/app/api/donations/route";
 import StorePlayer from "@/components/StorePlayer";
@@ -728,6 +728,64 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
 }
 
 /* ------------------------------------------------------------------ */
+/*  Top Followers                                                      */
+/* ------------------------------------------------------------------ */
+
+function formatFollowerCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+function TopFollowersBlock({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+  const heading = block.props.heading;
+  const maxItems = Number(block.props.max_items) || 8;
+  const followers = (profile.top_followers || []).slice(0, maxItems);
+
+  if (followers.length === 0) return <StillBuilding label="Top Followers" />;
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-white mb-3">{heading ? String(heading) : "Top Followers"}</h3>
+      <div className="space-y-2">
+        {followers.map((f: TopFollower, i: number) => (
+          <a
+            key={f.username || i}
+            href={`https://x.com/${f.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
+          >
+            {f.profile_image_url ? (
+              <img
+                src={f.profile_image_url}
+                alt={f.display_name}
+                className="h-10 w-10 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-indigo-600/20 flex items-center justify-center text-sm font-bold wf-accent shrink-0">
+                {f.display_name?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium text-white truncate">{f.display_name}</span>
+                {f.verified && (
+                  <svg className="h-3.5 w-3.5 shrink-0 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" />
+                  </svg>
+                )}
+              </div>
+              <p className="text-xs wf-muted truncate">@{f.username} · {formatFollowerCount(f.follower_count)} followers</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Block Router                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -773,6 +831,7 @@ function RenderBlock({
     case "grok_gallery": return <GrokGalleryBlock block={block} gallery={grokGallery} creatorUsername={profile.x_username} />;
     case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
+    case "top_followers": return <TopFollowersBlock block={block} profile={profile} />;
     default:
       return (
         <div className="rounded-xl border wf-card p-4 text-xs wf-muted">
@@ -790,7 +849,7 @@ import { COLOR_SCHEMES } from "@/lib/color-schemes";
 
 export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme, pageBackground }: WireframeRendererProps) {
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
-  const hasLeft = layout.left.length > 0;
+  const hasLeft = false; // Left sidebar removed — 2-column layout only
   const hasRight = layout.right.length > 0;
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
@@ -950,15 +1009,11 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           colors={colors}
         >
           <div className="mt-6 pb-12 flex gap-6 wf-columns">
-            {hasLeft && (
-              <div className="w-1/4 space-y-4 wf-col-left">
-                {layout.left.map((block) => (
-                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
-                ))}
-              </div>
-            )}
-
-            <div className={`space-y-4 wf-col-center ${hasLeft && hasRight ? "w-1/2" : hasLeft || hasRight ? "w-3/4" : "w-full"}`}>
+            <div className={`space-y-4 wf-col-center ${hasRight ? "w-3/4" : "w-full"}`}>
+              {/* Render any legacy left-sidebar blocks merged into center */}
+              {layout.left.map((block) => (
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+              ))}
               {layout.center.map((block) => (
                 <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
               ))}

@@ -113,7 +113,16 @@ const BLOCK_CATALOG: BlockComponentDef[] = [
     label: "My Favorites",
     description: "Show your favorite X creators with their profile and bio",
     icon: "M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z",
-    defaultColumn: "left",
+    defaultColumn: "right",
+    defaultSpan: 3,
+  },
+  {
+    id: "top_followers",
+    type: "top_followers",
+    label: "Top Followers",
+    description: "Notable accounts that follow you, auto-filled from X",
+    icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z",
+    defaultColumn: "right",
     defaultSpan: 3,
   },
 ];
