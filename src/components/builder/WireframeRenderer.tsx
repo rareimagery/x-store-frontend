@@ -697,7 +697,7 @@ function MyFavorites({ block, favorites, creatorUsername, compact = false }: { b
           href={`/${creatorUsername}/favorites`}
           className="mt-3 block text-center text-xs wf-accent hover:text-indigo-300"
         >
-          View all {favorites.length} favorites &rarr;
+          View All Favorites &rarr;
         </a>
       )}
     </div>
