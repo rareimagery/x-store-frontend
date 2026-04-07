@@ -3,9 +3,12 @@ import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { getStorePrintfulKey } from "@/lib/printful";
 
+export const maxDuration = 120;
+
 /**
  * POST /api/printful/import
- * Import existing Printful products into Drupal Commerce as clothing products.
+ * Import existing Printful products into Drupal Commerce with proper
+ * color/size attributes, pricing, descriptions, and images.
  * Body: { storeId: string }
  */
 export async function POST(req: NextRequest) {
@@ -25,7 +28,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Fetch all products from Printful
+    // 1. Load Drupal color + size attribute values for mapping
+    const colorMap = await loadAttributeMap("color");
+    const sizeMap = await loadAttributeMap("size");
+    const writeHeaders = await drupalWriteHeaders();
+
+    // 2. Fetch all products from Printful
     const pfRes = await fetch("https://api.printful.com/store/products", {
       headers: { Authorization: `Bearer ${printfulKey}` },
     });
@@ -33,27 +41,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch Printful products" }, { status: 502 });
     }
 
-    const pfData = await pfRes.json();
-    const pfProducts = pfData.result || [];
-
+    const pfProducts = (await pfRes.json()).result || [];
     let imported = 0;
     let skipped = 0;
+    const errors: string[] = [];
 
     for (const pf of pfProducts) {
-      // Check if already imported (by printful ID in product title or sku)
-      const checkRes = await fetch(
-        `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing?filter[title]=${encodeURIComponent(pf.name)}&filter[stores.id]=${storeId}&page[limit]=1`,
-        { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
-      );
-      if (checkRes.ok) {
-        const checkData = await checkRes.json();
-        if (checkData.data?.length > 0) {
-          skipped++;
-          continue;
+      // Check if already imported
+      try {
+        const checkRes = await fetch(
+          `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing?filter[field_printful_product_id]=${pf.id}&page[limit]=1`,
+          { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+        );
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData.data?.length > 0) { skipped++; continue; }
         }
-      }
+      } catch {}
 
-      // Fetch product details + variants from Printful
+      // Fetch full product detail from Printful
       const detailRes = await fetch(
         `https://api.printful.com/store/products/${pf.id}`,
         { headers: { Authorization: `Bearer ${printfulKey}` } }
@@ -62,23 +68,39 @@ export async function POST(req: NextRequest) {
 
       const detail = await detailRes.json();
       const syncProduct = detail.result?.sync_product;
-      const syncVariants = detail.result?.sync_variants || [];
-      if (!syncProduct) continue;
+      const syncVariants: any[] = detail.result?.sync_variants || [];
+      if (!syncProduct || syncVariants.length === 0) continue;
 
-      // Determine variation bundle from Printful product info
-      const productName = (syncProduct.name || "").toLowerCase();
+      // Determine variation bundle
+      const nameLower = (syncProduct.name || "").toLowerCase();
       let variationBundle = "t_shirt";
-      if (productName.includes("hoodie") || productName.includes("sweatshirt")) {
+      if (nameLower.includes("hoodie") || nameLower.includes("sweatshirt") || nameLower.includes("crewneck")) {
         variationBundle = "hoodie";
-      } else if (productName.includes("cap") || productName.includes("hat") || productName.includes("beanie")) {
+      } else if (nameLower.includes("cap") || nameLower.includes("hat") || nameLower.includes("beanie")) {
         variationBundle = "ballcap";
       }
 
-      // Create variations in Drupal
+      // 3. Create variations with color/size attributes
       const variationIds: string[] = [];
-      const writeHeaders = await drupalWriteHeaders();
 
       for (const sv of syncVariants) {
+        if (sv.is_ignored) continue;
+
+        // Resolve color + size attribute value UUIDs
+        const colorName = sv.color || "";
+        const sizeName = sv.size || "";
+
+        const colorUuid = colorName ? await resolveOrCreateAttribute("color", colorName, colorMap, writeHeaders) : null;
+        const sizeUuid = sizeName ? await resolveOrCreateAttribute("size", sizeName, sizeMap, writeHeaders) : null;
+
+        const relationships: Record<string, any> = {};
+        if (colorUuid) {
+          relationships.attribute_color = { data: { type: "commerce_product_attribute_value--color", id: colorUuid } };
+        }
+        if (sizeUuid) {
+          relationships.attribute_size = { data: { type: "commerce_product_attribute_value--size", id: sizeUuid } };
+        }
+
         try {
           const varRes = await fetch(
             `${DRUPAL_API_URL}/jsonapi/commerce_product_variation/${variationBundle}`,
@@ -90,12 +112,15 @@ export async function POST(req: NextRequest) {
                   type: `commerce_product_variation--${variationBundle}`,
                   attributes: {
                     sku: `pf-${sv.id}`,
+                    title: sv.name || syncProduct.name,
                     price: {
                       number: sv.retail_price || "29.99",
                       currency_code: sv.currency || "USD",
                     },
                     field_printful_variant_id: String(sv.id),
+                    status: true,
                   },
+                  relationships,
                 },
               }),
             }
@@ -103,39 +128,21 @@ export async function POST(req: NextRequest) {
           if (varRes.ok) {
             const varData = await varRes.json();
             variationIds.push(varData.data.id);
+          } else {
+            const errText = await varRes.text().catch(() => "");
+            console.error(`[printful-import] Variation create failed for ${sv.name}:`, varRes.status, errText.slice(0, 200));
           }
-        } catch {
-          // Skip failed variations
+        } catch (err: any) {
+          console.error(`[printful-import] Variation error:`, err.message);
         }
       }
 
       if (variationIds.length === 0) {
-        // Create at least one default variation
-        try {
-          const defVarRes = await fetch(
-            `${DRUPAL_API_URL}/jsonapi/commerce_product_variation/${variationBundle}`,
-            {
-              method: "POST",
-              headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
-              body: JSON.stringify({
-                data: {
-                  type: `commerce_product_variation--${variationBundle}`,
-                  attributes: {
-                    sku: `pf-${syncProduct.id}-default`,
-                    price: { number: "29.99", currency_code: "USD" },
-                  },
-                },
-              }),
-            }
-          );
-          if (defVarRes.ok) {
-            const defData = await defVarRes.json();
-            variationIds.push(defData.data.id);
-          }
-        } catch {}
+        errors.push(`${syncProduct.name}: no variations created`);
+        continue;
       }
 
-      // Create the product
+      // 4. Create the product with description
       try {
         const prodRes = await fetch(
           `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing`,
@@ -147,8 +154,13 @@ export async function POST(req: NextRequest) {
                 type: "commerce_product--clothing",
                 attributes: {
                   title: syncProduct.name,
-                  status: true,
+                  body: {
+                    value: `${syncProduct.name} — Premium print-on-demand product fulfilled by Printful. Available in ${new Set(syncVariants.map((v: any) => v.color).filter(Boolean)).size} colors and ${new Set(syncVariants.map((v: any) => v.size).filter(Boolean)).size} sizes.`,
+                    format: "basic_html",
+                  },
                   field_printful_product_id: String(syncProduct.id),
+                  field_product_image_url: pf.thumbnail_url || "",
+                  status: true,
                 },
                 relationships: {
                   stores: { data: [{ type: "commerce_store--online", id: storeId }] },
@@ -166,15 +178,26 @@ export async function POST(req: NextRequest) {
 
         if (prodRes.ok) {
           imported++;
+          const prodData = await prodRes.json();
 
-          // Upload thumbnail if available
+          // 5. Upload product images (thumbnail + preview mockup)
+          const imagesToUpload: { url: string; name: string }[] = [];
           const thumbUrl = pf.thumbnail_url || syncProduct.thumbnail_url;
-          if (thumbUrl) {
+          if (thumbUrl) imagesToUpload.push({ url: thumbUrl, name: `printful-${syncProduct.id}-thumb` });
+
+          // Get preview mockup from first variant's files
+          const previewFile = syncVariants[0]?.files?.find((f: any) => f.type === "preview");
+          if (previewFile?.preview_url) {
+            imagesToUpload.push({ url: previewFile.preview_url, name: `printful-${syncProduct.id}-preview` });
+          }
+
+          for (const img of imagesToUpload) {
             try {
-              const prodData = await prodRes.json();
-              const imgRes = await fetch(thumbUrl);
+              const imgRes = await fetch(img.url);
               if (imgRes.ok) {
                 const buffer = Buffer.from(await imgRes.arrayBuffer());
+                const ct = imgRes.headers.get("content-type") || "image/png";
+                const ext = ct.includes("png") ? "png" : "jpg";
                 await fetch(
                   `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing/${prodData.data.id}/field_images`,
                   {
@@ -182,7 +205,7 @@ export async function POST(req: NextRequest) {
                     headers: {
                       ...writeHeaders,
                       "Content-Type": "application/octet-stream",
-                      "Content-Disposition": `file; filename="printful-${syncProduct.id}.jpg"`,
+                      "Content-Disposition": `file; filename="${img.name}.${ext}"`,
                     },
                     body: buffer,
                   }
@@ -190,13 +213,85 @@ export async function POST(req: NextRequest) {
               }
             } catch {}
           }
+        } else {
+          const errText = await prodRes.text().catch(() => "");
+          errors.push(`${syncProduct.name}: product create failed (${prodRes.status})`);
+          console.error(`[printful-import] Product create failed:`, errText.slice(0, 300));
         }
-      } catch {}
+      } catch (err: any) {
+        errors.push(`${syncProduct.name}: ${err.message}`);
+      }
     }
 
-    return NextResponse.json({ imported, skipped, total: pfProducts.length });
+    return NextResponse.json({
+      imported,
+      skipped,
+      total: pfProducts.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
   } catch (err: any) {
     console.error("[printful-import]", err);
     return NextResponse.json({ error: err.message || "Import failed" }, { status: 500 });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Attribute helpers
+// ---------------------------------------------------------------------------
+
+/** Load all values for a Commerce attribute into a name→UUID map */
+async function loadAttributeMap(attribute: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    const res = await fetch(
+      `${DRUPAL_API_URL}/jsonapi/commerce_product_attribute_value/${attribute}?page[limit]=100`,
+      { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      for (const item of data.data || []) {
+        const name = item.attributes?.name;
+        if (name) map.set(name.toLowerCase(), item.id);
+      }
+    }
+  } catch {}
+  return map;
+}
+
+/** Resolve an attribute value UUID by name, creating it if needed */
+async function resolveOrCreateAttribute(
+  attribute: string,
+  name: string,
+  map: Map<string, string>,
+  writeHeaders: Record<string, string>
+): Promise<string | null> {
+  const existing = map.get(name.toLowerCase());
+  if (existing) return existing;
+
+  // Create the attribute value
+  try {
+    const res = await fetch(
+      `${DRUPAL_API_URL}/jsonapi/commerce_product_attribute_value/${attribute}`,
+      {
+        method: "POST",
+        headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+        body: JSON.stringify({
+          data: {
+            type: `commerce_product_attribute_value--${attribute}`,
+            attributes: { name },
+          },
+        }),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const uuid = data.data?.id;
+      if (uuid) {
+        map.set(name.toLowerCase(), uuid);
+        return uuid;
+      }
+    }
+  } catch {}
+
+  return null;
 }
