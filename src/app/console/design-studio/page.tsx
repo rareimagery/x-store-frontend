@@ -60,6 +60,7 @@ export default function DesignStudioPage() {
   // Printful import
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [showTokenHelp, setShowTokenHelp] = useState(false);
 
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
@@ -665,7 +666,7 @@ export default function DesignStudioPage() {
                 value={printfulKey}
                 onChange={(e) => setPrintfulKey(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && connectPrintful()}
-                placeholder="Paste your Printful API key..."
+                placeholder="Paste your Printful Private Token..."
                 className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
               />
               <button
@@ -677,15 +678,91 @@ export default function DesignStudioPage() {
               </button>
             </div>
             {connectError && <p className="text-xs text-red-400">{connectError}</p>}
-            <p className="text-[10px] text-zinc-600">
-              Get your API key from{" "}
-              <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
-                Printful Dashboard &rarr; Settings &rarr; API
-              </a>
-            </p>
+            <button
+              onClick={() => setShowTokenHelp(true)}
+              className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
+              How to find your token
+            </button>
           </div>
+
         )}
       </div>
+
+      {showTokenHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTokenHelp(false)}>
+          <div className="relative mx-4 w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowTokenHelp(false)}
+              className="absolute top-3 right-3 text-zinc-500 hover:text-white transition"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <h3 className="text-lg font-bold text-white mb-4">Find Your Printful Token</h3>
+
+            <ol className="space-y-4 text-sm text-zinc-300">
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span>
+                <div>
+                  <p className="font-medium text-white">Go to Printful Settings</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Log in to{" "}
+                    <a href="https://www.printful.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">printful.com/dashboard</a>
+                    {" "}and click <strong>Settings</strong> in the left sidebar.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span>
+                <div>
+                  <p className="font-medium text-white">Open the API tab</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Click <strong>API</strong> in the settings menu, or go directly to{" "}
+                    <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Settings &rarr; API</a>.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">3</span>
+                <div>
+                  <p className="font-medium text-white">Create a Private Token</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Click <strong>&quot;Create token&quot;</strong>, give it a name (e.g. &quot;RareImagery&quot;), and <strong>select all scopes</strong> so we can read your products and create orders.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">4</span>
+                <div>
+                  <p className="font-medium text-white">Copy and paste it here</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Copy the token and paste it into the field above. Your products will be automatically imported.
+                  </p>
+                </div>
+              </li>
+            </ol>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <a
+                href="https://www.printful.com/dashboard/developer/api"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-500 transition"
+              >
+                Open Printful API Settings
+              </a>
+              <button
+                onClick={() => setShowTokenHelp(false)}
+                className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white transition"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Store Products */}
       <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
@@ -715,7 +792,6 @@ export default function DesignStudioPage() {
                 )}
                 <div className="p-2">
                   <p className="text-xs font-medium text-white truncate">{p.title}</p>
-                  <p className="text-xs text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
                 </div>
               </a>
             ))}
