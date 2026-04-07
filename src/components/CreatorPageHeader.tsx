@@ -16,7 +16,7 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
     { id: "store", label: "Store", href: `/${handle}/store` },
     { id: "favorites", label: "Favorites", href: `/${handle}/favorites` },
     { id: "gallery", label: "Gallery", href: `/${handle}/gallery` },
-    { id: "articles", label: "Articles", href: `https://x.com/${handle}/articles`, external: true },
+    { id: "articles", label: "Articles", href: `/${handle}/articles` },
   ];
 
   return (

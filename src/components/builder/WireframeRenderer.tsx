@@ -931,6 +931,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             { href: `/${profile.x_username}/store`, label: "Store" },
             { href: `/${profile.x_username}/favorites`, label: "Favorites" },
             { href: `/${profile.x_username}/gallery`, label: "Gallery" },
+            { href: `/${profile.x_username}/articles`, label: "Articles" },
           ].map((link) => (
             <a
               key={link.label}
@@ -944,15 +945,6 @@ export default function WireframeRenderer({ layout, profile, products, favorites
               {link.label}
             </a>
           ))}
-          <a
-            href={`https://x.com/${profile.x_username}/articles`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition"
-            style={{ color: colors.textMuted }}
-          >
-            Articles
-          </a>
 
           {/* Share on X */}
           <a
