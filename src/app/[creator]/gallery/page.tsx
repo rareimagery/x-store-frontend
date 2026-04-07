@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorProfile, DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import ThemedPage from "@/components/ThemedPage";
+import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -49,9 +51,10 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
   const normalized = creator.toLowerCase();
   if (RESERVED.has(normalized)) notFound();
 
-  const [profile, gallery] = await Promise.all([
+  const [profile, gallery, theme] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getGallery(normalized),
+    getStoreTheme(normalized),
   ]);
 
   if (!profile) notFound();
@@ -60,7 +63,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
   const videos = gallery.filter((g) => g.type === "video");
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <CreatorPageHeader profile={profile} activePage="gallery" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -153,6 +156,6 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
           </Link>
         </div>
       </div>
-    </div>
+    </ThemedPage>
   );
 }

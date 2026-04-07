@@ -3,6 +3,8 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import DonationCampaignCard, { DonorWall } from "@/components/DonationCampaign";
+import ThemedPage from "@/components/ThemedPage";
+import { getStoreTheme } from "@/lib/storeTheme";
 import type { DonationCampaign } from "@/app/api/donations/route";
 
 const RESERVED = new Set([
@@ -38,7 +40,10 @@ export default async function DonatePage({
   const normalized = creator.toLowerCase();
   if (RESERVED.has(normalized)) notFound();
 
-  const profile = await getCreatorProfile(normalized, { noStore: true });
+  const [profile, theme] = await Promise.all([
+    getCreatorProfile(normalized, { noStore: true }),
+    getStoreTheme(normalized),
+  ]);
   if (!profile) notFound();
 
   // Fetch campaigns from API
@@ -59,7 +64,7 @@ export default async function DonatePage({
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900/50">
         <div className="mx-auto max-w-3xl px-4 py-6">
@@ -122,6 +127,6 @@ export default async function DonatePage({
           </Link>
         </div>
       </div>
-    </div>
+    </ThemedPage>
   );
 }

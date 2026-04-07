@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import ThemedPage from "@/components/ThemedPage";
+import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -58,15 +60,16 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
   const normalized = creator.toLowerCase();
   if (RESERVED.has(normalized)) notFound();
 
-  const [profile, articles] = await Promise.all([
+  const [profile, articles, theme] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getArticles(normalized),
+    getStoreTheme(normalized),
   ]);
 
   if (!profile) notFound();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <CreatorPageHeader profile={profile} activePage="articles" />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
@@ -119,6 +122,6 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
           </div>
         )}
       </div>
-    </div>
+    </ThemedPage>
   );
 }

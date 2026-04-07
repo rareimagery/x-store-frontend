@@ -9,6 +9,8 @@ import {
 } from "@/lib/drupal";
 import BuilderGate from "@/components/builder/BuilderGate";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import ThemedPage from "@/components/ThemedPage";
+import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -57,9 +59,10 @@ export default async function CreatorStorePage({
     notFound();
   }
 
-  const [profile, products] = await Promise.all([
+  const [profile, products, theme] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
+    getStoreTheme(normalized),
   ]);
 
   if (!profile) {
@@ -83,10 +86,9 @@ export default async function CreatorStorePage({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <CreatorPageHeader profile={profile} activePage="store" />
 
-      {/* Product grid */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">{products.length} {products.length === 1 ? "Product" : "Products"}</h2>
@@ -105,7 +107,7 @@ export default async function CreatorStorePage({
               <Link
                 key={product.id}
                 href={`/products/${productSlug(product.title)}` as Route}
-                className="group rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-600"
+                className="group rounded-xl border wf-card overflow-hidden transition hover:border-zinc-600"
               >
                 {product.image_url ? (
                   <div className="aspect-square overflow-hidden">
@@ -116,18 +118,18 @@ export default async function CreatorStorePage({
                     />
                   </div>
                 ) : (
-                  <div className="aspect-square flex items-center justify-center bg-zinc-800">
+                  <div className="aspect-square flex items-center justify-center wf-card">
                     <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                   </div>
                 )}
                 <div className="p-4">
-                  <h3 className="text-sm font-medium text-white truncate">{product.title}</h3>
+                  <h3 className="text-sm font-medium truncate">{product.title}</h3>
                   {product.description && (
-                    <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{product.description}</p>
+                    <p className="mt-1 text-xs wf-muted line-clamp-2">{product.description}</p>
                   )}
-                  <p className="mt-2 text-sm font-semibold text-indigo-400">${parseFloat(product.price).toFixed(2)}</p>
+                  <p className="mt-2 text-sm font-semibold wf-accent">${parseFloat(product.price).toFixed(2)}</p>
                 </div>
               </Link>
             ))}
@@ -136,6 +138,6 @@ export default async function CreatorStorePage({
       </div>
 
       <BuilderGate storeSlug={normalized} />
-    </div>
+    </ThemedPage>
   );
 }

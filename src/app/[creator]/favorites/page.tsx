@@ -3,6 +3,8 @@ import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
 import FavoritesGrid from "@/components/FavoritesGrid";
+import ThemedPage from "@/components/ThemedPage";
+import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -53,9 +55,10 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
   const normalized = creator.toLowerCase();
   if (RESERVED.has(normalized)) notFound();
 
-  const [profile, favorites] = await Promise.all([
+  const [profile, favorites, theme] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getFavorites(normalized),
+    getStoreTheme(normalized),
   ]);
 
   if (!profile) notFound();
@@ -69,7 +72,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <CreatorPageHeader profile={profile} activePage="favorites" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -83,6 +86,6 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
           />
         )}
       </div>
-    </div>
+    </ThemedPage>
   );
 }
