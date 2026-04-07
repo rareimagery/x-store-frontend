@@ -663,7 +663,7 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="space-y-2">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((fav) => (
           <FavoriteCard key={fav.username} fav={fav} />
         ))}
@@ -700,7 +700,7 @@ function TopFollowersBlock({ block, profile }: { block: PlacedBlock; profile: Cr
   return (
     <div>
       <h3 className="text-lg font-semibold text-white mb-3">{heading ? String(heading) : "Top Followers"}</h3>
-      <div className="space-y-2">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {followers.map((f: TopFollower, i: number) => (
           <a
             key={f.username || i}
