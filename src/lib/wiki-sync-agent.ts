@@ -171,12 +171,64 @@ export async function runWikiSyncAgent(): Promise<WikiSyncReport> {
       changes.push("Saved updated guide content to Drupal");
     }
 
+    // ── Also sync admin wiki at /admin/wiki ──
+    let adminWikiUpdates = 0;
+    try {
+      const ADMIN_WIKI_TITLE = "__rareimagery_admin_wiki__";
+      const wikiRes = await fetch(
+        `${DRUPAL_API_URL}/jsonapi/node/page?filter[title]=${encodeURIComponent(ADMIN_WIKI_TITLE)}&page[limit]=1`,
+        { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+      );
+      if (wikiRes.ok) {
+        const wikiJson = await wikiRes.json();
+        const wikiNode = wikiJson.data?.[0];
+        if (wikiNode) {
+          const wikiBody = wikiNode.attributes?.body?.value || "[]";
+          let wikiSections: Array<{ id: string; title: string; content: string }> = [];
+          try { wikiSections = JSON.parse(wikiBody); } catch {}
+
+          if (Array.isArray(wikiSections) && wikiSections.length > 0) {
+            let wikiChanged = false;
+            for (const section of wikiSections) {
+              let fixed = section.content;
+              for (const { pattern, fix, label } of stalePatterns) {
+                if (pattern.test(fixed)) {
+                  fixed = fixed.replace(pattern, fix);
+                  changes.push(`[admin-wiki] Fixed stale "${label}" in "${section.title}"`);
+                  adminWikiUpdates++;
+                  wikiChanged = true;
+                }
+                pattern.lastIndex = 0;
+              }
+              section.content = fixed;
+            }
+
+            if (wikiChanged) {
+              const wh = await drupalWriteHeaders();
+              await fetch(`${DRUPAL_API_URL}/jsonapi/node/page/${wikiNode.id}`, {
+                method: "PATCH",
+                headers: { ...wh, "Content-Type": "application/vnd.api+json" },
+                body: JSON.stringify({
+                  data: { type: "node--page", id: wikiNode.id, attributes: { body: { value: JSON.stringify(wikiSections), format: "plain_text" } } },
+                }),
+              });
+              changes.push(`Saved ${adminWikiUpdates} fix(es) to admin wiki`);
+            }
+          }
+        }
+      }
+    } catch (wikiErr: any) {
+      changes.push(`[admin-wiki] Sync error: ${wikiErr?.message || "Unknown"}`);
+    }
+
+    updatesApplied += adminWikiUpdates;
+
     return {
       timestamp: new Date().toISOString(),
       durationMs: Date.now() - startTime,
-      sectionsChecked: Object.keys(current).length,
+      sectionsChecked: Object.keys(current).length + (adminWikiUpdates > 0 ? 1 : 0),
       updatesApplied,
-      changes: changes.length > 0 ? changes : ["No changes needed — guide is current"],
+      changes: changes.length > 0 ? changes : ["No changes needed — both wikis are current"],
       status: updatesApplied > 0 ? "updated" : "synced",
     };
   } catch (err: any) {
