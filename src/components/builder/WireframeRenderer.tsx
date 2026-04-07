@@ -652,8 +652,8 @@ function FavoriteCard({ fav }: { fav: FavoriteCreator }) {
 }
 
 function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
-  const maxItems = Math.min(Number(block.props.max_items) || 10, 10);
   const heading = block.props.heading;
+  const shown = favorites.slice(0, 5);
 
   if (favorites.length === 0) {
     return (
@@ -664,58 +664,15 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
     );
   }
 
-  // Group by tags
-  const tagGroups: Record<string, FavoriteCreator[]> = {};
-  const untagged: FavoriteCreator[] = [];
-  for (const fav of favorites) {
-    if (!fav.tags || fav.tags.length === 0) {
-      untagged.push(fav);
-    } else {
-      for (const tag of fav.tags) {
-        if (!tagGroups[tag]) tagGroups[tag] = [];
-        tagGroups[tag].push(fav);
-      }
-    }
-  }
-
-  const hasGroups = Object.keys(tagGroups).length > 0;
-
   return (
     <div>
       {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-
-      {hasGroups ? (
-        <div className="space-y-4">
-          {Object.entries(tagGroups).map(([tag, members]) => (
-            <div key={tag}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider wf-accent mb-2">{tag}</p>
-              <div className="space-y-1.5">
-                {members.slice(0, maxItems).map((fav) => (
-                  <FavoriteCard key={fav.username} fav={fav} />
-                ))}
-              </div>
-            </div>
-          ))}
-          {untagged.length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider wf-muted mb-2">Other</p>
-              <div className="space-y-1.5">
-                {untagged.slice(0, maxItems).map((fav) => (
-                  <FavoriteCard key={fav.username} fav={fav} />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {favorites.slice(0, maxItems).map((fav) => (
-            <FavoriteCard key={fav.username} fav={fav} />
-          ))}
-        </div>
-      )}
-
-      {favorites.length > maxItems && (
+      <div className="space-y-2">
+        {shown.map((fav) => (
+          <FavoriteCard key={fav.username} fav={fav} />
+        ))}
+      </div>
+      {favorites.length > 5 && (
         <a
           href={`/${creatorUsername}/favorites`}
           className="mt-3 block text-center text-xs wf-accent hover:text-indigo-300"
