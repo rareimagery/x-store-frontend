@@ -946,13 +946,20 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             </a>
           ))}
 
-          {/* Open Your Store */}
+          {/* Open Your Store + Here's How */}
           <a
-            href="/howto"
-            className="shrink-0 ml-auto rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
-            style={{ borderColor: colors.accent, color: colors.accent }}
+            href="/login"
+            className="shrink-0 ml-auto rounded-lg px-3 py-2 text-sm font-medium transition hover:opacity-90"
+            style={{ backgroundColor: colors.accent, color: "#fff" }}
           >
             Open Your Store
+          </a>
+          <a
+            href="/howto"
+            className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
+            style={{ borderColor: colors.accent, color: colors.accent }}
+          >
+            Here&apos;s How
           </a>
 
           {/* Share on X */}
