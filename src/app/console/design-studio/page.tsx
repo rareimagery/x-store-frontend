@@ -57,6 +57,10 @@ export default function DesignStudioPage() {
   const [xHandle, setXHandle] = useState("");
   const [xLooking, setXLooking] = useState(false);
 
+  // Printful import
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -609,9 +613,47 @@ export default function DesignStudioPage() {
         </div>
 
         {printfulConnected ? (
-          <p className="text-xs text-zinc-500">
-            Printful is connected. Designs you publish will auto-sync for print-on-demand fulfillment.
-          </p>
+          <div className="space-y-3">
+            <p className="text-xs text-zinc-500">
+              Printful is connected. Designs you publish will auto-sync for print-on-demand fulfillment.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  if (!storeUuid) return;
+                  setSyncing(true);
+                  setSyncResult(null);
+                  try {
+                    const res = await fetch("/api/printful/import", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ storeId: storeUuid }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setSyncResult(`Imported ${data.imported} product${data.imported !== 1 ? "s" : ""} (${data.skipped} already existed)`);
+                      // Reload products
+                      fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`)
+                        .then((r) => r.json())
+                        .then((d) => setStoreProducts(Array.isArray(d.products ?? d) ? (d.products ?? d) : []))
+                        .catch(() => {});
+                    } else {
+                      setSyncResult(data.error || "Import failed");
+                    }
+                  } catch {
+                    setSyncResult("Import failed");
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+                disabled={syncing}
+                className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-indigo-500 hover:text-white disabled:opacity-50 transition"
+              >
+                {syncing ? "Importing..." : "Import Products from Printful"}
+              </button>
+              {syncResult && <span className="text-xs text-zinc-400">{syncResult}</span>}
+            </div>
+          </div>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-zinc-500">
