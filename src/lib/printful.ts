@@ -752,9 +752,20 @@ export async function getFile(
 // Store Info API (auth required)
 // ---------------------------------------------------------------------------
 
-export async function getStoreInfo(apiKey: string): Promise<unknown> {
-  const res = await printfulFetch<unknown>("/store", apiKey);
-  return res.result;
+export async function getStoreInfo(apiKey: string): Promise<{ id?: string; name?: string }> {
+  // Try /store first (legacy API keys), fall back to /store/products
+  // for Private Tokens which lack the stores_list/read scope
+  try {
+    const res = await printfulFetch<{ id?: number; name?: string }>("/store", apiKey);
+    return { id: String(res.result?.id ?? ""), name: res.result?.name ?? "Printful Store" };
+  } catch {
+    // Validate token by hitting /store/products instead
+    const res = await printfulFetch<unknown[]>("/store/products?limit=1", apiKey);
+    if (res.code === 200) {
+      return { id: "", name: "Printful Store (Private Token)" };
+    }
+    throw new PrintfulApiError(401, "invalid_token", "Token could not be validated");
+  }
 }
 
 export async function updatePackingSlip(
