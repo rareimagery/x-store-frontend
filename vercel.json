@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/code-audit",
-      "schedule": "0 */8 * * *"
+      "schedule": "0 */6 * * *"
     }
   ],
   "headers": [
