@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useConsole } from "@/components/ConsoleContext";
-import CostTracker from "@/components/CostTracker";
+
 import { resolveTemplateId } from "@/templates/catalog";
 import { getTemplateDefinition } from "@/templates/registry";
 
@@ -248,10 +248,6 @@ export default function ConsoleDashboard() {
             Tap a component, then tap a column to place it. Rearrange, customize, and hit Save &amp; Publish.
           </p>
         </div>
-      )}
-
-      {xUsername && (
-        <CostTracker sellerHandle={xUsername} />
       )}
 
       {isAdmin && (
