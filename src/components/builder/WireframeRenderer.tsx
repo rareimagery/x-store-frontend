@@ -11,6 +11,8 @@ export interface FavoriteCreator {
   bio: string;
   profile_image_url: string | null;
   follower_count: number;
+  following_count?: number;
+  location?: string;
   verified: boolean;
   tags?: string[];
 }
@@ -614,37 +616,55 @@ function XCommunitiesBlock({ block, communities }: { block: PlacedBlock; communi
   );
 }
 
+function formatCompactCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
 function FavoriteCard({ fav }: { fav: FavoriteCreator }) {
   return (
     <a
       href={`https://x.com/${fav.username}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-start gap-3 rounded-xl border wf-card p-3 transition hover:border-zinc-600"
+      className="block rounded-xl border wf-card p-3 transition hover:border-zinc-600"
     >
-      {fav.profile_image_url ? (
-        <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold wf-accent shrink-0">
-          {fav.display_name?.[0]?.toUpperCase() || "?"}
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-white truncate">{fav.display_name}</p>
-          {fav.verified && (
-            <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
-        </div>
-        <p className="text-[11px] wf-muted">@{fav.username}</p>
-        {fav.tags && fav.tags.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {fav.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] font-medium wf-accent">{tag}</span>
-            ))}
+      <div className="flex items-center gap-2.5 mb-2">
+        {fav.profile_image_url ? (
+          <img src={fav.profile_image_url} alt={`@${fav.username}`} className="h-10 w-10 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-xs font-bold wf-accent shrink-0">
+            {fav.display_name?.[0]?.toUpperCase() || "?"}
           </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-semibold text-white truncate">{fav.display_name}</p>
+            {fav.verified && (
+              <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" />
+              </svg>
+            )}
+          </div>
+          <p className="text-[11px] wf-muted">@{fav.username}</p>
+        </div>
+      </div>
+      {fav.bio && (
+        <p className="text-xs wf-muted leading-relaxed line-clamp-2 mb-2">{fav.bio}</p>
+      )}
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[10px] wf-muted">
+        {fav.location && (
+          <span className="flex items-center gap-1">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+            {fav.location}
+          </span>
+        )}
+        {(fav.following_count ?? 0) > 0 && (
+          <span><strong className="text-white">{formatCompactCount(fav.following_count!)}</strong> Following</span>
+        )}
+        {fav.follower_count > 0 && (
+          <span><strong className="text-white">{formatCompactCount(fav.follower_count)}</strong> Followers</span>
         )}
       </div>
     </a>
@@ -667,7 +687,7 @@ function MyFavorites({ block, favorites, creatorUsername, compact = false }: { b
   return (
     <div>
       {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
-      <div className={compact ? "grid gap-2 grid-cols-2" : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}>
+      <div className={compact ? "space-y-3" : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}>
         {shown.map((fav) => (
           <FavoriteCard key={fav.username} fav={fav} />
         ))}

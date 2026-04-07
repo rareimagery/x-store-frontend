@@ -9,7 +9,7 @@ async function lookupViaX(username: string): Promise<any | null> {
   const bearerToken = process.env.X_API_BEARER_TOKEN;
   if (!bearerToken) return null;
 
-  const fields = "id,name,username,description,profile_image_url,public_metrics,verified_type";
+  const fields = "id,name,username,description,profile_image_url,public_metrics,verified_type,location";
   try {
     const res = await fetchWithRetry(
       `https://api.x.com/2/users/by/username/${encodeURIComponent(username)}?user.fields=${fields}`,
@@ -34,6 +34,8 @@ async function lookupViaX(username: string): Promise<any | null> {
       bio: user.description ?? "",
       profile_image_url: avatarUrl,
       follower_count: pm.followers_count ?? 0,
+      following_count: pm.following_count ?? 0,
+      location: user.location ?? "",
       verified: (user.verified_type ?? "none") !== "none",
     };
   } catch {
