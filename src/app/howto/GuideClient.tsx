@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 
 /* ------------------------------------------------------------------ */
 /*  Inline style block — mirrors the original HTML guide exactly      */
@@ -125,6 +126,16 @@ const GUIDE_CSS = `
 
   .g-footer-cta { margin-top: 3rem; padding: 1.5rem; background: var(--purple); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
+  .g-editable { outline: 2px dashed transparent; transition: outline 0.15s; border-radius: 4px; padding: 2px 4px; margin: -2px -4px; }
+  .g-editing .g-editable { outline: 2px dashed var(--purple-mid); cursor: text; }
+  .g-editing .g-editable:focus { outline: 2px solid var(--purple); background: rgba(123,45,142,0.05); }
+  .g-edit-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 50px; background: var(--purple); color: white; box-shadow: 0 8px 32px rgba(0,0,0,0.3); font-size: 13px; font-weight: 500; }
+  .g-edit-btn { padding: 6px 16px; border-radius: 20px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .g-edit-save { background: var(--gold); color: #1c1a18; }
+  .g-edit-save:hover { background: #e6c345; }
+  .g-edit-cancel { background: rgba(255,255,255,0.2); color: white; }
+  .g-edit-cancel:hover { background: rgba(255,255,255,0.3); }
+
   @media (max-width: 768px) {
     .g-sidebar { display: none; }
     .g-main { margin-left: 0; padding: 1.5rem 1rem; }
@@ -133,6 +144,34 @@ const GUIDE_CSS = `
 `;
 
 /* ------------------------------------------------------------------ */
+
+function EditableText({
+  id,
+  defaultText,
+  overrides,
+  editing,
+  tag: Tag = "span",
+  className,
+}: {
+  id: string;
+  defaultText: string;
+  overrides: Record<string, string>;
+  editing: boolean;
+  tag?: "span" | "p" | "div" | "h3";
+  className?: string;
+}) {
+  const text = overrides[id] ?? defaultText;
+  if (!editing) return <Tag className={className} dangerouslySetInnerHTML={{ __html: text }} />;
+  return (
+    <Tag
+      className={`g-editable ${className || ""}`}
+      contentEditable
+      suppressContentEditableWarning
+      data-field-id={id}
+      dangerouslySetInnerHTML={{ __html: text }}
+    />
+  );
+}
 
 function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
   return (
@@ -169,7 +208,51 @@ function Check({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export default function GuideClient() {
+  const { data: session } = useSession();
+  const isAdmin = (session as any)?.role === "admin";
   const sidebarRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load saved overrides
+  useEffect(() => {
+    fetch("/api/guide")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.content && typeof d.content === "object") setOverrides(d.content);
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const saveEdits = useCallback(async () => {
+    if (!mainRef.current) return;
+    setSaving(true);
+    // Collect all editable fields
+    const fields = mainRef.current.querySelectorAll<HTMLElement>("[data-field-id]");
+    const updated = { ...overrides };
+    fields.forEach((el) => {
+      const id = el.getAttribute("data-field-id");
+      const text = el.textContent?.trim() || "";
+      if (id && text) updated[id] = text;
+    });
+    try {
+      const res = await fetch("/api/guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: updated }),
+      });
+      if (res.ok) {
+        setOverrides(updated);
+        setEditing(false);
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  }, [overrides]);
 
   useEffect(() => {
     const links = sidebarRef.current?.querySelectorAll<HTMLElement>(".g-nav-link");
@@ -225,8 +308,29 @@ export default function GuideClient() {
   ];
 
   return (
-    <div className="g">
+    <div className={`g ${editing ? "g-editing" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GUIDE_CSS }} />
+
+      {/* Admin edit bar */}
+      {isAdmin && !editing && (
+        <button
+          onClick={() => setEditing(true)}
+          style={{ position: "fixed", top: 16, right: 16, zIndex: 200, padding: "8px 16px", borderRadius: 20, background: "var(--purple)", color: "white", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}
+        >
+          Edit Guide
+        </button>
+      )}
+      {editing && (
+        <div className="g-edit-bar">
+          <span>Editing guide</span>
+          <button className="g-edit-btn g-edit-save" onClick={saveEdits} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+          <button className="g-edit-btn g-edit-cancel" onClick={() => setEditing(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Sidebar */}
       <nav className="g-sidebar" ref={sidebarRef}>
@@ -261,12 +365,12 @@ export default function GuideClient() {
       </nav>
 
       {/* Main content */}
-      <main className="g-main">
+      <main className="g-main" ref={mainRef}>
         {/* Hero */}
         <div className="g-hero">
           <div className="g-hero-eyebrow">Creator Guide</div>
-          <h1 className="g-hero-title">Your store, your rules.<br />Let&apos;s get you set up.</h1>
-          <p className="g-hero-desc">RareImagery is an invite-only marketplace for creators. This guide walks you through everything &mdash; from signing up to making your first sale.</p>
+          <EditableText tag="div" id="hero-title" editing={editing} overrides={overrides} className="g-hero-title" defaultText="Your store, your rules. Let's get you set up." />
+          <EditableText tag="p" id="hero-desc" editing={editing} overrides={overrides} className="g-hero-desc" defaultText="RareImagery is an invite-only marketplace for creators. This guide walks you through everything — from signing up to making your first sale." />
           <div className="g-hero-chips">
             <span className="g-hero-chip">No coding needed</span>
             <span className="g-hero-chip">Invite-only platform</span>
@@ -285,11 +389,11 @@ export default function GuideClient() {
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>RareImagery is a creator marketplace where you get your own personal storefront &mdash; a page at <strong>yourname.rareimagery.net</strong> &mdash; that you can fill with products, customize with your own style, and share with your audience.</p>
-            <p>It&apos;s built around your <strong>X (Twitter) identity</strong>. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically &mdash; you don&apos;t have to start from a blank page.</p>
+            <EditableText tag="p" id="what-p1" editing={editing} overrides={overrides} defaultText="RareImagery is a creator marketplace where you get your own personal storefront — a page at rareimagery.net/yourname — that you can fill with products, customize with your own style, and share with your audience." />
+            <EditableText tag="p" id="what-p2" editing={editing} overrides={overrides} defaultText="It's built around your X (Twitter) identity. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically — you don't have to start from a blank page." />
             <div className="g-features">
               {[
-                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "A real URL at yourname.rareimagery.net, styled however you want." },
+                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "A real URL at rareimagery.net/yourname, styled however you want." },
                 { icon: "\uD83E\uDD16", title: "AI-assisted setup", desc: "Your X profile auto-fills your store info, bio, and product ideas." },
                 { icon: "\uD83C\uDFA8", title: "6 visual themes", desc: "From sleek and modern to full Y2K MySpace nostalgia." },
                 { icon: "\uD83D\uDCB8", title: "Automatic payouts", desc: "When someone buys from you, money goes directly to your account." },
