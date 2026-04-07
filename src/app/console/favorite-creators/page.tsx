@@ -225,6 +225,49 @@ export default function FavoriteCreatorsPage() {
         </div>
       </div>
 
+      {/* Category bar */}
+      <div className="flex flex-wrap items-center gap-2 mt-4 mb-6">
+        {tags.map((tag) => {
+          const count = favorites.filter((f) => f.tags.includes(tag.name)).length;
+          return (
+            <div key={tag.id} className="group flex items-center gap-1 rounded-full bg-zinc-800 pl-3 pr-1.5 py-1.5">
+              <span className="text-xs font-medium text-zinc-300">{tag.name}</span>
+              <span className="text-[10px] text-zinc-600">({count})</span>
+              <button
+                onClick={() => removeTag(tag.name)}
+                className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-zinc-600 hover:bg-red-600/20 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+                title={`Delete "${tag.name}" category`}
+              >
+                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          );
+        })}
+
+        {showNewTag ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addCustomTag(); if (e.key === "Escape") setShowNewTag(false); }}
+              placeholder="Category name..."
+              autoFocus
+              className="w-32 rounded-full border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            />
+            <button onClick={addCustomTag} className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs text-white hover:bg-indigo-500">Add</button>
+            <button onClick={() => { setShowNewTag(false); setNewTagName(""); }} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowNewTag(true)}
+            className="rounded-full border border-dashed border-zinc-600 px-3 py-1.5 text-xs text-zinc-500 hover:border-indigo-500 hover:text-indigo-400 transition"
+          >
+            + New Category
+          </button>
+        )}
+      </div>
+
       {/* Search / Add */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-6">
         <p className="text-sm font-medium text-zinc-300 mb-3">Add a creator</p>
