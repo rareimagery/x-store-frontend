@@ -356,7 +356,12 @@ export default async function ProductPage({
     notFound();
   }
 
-  const relatedProducts = await getRelatedProducts(product);
+  let relatedProducts: Product[] = [];
+  try {
+    relatedProducts = await getRelatedProducts(product);
+  } catch {
+    // Non-critical — render page without related products
+  }
 
   // Load creator profile for the header if product belongs to a store
   const creatorProfile = product.store_slug
