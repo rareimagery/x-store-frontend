@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import FavoritesGrid from "@/components/FavoritesGrid";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -17,6 +17,8 @@ interface FavoriteCreator {
   bio: string;
   profile_image_url: string | null;
   follower_count: number;
+  following_count?: number;
+  location?: string;
   verified: boolean;
   tags?: string[];
 }
@@ -58,58 +60,28 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
 
   if (!profile) notFound();
 
-  const top5 = favorites.slice(0, 5);
+  // Collect all unique tags
+  const allTags: string[] = [];
+  for (const fav of favorites) {
+    for (const tag of fav.tags ?? []) {
+      if (!allTags.includes(tag)) allTags.push(tag);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <CreatorPageHeader profile={profile} activePage="favorites" />
 
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
-        {top5.length === 0 ? (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+        {favorites.length === 0 ? (
           <p className="text-center text-zinc-500 py-16">No favorites added yet.</p>
         ) : (
-          <>
-            <h2 className="text-lg font-semibold mb-6">{profile.x_username}&apos;s Favorites</h2>
-            <div className="grid grid-cols-5 gap-4">
-              {top5.map((fav) => (
-                <a
-                  key={fav.username}
-                  href={`https://x.com/${fav.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col items-center text-center transition"
-                >
-                  {fav.profile_image_url ? (
-                    <img
-                      src={fav.profile_image_url}
-                      alt={`@${fav.username}`}
-                      className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-800 transition group-hover:ring-indigo-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/20 text-lg font-bold text-indigo-400 ring-2 ring-zinc-800 group-hover:ring-indigo-500">
-                      {fav.display_name?.[0]?.toUpperCase() || "?"}
-                    </div>
-                  )}
-                  <p className="mt-2 text-xs font-medium text-white truncate max-w-[80px] group-hover:text-indigo-400 transition">
-                    {fav.display_name}
-                  </p>
-                  <p className="text-[10px] text-zinc-600 truncate max-w-[80px]">@{fav.username}</p>
-                  {fav.verified && (
-                    <svg className="mt-0.5 h-3 w-3 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                </a>
-              ))}
-            </div>
-          </>
+          <FavoritesGrid
+            favorites={favorites}
+            tags={allTags}
+            creatorUsername={profile.x_username}
+          />
         )}
-
-        <div className="mt-16 text-center">
-          <Link href="/" className="text-xs text-zinc-600 hover:text-zinc-400">
-            Powered by RareImagery
-          </Link>
-        </div>
       </div>
     </div>
   );
