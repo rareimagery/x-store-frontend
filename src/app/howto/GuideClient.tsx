@@ -207,7 +207,7 @@ function Check({ children }: { children: React.ReactNode }) {
 /*  Main guide component                                               */
 /* ------------------------------------------------------------------ */
 
-export default function GuideClient() {
+export default function GuideClient({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: session } = useSession();
   const isAdmin = (session as any)?.role === "admin";
   const sidebarRef = useRef<HTMLElement>(null);
@@ -308,8 +308,11 @@ export default function GuideClient() {
   ];
 
   return (
-    <div className={`g ${editing ? "g-editing" : ""}`}>
-      <style dangerouslySetInnerHTML={{ __html: GUIDE_CSS }} />
+    <div className={`g ${editing ? "g-editing" : ""} ${embedded ? "g-embedded" : ""}`}>
+      <style dangerouslySetInnerHTML={{ __html: GUIDE_CSS + `
+        .g-embedded .g-sidebar { display: none !important; }
+        .g-embedded .g-main { margin-left: 0 !important; max-width: 100% !important; padding: 2rem 1.5rem 4rem !important; }
+      ` }} />
 
       {/* Admin edit bar */}
       {isAdmin && !editing && (
@@ -332,7 +335,7 @@ export default function GuideClient() {
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — hidden when embedded in console */}
       <nav className="g-sidebar" ref={sidebarRef}>
         <div className="g-sidebar-top">
           <div className="g-brand">
