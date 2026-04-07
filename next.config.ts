@@ -56,6 +56,11 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "files.cdn.printful.com",
+        pathname: "/**",
+      },
     ],
   },
   headers: async () => [

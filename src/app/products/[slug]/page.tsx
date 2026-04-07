@@ -10,10 +10,9 @@ import {
   type Product,
 } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
-import ProductGallery from "@/components/ProductGallery";
 import ProductTabs from "@/components/ProductTabs";
-import AddToCartBlock from "@/components/AddToCartBlock";
 import PayWithXMoneyButton from "@/components/PayWithXMoneyButton";
+import ProductDetailClient from "@/components/ProductDetailClient";
 
 export const revalidate = 60;
 
@@ -382,58 +381,45 @@ export default async function ProductPage({
         {/* Breadcrumb */}
         <Breadcrumb product={product} />
 
-        {/* Main product layout */}
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-          {/* Left: Image Gallery */}
-          <ProductGallery images={product.images} title={product.title} />
-
-          {/* Right: Product Info */}
-          <div className="space-y-6">
-            {/* Header */}
-            <div>
-              {product.store_slug && (
-                <Link
-                  href={`/stores/${product.store_slug}`}
-                  className="mb-2 inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-600">
-                    {product.store_name.charAt(0).toUpperCase()}
-                  </span>
-                  {product.store_name}
-                </Link>
-              )}
-              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-                {product.title}
-              </h1>
-              {product.sku && (
-                <p className="mt-1 text-xs text-zinc-400">SKU: {product.sku}</p>
-              )}
-            </div>
-
-            {/* Price */}
-            <PriceBlock product={product} />
-
-            {/* Short description */}
+        {/* Main product layout — client component syncs color ↔ gallery */}
+        <div className="mb-8">
+          {/* Header */}
+          <div className="mb-6">
+            {product.store_slug && (
+              <Link
+                href={`/stores/${product.store_slug}`}
+                className="mb-2 inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-600">
+                  {product.store_name.charAt(0).toUpperCase()}
+                </span>
+                {product.store_name}
+              </Link>
+            )}
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+              {product.title}
+            </h1>
+            {product.sku && (
+              <p className="mt-1 text-xs text-zinc-400">SKU: {product.sku}</p>
+            )}
+            <div className="mt-3"><PriceBlock product={product} /></div>
             {product.short_description && (
               <div
-                className="text-sm leading-relaxed text-zinc-600"
+                className="mt-3 text-sm leading-relaxed text-zinc-600"
                 dangerouslySetInnerHTML={{ __html: product.short_description }}
               />
             )}
+          </div>
 
-            {/* Add to Cart / Buy Block */}
-            <AddToCartBlock product={product} />
+          <ProductDetailClient product={product} baseImages={product.images} />
 
+          <div className="mt-6 space-y-4">
             <PayWithXMoneyButton
               productId={product.id}
               price={parseFloat(product.price)}
               sellerHandle={product.store_slug || product.store_name}
             />
-
-            {/* Trust Badges */}
             <TrustBadges product={product} />
-
-            {/* Delivery Info */}
             <DeliveryInfo product={product} />
           </div>
         </div>

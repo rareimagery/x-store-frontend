@@ -5,11 +5,17 @@ import type { ProductDetail } from "@/lib/drupal";
 
 export default function AddToCartBlock({
   product,
+  onVariationChange,
 }: {
   product: ProductDetail;
+  onVariationChange?: (variationIndex: number) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState(0);
+  const updateVariation = (idx: number) => {
+    setSelectedVariation(idx);
+    onVariationChange?.(idx);
+  };
   const [customNote, setCustomNote] = useState("");
   const [addedToCart, setAddedToCart] = useState(false);
 
@@ -65,7 +71,7 @@ export default function AddToCartBlock({
                     <button
                       key={val}
                       onClick={() =>
-                        matchingVar >= 0 && setSelectedVariation(matchingVar)
+                        matchingVar >= 0 && updateVariation(matchingVar)
                       }
                       className={`w-full rounded-lg border-2 px-4 py-3 text-left text-sm transition ${
                         selectedVariation === matchingVar
@@ -102,7 +108,7 @@ export default function AddToCartBlock({
                       onClick={() =>
                         !outOfStock &&
                         matchingVar >= 0 &&
-                        setSelectedVariation(matchingVar)
+                        updateVariation(matchingVar)
                       }
                       disabled={outOfStock}
                       className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition ${

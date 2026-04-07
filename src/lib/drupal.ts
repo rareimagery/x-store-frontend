@@ -203,6 +203,8 @@ export interface ProductVariation {
   currency: string;
   list_price: string | null;
   image_url: string | null;
+  front_image_url: string | null;
+  back_image_url: string | null;
   stock: number | null;
   on_sale: boolean;
   attributes: Record<string, string>;
@@ -882,6 +884,8 @@ function mapProductDetail(
         currency: va.price?.currency_code ?? "USD",
         list_price: va.list_price?.number ?? null,
         image_url: varImage,
+        front_image_url: va.field_variant_front_url ?? null,
+        back_image_url: va.field_variant_back_url ?? null,
         stock: va.field_stock ?? null,
         on_sale: va.field_on_sale ?? false,
         attributes: attrMap,
