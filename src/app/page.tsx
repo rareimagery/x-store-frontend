@@ -31,7 +31,7 @@ function CreatorCard({ creator }: { creator: CreatorProfile }) {
 
   return (
     <Link
-      href={`/stores/${creator.x_username}`}
+      href={`/${creator.x_username}`}
       className="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-indigo-500/50 hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10"
     >
       {/* Avatar + identity */}
@@ -162,7 +162,7 @@ export default async function LandingPage() {
           </Link>
           <div className="flex items-center gap-4">
             <Link
-              href="/build"
+              href="/signup"
               className="hidden rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:block"
             >
               Create Store
@@ -213,7 +213,7 @@ export default async function LandingPage() {
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
-              href="/build"
+              href="/signup"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-500 hover:to-purple-500 hover:shadow-indigo-500/40"
             >
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -359,7 +359,7 @@ export default async function LandingPage() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 py-20 text-center">
             <p className="text-zinc-500">
               No approved stores yet.{" "}
-              <Link href="/build" className="text-indigo-400 hover:text-indigo-300">
+              <Link href="/signup" className="text-indigo-400 hover:text-indigo-300">
                 Be the first creator →
               </Link>
             </p>
@@ -384,7 +384,7 @@ export default async function LandingPage() {
             your site. You&apos;re live.
           </p>
           <Link
-            href="/build"
+            href="/signup"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-500 hover:to-purple-500"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
