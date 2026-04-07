@@ -294,7 +294,7 @@ export default function GuideClient() {
     { group: "Your store", items: [
       { id: "s-create", icon: "\uD83C\uDFEA", label: "Creating your store" },
       { id: "s-products", icon: "\uD83D\uDCE6", label: "Adding products" },
-      { id: "s-themes", icon: "\uD83C\uDFA8", label: "Choosing a theme" },
+      { id: "s-themes", icon: "\uD83C\uDFA8", label: "Customizing your look" },
       { id: "s-console", icon: "\u2699\uFE0F", label: "Your dashboard" },
     ]},
     { group: "Getting paid", items: [
@@ -393,9 +393,9 @@ export default function GuideClient() {
             <EditableText tag="p" id="what-p2" editing={editing} overrides={overrides} defaultText="It's built around your X (Twitter) identity. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically — you don't have to start from a blank page." />
             <div className="g-features">
               {[
-                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "A real URL at rareimagery.net/yourname, styled however you want." },
+                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "Your own page at rareimagery.net/yourname, styled however you want." },
                 { icon: "\uD83E\uDD16", title: "AI-assisted setup", desc: "Your X profile auto-fills your store info, bio, and product ideas." },
-                { icon: "\uD83C\uDFA8", title: "6 visual themes", desc: "From sleek and modern to full Y2K MySpace nostalgia." },
+                { icon: "\uD83C\uDFA8", title: "10 color schemes", desc: "Customize your look with color schemes, backgrounds, and drag-and-drop layout." },
                 { icon: "\uD83D\uDCB8", title: "Automatic payouts", desc: "When someone buys from you, money goes directly to your account." },
                 { icon: "\uD83D\uDCE6", title: "Print-on-demand", desc: "Sell merch without keeping inventory \u2014 we handle printing and shipping." },
                 { icon: "\uD83D\uDD10", title: "Invite-only access", desc: "You need an invite code from the RareImagery team to get started." },
@@ -490,14 +490,14 @@ export default function GuideClient() {
             <p>Fill in the essentials:</p>
             <ul className="g-check">
               <Check><strong>Store name</strong> &mdash; what you want your store to be called</Check>
-              <Check><strong>Subdomain</strong> &mdash; this becomes <em>yourname</em>.rareimagery.net. Choose carefully, this is your permanent URL.</Check>
+              <Check><strong>Store URL</strong> &mdash; this becomes rareimagery.net/<em>yourname</em>. Choose carefully, this is your permanent URL.</Check>
               <Check><strong>Contact email</strong> &mdash; for order notifications</Check>
               <Check><strong>Currency</strong> &mdash; the currency your products will be priced in</Check>
             </ul>
             <h3>Step 2 &mdash; Creator profile</h3>
             <p>Your X data is already here. Review and edit your bio, check that your profile photo and banner look right. You&apos;ll also see AI-suggested product ideas based on your posts and audience.</p>
-            <h3>Step 3 &mdash; Choose your theme</h3>
-            <p>Pick how your store looks. Our AI will recommend one based on your X vibe, but you can choose any of the 6 themes. You can always change this later.</p>
+            <h3>Step 3 &mdash; Customize your look</h3>
+            <p>Pick a color scheme and page background for your storefront. You can choose from 10 color schemes and 9 background presets, or upload your own custom background image. You can always change this later from the Page Building editor.</p>
             <h3>Step 4 &mdash; Add products (optional)</h3>
             <p>You can add products now or skip this and do it later. Your store goes into review once you hit Submit &mdash; you don&apos;t need products to get approved.</p>
             <h3>Step 5 &mdash; Submitted!</h3>
@@ -545,33 +545,48 @@ export default function GuideClient() {
           <summary>
             <div className="g-sec-icon">{"\uD83C\uDFA8"}</div>
             <div className="g-sec-meta">
-              <div className="g-sec-label">Choosing a theme</div>
-              <div className="g-sec-sub">6 visual styles for your storefront</div>
+              <div className="g-sec-label">Customizing your look</div>
+              <div className="g-sec-sub">Color schemes, backgrounds, and page layout</div>
             </div>
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>Your theme controls how your entire storefront looks. You can switch themes at any time from your dashboard &mdash; no rebuilding required.</p>
+            <p>Your storefront&apos;s look is controlled through the <strong>Page Building</strong> editor. You choose a color scheme, a page background, and arrange content blocks in a drag-and-drop layout.</p>
+
+            <h3>Color schemes</h3>
+            <p>Choose from 10 color schemes that control all text, borders, accents, and surfaces across your page:</p>
             <div className="g-themes">
               {[
-                { name: "xai3", bg: "#0f0f0f", fg: "#fff", pill: "Default", pillType: "purple", vibe: "Modern, dark, 3-column grid" },
-                { name: "xmimic", bg: "#f5f5f5", fg: "#0f0f0f", vibe: "Feels like scrolling X.com" },
-                { name: "myspace", bg: "linear-gradient(135deg,#ff69b4,#9400d3)", fg: "#fff", pill: "Fan fav", pillType: "gold", vibe: "Y2K, glitter, music player" },
-                { name: "minimal", bg: "#fff", fg: "#333", vibe: "Clean, airy, product-first" },
-                { name: "editorial", bg: "#1a1a1a", fg: "#f0e6c0", vibe: "Magazine-style layout" },
-                { name: "neon", bg: "#0a0010", fg: "#bf00ff", vibe: "Cyberpunk glow, dark" },
+                { name: "Midnight", bg: "#0f0d1a", fg: "#e2e0ff", vibe: "Deep purple-black, default" },
+                { name: "Ocean", bg: "#0a1628", fg: "#c5d5e8", vibe: "Deep sea blue tones" },
+                { name: "Forest", bg: "#0d1a0f", fg: "#c5e0c8", vibe: "Dark green nature" },
+                { name: "Sunset", bg: "#1a0f0d", fg: "#e8c5c0", vibe: "Warm amber and red" },
+                { name: "Royal", bg: "#0d0f1a", fg: "#c5c8e8", vibe: "Rich blue-purple" },
+                { name: "Cherry", bg: "#1a0d12", fg: "#e8c0cc", vibe: "Deep red-pink" },
+                { name: "Arctic", bg: "#0f1a1a", fg: "#c5e5e5", vibe: "Cool icy teal" },
+                { name: "Ember", bg: "#1a110d", fg: "#e8d0c0", vibe: "Warm orange glow" },
+                { name: "Slate", bg: "#141414", fg: "#d4d4d4", vibe: "Clean neutral gray" },
+                { name: "Neon", bg: "#0a000f", fg: "#e0c0ff", vibe: "Cyberpunk purple glow" },
               ].map((t) => (
                 <div className="g-theme" key={t.name}>
                   <div className="g-theme-swatch" style={{ background: t.bg, color: t.fg }}>{t.name}</div>
                   <div className="g-theme-info">
-                    <div className="g-theme-name">{t.name} {t.pill && <span className={`g-pill g-pill-${t.pillType}`}>{t.pill}</span>}</div>
+                    <div className="g-theme-name">{t.name}</div>
                     <div className="g-theme-vibe">{t.vibe}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <h3>How to change your theme</h3>
-            <p>Go to <strong>Dashboard &rarr; Theme</strong> and click any of the 6 theme cards. Your store updates instantly.</p>
+
+            <h3>Page backgrounds</h3>
+            <p>Add a background image to your storefront. Choose from 9 presets (Nature, Mountain, Space, Ocean Waves, City Night, Desert, Aurora, Abstract) or upload your own custom image.</p>
+
+            <h3>How to change your look</h3>
+            <p>Go to <strong>Console &rarr; Page Building</strong>. The color scheme and background selectors are at the top of the editor. Changes save when you publish your layout.</p>
+
+            <Callout type="tip" icon="&#10022;">
+              <strong>Drag-and-drop layout</strong> The Page Building editor lets you arrange content blocks (products, posts, galleries, music, etc.) into a two-column layout: Main Content and Right Sidebar. No coding needed.
+            </Callout>
           </div>
         </details>
 
@@ -620,27 +635,34 @@ export default function GuideClient() {
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>RareImagery uses <strong>Stripe</strong> to handle all payments. When a customer buys from you, the money goes to your Stripe account &mdash; minus a small platform fee.</p>
+            <p>RareImagery uses <strong>Stripe</strong> (and <strong>X Money</strong> when it launches) to handle all payments. When a customer buys from you, the money goes directly to your account.</p>
+
+            <h3>Getting started</h3>
+            <p>To open a store, you need an <strong>X Creator Subscription</strong> ($4/month on X) to @RareImagery. This gives you access to the platform and all its features.</p>
+
             <h3>Connecting Stripe</h3>
             <div className="g-steps">
-              <Step n={1} title='Go to Dashboard \u2192 Settings and click "Connect Stripe"' desc="You'll be taken to Stripe's website to set up your account." />
+              <Step n={1} title='Go to Console \u2192 Settings and click "Connect Stripe"' desc="You'll be taken to Stripe's website to set up your account." />
               <Step n={2} title="Complete Stripe's onboarding" desc="Stripe will ask for your bank details, ID verification, and tax information." />
-              <Step n={3} title="You're connected \u2014 sales go straight to you" desc="When someone buys, Stripe deposits your cut directly to your bank." />
+              <Step n={3} title="You're connected \u2014 sales go straight to you" desc="When someone buys, Stripe deposits your cut directly to your bank. RareImagery never holds your money." />
             </div>
-            <h3>Platform fees</h3>
+
+            <h3>Fees</h3>
             <table className="g-table">
-              <thead><tr><th>Fee</th><th>Amount</th><th>When</th></tr></thead>
+              <thead><tr><th>Fee</th><th>Amount</th><th>Details</th></tr></thead>
               <tbody>
-                <tr><td><strong>Store launch</strong></td><td><span className="g-fee">$11 total</span><br /><small>($5 one-time + $6 first month)</small></td><td>When your store is activated</td></tr>
-                <tr><td><strong>Monthly</strong></td><td><span className="g-fee">$6/month</span></td><td>Recurring, cancellable anytime</td></tr>
-                <tr><td><strong>Physical order</strong></td><td><span className="g-fee">$1.00</span></td><td>Per physical product sale</td></tr>
-                <tr><td><strong>Digital order</strong></td><td><span className="g-fee">$0.05</span></td><td>Per digital product sale</td></tr>
-                <tr><td><strong>Listing fee</strong></td><td><span className="g-fee">$0.05</span></td><td>After first 50 free listings</td></tr>
-                <tr><td><strong>Stripe</strong></td><td><span className="g-fee">2.9% + $0.30</span></td><td>Every transaction</td></tr>
+                <tr><td><strong>X Creator Subscription</strong></td><td><span className="g-fee">$4/month</span></td><td>Subscribe to @RareImagery on X to access the platform</td></tr>
+                <tr><td><strong>Store maintenance</strong></td><td><span className="g-fee">$2/month</span></td><td>Keeps your store live. Cancellable anytime.</td></tr>
+                <tr><td><strong>Payment processing</strong></td><td><span className="g-fee">$0.30/transaction</span></td><td>Stripe or X Money processing fee per sale</td></tr>
               </tbody>
             </table>
+
             <Callout type="good" icon="&#128161;">
-              <strong>No hidden fees</strong> Everything above is the complete list. Platform fees are added transparently to each order.
+              <strong>That&apos;s it</strong> No per-order platform fees, no listing fees, no hidden costs. Just your X subscription, a small monthly maintenance fee, and the standard payment processing fee on each sale.
+            </Callout>
+
+            <Callout type="info" icon="&#8505;">
+              <strong>X Money &mdash; coming soon</strong> When X launches its payment system, you&apos;ll be able to accept X Money payments alongside (or instead of) Stripe. We&apos;ll handle the switch automatically.
             </Callout>
           </div>
         </details>
