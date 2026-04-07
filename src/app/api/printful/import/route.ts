@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { getStorePrintfulKey } from "@/lib/printful";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * POST /api/printful/import
@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
     // 1. Load Drupal color + size attribute values for mapping
     const colorMap = await loadAttributeMap("color");
     const sizeMap = await loadAttributeMap("size");
-    const writeHeaders = await drupalWriteHeaders();
+
+    // Get fresh write headers (refresh every batch to avoid session expiry)
+    async function freshWriteHeaders() {
+      return drupalWriteHeaders();
+    }
+    let writeHeaders = await freshWriteHeaders();
 
     // 2. Fetch all products from Printful
     const pfRes = await fetch("https://api.printful.com/store/products", {
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
     const errors: string[] = [];
 
     for (const pf of pfProducts) {
-      // Check if already imported
+      // Check if already imported — update title if changed
       try {
         const checkRes = await fetch(
           `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing?filter[field_printful_product_id]=${pf.id}&page[limit]=1`,
@@ -55,7 +60,29 @@ export async function POST(req: NextRequest) {
         );
         if (checkRes.ok) {
           const checkData = await checkRes.json();
-          if (checkData.data?.length > 0) { skipped++; continue; }
+          const existing = checkData.data?.[0];
+          if (existing) {
+            // Update title if it changed on Printful
+            if (existing.attributes?.title !== pf.name) {
+              const updateHeaders = await freshWriteHeaders();
+              await fetch(
+                `${DRUPAL_API_URL}/jsonapi/commerce_product/clothing/${existing.id}`,
+                {
+                  method: "PATCH",
+                  headers: { ...updateHeaders, "Content-Type": "application/vnd.api+json" },
+                  body: JSON.stringify({
+                    data: {
+                      type: "commerce_product--clothing",
+                      id: existing.id,
+                      attributes: { title: pf.name },
+                    },
+                  }),
+                }
+              );
+            }
+            skipped++;
+            continue;
+          }
         }
       } catch {}
 
@@ -79,6 +106,9 @@ export async function POST(req: NextRequest) {
       } else if (nameLower.includes("cap") || nameLower.includes("hat") || nameLower.includes("beanie")) {
         variationBundle = "ballcap";
       }
+
+      // Refresh write headers for each product (session may expire with many variants)
+      writeHeaders = await freshWriteHeaders();
 
       // 3. Create variations with color/size attributes
       const variationIds: string[] = [];
