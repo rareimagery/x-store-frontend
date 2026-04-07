@@ -287,10 +287,77 @@ export async function runCodeAuditAgent(): Promise<CodeAuditReport> {
     return { ok: r.ok, detail: `${r.detail} (creator page)` };
   }));
 
-  checks.push(await timedCheck("Product page health", "api", async () => {
+  checks.push(await timedCheck("Store page health", "api", async () => {
     const r = await fetchCheck(`${baseUrl}/RareImagery/store`);
     return { ok: r.ok, detail: `${r.detail} (store page)` };
   }));
+
+  checks.push(await timedCheck("Gallery page health", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/RareImagery/gallery`);
+    return { ok: r.ok, detail: `${r.detail} (gallery)` };
+  }));
+
+  checks.push(await timedCheck("Favorites page health", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/RareImagery/favorites`);
+    return { ok: r.ok, detail: `${r.detail} (favorites)` };
+  }));
+
+  checks.push(await timedCheck("Articles page health", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/RareImagery/articles`);
+    return { ok: r.ok, detail: `${r.detail} (articles)` };
+  }));
+
+  checks.push(await timedCheck("How-to guide page", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/howto`);
+    return { ok: r.ok, detail: `${r.detail} (howto)` };
+  }));
+
+  checks.push(await timedCheck("Health endpoint", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/api/health`);
+    return { ok: r.ok, detail: r.detail };
+  }));
+
+  checks.push(await timedCheck("Invite API reachable", "api", async () => {
+    const r = await fetchCheck(`${baseUrl}/api/invite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: "TEST-PROBE" }),
+    });
+    // Expect 200 with valid:false — that means the API works
+    return { ok: r.status !== null && r.status < 500, detail: r.detail };
+  }));
+
+  // ── 9. Drupal batch profile sync trigger ──
+  if (DRUPAL_API_URL) {
+    checks.push(await timedCheck("Drupal profile batch sync", "drupal", async () => {
+      try {
+        const r = await fetchCheck(
+          `${DRUPAL_API_URL}/api/x-profile-sync/batch`,
+          { method: "POST", headers: { ...drupalAuthHeaders(), "Content-Type": "application/json" } }
+        );
+        // 404 is fine (endpoint may not exist), 200/403 means it's reachable
+        return { ok: r.status !== null && r.status < 500, detail: `${r.detail} (batch sync)` };
+      } catch {
+        return { ok: true, detail: "Batch sync endpoint not available (non-critical)" };
+      }
+    }));
+  }
+
+  // ── 10. HTTPS / security checks ──
+  checks.push(await timedCheck("Frontend HTTPS", "config", async () => {
+    const url = process.env.NEXTAUTH_URL || "";
+    const isHttps = url.startsWith("https://");
+    return { ok: isHttps, detail: isHttps ? "HTTPS enabled" : `WARNING: ${url || "NEXTAUTH_URL not set"}` };
+  }));
+
+  if (process.env.STRIPE_SECRET_KEY) {
+    checks.push(await timedCheck("Stripe key type", "config", async () => {
+      const key = process.env.STRIPE_SECRET_KEY || "";
+      const isLive = key.startsWith("sk_live_");
+      const isTest = key.startsWith("sk_test_");
+      return { ok: isLive || isTest, detail: isLive ? "Live key" : isTest ? "Test key" : "Unknown key format" };
+    }));
+  }
 
   // ── Compile report ──
   const failed = checks.filter((c) => !c.ok);

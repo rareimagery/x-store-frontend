@@ -1,32 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron/frontend-agent",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/site-generate-agent",
-      "schedule": "0 */5 * * *"
-    },
-    {
-      "path": "/api/cron/drupal-api-path-agent",
-      "schedule": "0 */5 * * *"
-    },
-    {
-      "path": "/api/cron/api-agent",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/x-money-watcher",
-      "schedule": "0 */6 * * *"
-    },
-    {
       "path": "/api/cron/code-audit",
       "schedule": "0 */6 * * *"
     },
     {
       "path": "/api/cron/wiki-sync",
-      "schedule": "0 */8 * * *"
+      "schedule": "0 3,15 * * *"
+    },
+    {
+      "path": "/api/cron/x-money-watcher",
+      "schedule": "0 6,18 * * *"
     }
   ],
   "headers": [
