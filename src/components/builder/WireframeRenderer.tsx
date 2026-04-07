@@ -946,6 +946,15 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             </a>
           ))}
 
+          {/* Open Your Store */}
+          <a
+            href="/howto"
+            className="shrink-0 ml-auto rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
+            style={{ borderColor: colors.accent, color: colors.accent }}
+          >
+            Open Your Store
+          </a>
+
           {/* Share on X */}
           <a
             href={`https://x.com/intent/tweet?${new URLSearchParams({
@@ -954,7 +963,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             }).toString()}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
+            className="shrink-0 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
             style={{ borderColor: colors.border, color: colors.text }}
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
