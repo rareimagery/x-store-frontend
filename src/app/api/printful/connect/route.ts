@@ -63,10 +63,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Auto-trigger Drupal-side product sync after connecting
+    if (DRUPAL_API && storeId) {
+      fetch(`${DRUPAL_API}/api/printful-sync/${encodeURIComponent(storeId)}`, {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + Buffer.from(
+            `${process.env.DRUPAL_API_USER}:${process.env.DRUPAL_API_PASS}`
+          ).toString("base64"),
+          "Content-Type": "application/json",
+        },
+      }).catch((err) => {
+        console.error("[printful/connect] Auto-sync trigger failed:", err.message);
+      });
+      // Fire-and-forget — don't block the connect response
+    }
+
     return NextResponse.json({
       success: true,
       printful_store: printfulStoreName,
       printful_store_id: printfulStoreId,
+      sync_triggered: true,
     });
   } catch (err: any) {
     return NextResponse.json(
