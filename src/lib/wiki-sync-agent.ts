@@ -134,10 +134,12 @@ export async function runWikiSyncAgent(): Promise<WikiSyncReport> {
     // Check for stale content that references old patterns
     const stalePatterns = [
       { pattern: /yourname\.rareimagery\.net/g, fix: "rareimagery.net/yourname", label: "subdomain URL format" },
-      { pattern: /\$6\/month/g, fix: "$2/month", label: "monthly fee amount" },
-      { pattern: /\$11 total/g, fix: "$4/month X sub + $2/month maintenance", label: "launch fee" },
+      { pattern: /\$6\/month/g, fix: "$2/month (only charged when you make sales)", label: "monthly fee amount" },
+      { pattern: /\$11 total/g, fix: "$4/month X sub + $2/month maintenance (sales months only)", label: "launch fee" },
       { pattern: /6 visual themes/g, fix: "10 color schemes", label: "theme count" },
       { pattern: /Choose your theme/gi, fix: "Customize your look", label: "theme section title" },
+      { pattern: /Keeps your store live\. Cancellable anytime\./g, fix: "Only charged in months where you make a sale. No sales = no fee.", label: "store fee description" },
+      { pattern: /Recurring, cancellable anytime/g, fix: "Only charged in months with sales", label: "store fee billing" },
     ];
 
     for (const [key, value] of Object.entries(updated)) {

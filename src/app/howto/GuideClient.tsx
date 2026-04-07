@@ -641,7 +641,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <p>RareImagery uses <strong>Stripe</strong> (and <strong>X Money</strong> when it launches) to handle all payments. When a customer buys from you, the money goes directly to your account.</p>
 
             <h3>Getting started</h3>
-            <p>To open a store, you need an <strong>X Creator Subscription</strong> ($4/month on X) to @RareImagery. This gives you access to the platform and all its features.</p>
+            <p>To access the platform, you need an <strong>X Creator Subscription</strong> ($4/month on X) to @RareImagery. This is the only cost to browse, build your page, and set up your store. <strong>You are never charged just for having an account.</strong></p>
 
             <h3>Connecting Stripe</h3>
             <div className="g-steps">
@@ -655,13 +655,13 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               <thead><tr><th>Fee</th><th>Amount</th><th>Details</th></tr></thead>
               <tbody>
                 <tr><td><strong>X Creator Subscription</strong></td><td><span className="g-fee">$4/month</span></td><td>Subscribe to @RareImagery on X to access the platform</td></tr>
-                <tr><td><strong>Store maintenance</strong></td><td><span className="g-fee">$2/month</span></td><td>Keeps your store live. Cancellable anytime.</td></tr>
+                <tr><td><strong>Store maintenance</strong></td><td><span className="g-fee">$2/month</span></td><td>Only charged in months where you make a sale. No sales = no fee.</td></tr>
                 <tr><td><strong>Payment processing</strong></td><td><span className="g-fee">$0.30/transaction</span></td><td>Stripe or X Money processing fee per sale</td></tr>
               </tbody>
             </table>
 
             <Callout type="good" icon="&#128161;">
-              <strong>That&apos;s it</strong> No per-order platform fees, no listing fees, no hidden costs. Just your X subscription, a small monthly maintenance fee, and the standard payment processing fee on each sale.
+              <strong>You only pay when you sell</strong> If you don&apos;t make any sales in a given month, you won&apos;t be charged the $2 store maintenance fee. No sales = no fee. Users without a store are never charged anything beyond their X subscription.
             </Callout>
 
             <Callout type="info" icon="&#8505;">

@@ -291,9 +291,14 @@ ${(state.cronAgents || []).map((a: any) => `• <strong>${a.name}</strong> — $
 
 <strong>Fee Structure:</strong>
 • X Creator Subscription: $4/month to @RareImagery on X (platform access)
-• Store maintenance: $2/month (recurring, cancellable)
+• Store maintenance: $2/month — <strong>only charged in months with sales</strong>. No sales = no fee.
 • Payment processing: $0.30/transaction (Stripe or X Money)
-• No per-order platform fees, no listing fees`,
+• No per-order platform fees, no listing fees
+
+<strong>Key rules:</strong>
+• Users without a store are never charged anything beyond the X subscription
+• Store owners who make zero sales in a month are NOT charged the $2 maintenance fee
+• The $2 fee only applies to months where at least one sale is completed`,
     },
     {
       id: "auth",
