@@ -204,16 +204,20 @@ function productSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function ProductGrid({ block, products }: { block: PlacedBlock; products: Product[] }) {
+function ProductGrid({ block, products, compact = false }: { block: PlacedBlock; products: Product[]; compact?: boolean }) {
   const maxItems = Number(block.props.max_items) || 6;
   const cols = Number(block.props.gallery_columns) || 3;
   const heading = block.props.heading;
   const shown = products.slice(0, maxItems);
 
+  const gridClass = compact
+    ? "grid-cols-1"
+    : cols >= 3 ? "grid-cols-2 sm:grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2";
+
   return (
     <div>
-      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className={`grid gap-3 ${cols >= 3 ? "grid-cols-2 sm:grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
+      <div className={`grid gap-3 ${gridClass}`}>
         {shown.map((p) => (
           <a
             key={p.id}
@@ -242,15 +246,15 @@ function ProductGrid({ block, products }: { block: PlacedBlock; products: Produc
   );
 }
 
-function SocialFeed({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+function SocialFeed({ block, profile, compact = false }: { block: PlacedBlock; profile: CreatorProfile; compact?: boolean }) {
   const maxItems = Number(block.props.max_items) || 6;
   const heading = block.props.heading;
   const posts = (profile.top_posts || []).slice(0, maxItems);
 
   return (
     <div>
-      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
+      <div className={compact ? "space-y-3" : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}>
         {posts.map((post) => (
           <a
             key={post.id}
@@ -459,7 +463,7 @@ function MusicPlayerBlock({ block, musicTracks }: { block: PlacedBlock; musicTra
   );
 }
 
-function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XArticle[] }) {
+function XArticlesBlock({ block, articles, compact = false }: { block: PlacedBlock; articles: XArticle[]; compact?: boolean }) {
   const maxItems = Number(block.props.max_items) || 5;
   const heading = block.props.heading;
   const shown = articles.slice(0, maxItems);
@@ -468,7 +472,7 @@ function XArticlesBlock({ block, articles }: { block: PlacedBlock; articles: XAr
 
   return (
     <div>
-      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
+      {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
       <div className="space-y-3">
         {shown.map((article) => (
           <a
@@ -647,7 +651,7 @@ function FavoriteCard({ fav }: { fav: FavoriteCreator }) {
   );
 }
 
-function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string }) {
+function MyFavorites({ block, favorites, creatorUsername, compact = false }: { block: PlacedBlock; favorites: FavoriteCreator[]; creatorUsername: string; compact?: boolean }) {
   const heading = block.props.heading;
   const shown = favorites.slice(0, 5);
 
@@ -662,8 +666,8 @@ function MyFavorites({ block, favorites, creatorUsername }: { block: PlacedBlock
 
   return (
     <div>
-      {heading && <h3 className="text-lg font-semibold text-white mb-3">{String(heading)}</h3>}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
+      <div className={compact ? "grid gap-2 grid-cols-2" : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}>
         {shown.map((fav) => (
           <FavoriteCard key={fav.username} fav={fav} />
         ))}
@@ -690,7 +694,7 @@ function formatFollowerCount(n: number): string {
   return n.toString();
 }
 
-function TopFollowersBlock({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+function TopFollowersBlock({ block, profile, compact = false }: { block: PlacedBlock; profile: CreatorProfile; compact?: boolean }) {
   const heading = block.props.heading;
   const maxItems = Number(block.props.max_items) || 8;
   const followers = (profile.top_followers || []).slice(0, maxItems);
@@ -699,8 +703,8 @@ function TopFollowersBlock({ block, profile }: { block: PlacedBlock; profile: Cr
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-white mb-3">{heading ? String(heading) : "Top Followers"}</h3>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{heading ? String(heading) : "Top Followers"}</h3>
+      <div className={compact ? "grid gap-2 grid-cols-2" : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}>
         {followers.map((f: TopFollower, i: number) => (
           <a
             key={f.username || i}
@@ -752,6 +756,7 @@ function RenderBlock({
   communities,
   grokGallery,
   socialFeeds,
+  compact = false,
 }: {
   block: PlacedBlock;
   profile: CreatorProfile;
@@ -762,6 +767,7 @@ function RenderBlock({
   communities: XCommunity[];
   grokGallery: GrokGalleryItem[];
   socialFeeds: SocialFeedAccount[];
+  compact?: boolean;
 }) {
   switch (block.type) {
     case "hero_banner": return <HeroBanner block={block} profile={profile} />;
@@ -769,22 +775,22 @@ function RenderBlock({
     case "cta_section": return <CtaSection block={block} />;
     case "video_embed": return <VideoEmbed block={block} />;
     case "testimonial": return <Testimonial block={block} />;
-    case "product_grid": return <ProductGrid block={block} products={products} />;
-    case "social_feed": return <SocialFeed block={block} profile={profile} />;
+    case "product_grid": return <ProductGrid block={block} products={products} compact={compact} />;
+    case "social_feed": return <SocialFeed block={block} profile={profile} compact={compact} />;
     case "spacer": return <Spacer block={block} />;
     case "newsletter": return <Newsletter block={block} />;
     case "image_gallery": return <ImageGallery block={block} />;
     case "donation": return <DonationBlock block={block} />;
     case "pinned_post": return <PinnedPostBlock block={block} profile={profile} />;
     case "music_player": return <MusicPlayerBlock block={block} musicTracks={musicTracks} />;
-    case "x_articles": return <XArticlesBlock block={block} articles={articles} />;
+    case "x_articles": return <XArticlesBlock block={block} articles={articles} compact={compact} />;
     case "tiktok_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="tiktok" platformLabel="TikTok" platformColor="#00f2ea" platformIcon="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.87a8.28 8.28 0 004.77 1.52V6.94a4.85 4.85 0 01-1.01-.25z" />;
     case "instagram_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="instagram" platformLabel="Instagram" platformColor="#E4405F" platformIcon="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z" />;
     case "youtube_feed": return <SocialPlatformBlock block={block} socialFeeds={socialFeeds} platformId="youtube" platformLabel="YouTube" platformColor="#FF0000" platformIcon="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />;
     case "grok_gallery": return <GrokGalleryBlock block={block} gallery={grokGallery} creatorUsername={profile.x_username} />;
     case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
-    case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} />;
-    case "top_followers": return <TopFollowersBlock block={block} profile={profile} />;
+    case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} compact={compact} />;
+    case "top_followers": return <TopFollowersBlock block={block} profile={profile} compact={compact} />;
     default:
       return (
         <div className="rounded-xl border wf-card p-4 text-xs wf-muted">
@@ -975,7 +981,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             {hasRight && (
               <div className="w-1/4 space-y-4 wf-col-right">
                 {layout.right.map((block) => (
-                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} compact />
                 ))}
               </div>
             )}
