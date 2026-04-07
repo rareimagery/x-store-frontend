@@ -31,14 +31,13 @@ export default function FavoriteCreatorsPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [newTagName, setNewTagName] = useState("");
   const [showNewTag, setShowNewTag] = useState(false);
   const [autoResult, setAutoResult] = useState<Omit<FavoriteCreator, "tags"> | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
+  const [editingTags, setEditingTags] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load favorites and tags
   useEffect(() => {
     if (!hasStore) return;
     Promise.all([
@@ -46,7 +45,6 @@ export default function FavoriteCreatorsPage() {
       fetch("/api/favorites/tags").then((r) => r.json()),
     ])
       .then(([favData, tagData]) => {
-        // Migrate old favorites without tags
         const favs = (favData.favorites ?? []).map((f: any) => ({
           ...f,
           tags: f.tags || [],
@@ -58,7 +56,6 @@ export default function FavoriteCreatorsPage() {
       .finally(() => setLoading(false));
   }, [hasStore]);
 
-  // Auto-lookup as user types (debounced)
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     setSearchError(null);
@@ -90,7 +87,6 @@ export default function FavoriteCreatorsPage() {
     }, 500);
   }, []);
 
-  // Select the auto-result
   const selectAutoResult = useCallback(() => {
     if (!autoResult) return;
     if (favorites.some((f) => f.username.toLowerCase() === autoResult.username.toLowerCase())) {
@@ -170,6 +166,17 @@ export default function FavoriteCreatorsPage() {
     setShowNewTag(false);
   }, [newTagName, tags]);
 
+  const removeTag = useCallback((tagName: string) => {
+    setTags((prev) => prev.filter((t) => t.name !== tagName));
+    // Remove tag from all favorites that have it
+    const updated = favorites.map((f) => ({
+      ...f,
+      tags: f.tags.filter((t) => t !== tagName),
+    }));
+    setFavorites(updated);
+    saveFavorites(updated);
+  }, [favorites]);
+
   async function saveFavorites(list: FavoriteCreator[]) {
     setSaving(true);
     setSavedMessage(null);
@@ -186,6 +193,12 @@ export default function FavoriteCreatorsPage() {
     } catch {} finally { setSaving(false); }
   }
 
+  function formatCount(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return n.toString();
+  }
+
   if (!hasStore || !storeSlug) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -197,25 +210,13 @@ export default function FavoriteCreatorsPage() {
     );
   }
 
-  const filteredFavorites = activeFilter
-    ? favorites.filter((f) => f.tags.includes(activeFilter))
-    : favorites;
-
-  // Count per tag
-  const tagCounts: Record<string, number> = {};
-  for (const f of favorites) {
-    for (const t of f.tags) {
-      tagCounts[t] = (tagCounts[t] || 0) + 1;
-    }
-  }
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Creator Collections</h1>
+          <h1 className="text-2xl font-bold text-white">Favorite Creators</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Curate your favorite X creators into collections. They show on your public page.
+            Add creators and organize them into categories for your public favorites page.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -224,32 +225,26 @@ export default function FavoriteCreatorsPage() {
         </div>
       </div>
 
-      {/* Tag filter bar + create custom tag */}
-      {favorites.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-6 mt-4">
-          <button
-            onClick={() => setActiveFilter(null)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              !activeFilter
-                ? "bg-indigo-600 text-white"
-                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
-            }`}
-          >
-            All ({favorites.length})
-          </button>
-          {tags.map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => setActiveFilter(activeFilter === tag.name ? null : tag.name)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                activeFilter === tag.name
-                  ? "bg-indigo-600 text-white"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
-              }`}
-            >
-              {tag.name} ({tagCounts[tag.name] || 0})
-            </button>
-          ))}
+      {/* Manage Categories */}
+      <div className="mt-4 mb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Categories</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {tags.map((tag) => {
+            const count = favorites.filter((f) => f.tags.includes(tag.name)).length;
+            return (
+              <div key={tag.id} className="group flex items-center gap-1 rounded-full bg-zinc-800 pl-3 pr-1.5 py-1.5">
+                <span className="text-xs font-medium text-zinc-300">{tag.name}</span>
+                <span className="text-[10px] text-zinc-600">({count})</span>
+                <button
+                  onClick={() => removeTag(tag.name)}
+                  className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-zinc-600 hover:bg-red-600/20 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+                  title={`Delete "${tag.name}" category`}
+                >
+                  <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            );
+          })}
 
           {showNewTag ? (
             <div className="flex items-center gap-1">
@@ -258,23 +253,23 @@ export default function FavoriteCreatorsPage() {
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") addCustomTag(); if (e.key === "Escape") setShowNewTag(false); }}
-                placeholder="Tag name..."
+                placeholder="Category name..."
                 autoFocus
-                className="w-28 rounded-full border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+                className="w-32 rounded-full border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
               />
-              <button onClick={addCustomTag} className="rounded-full bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Add</button>
-              <button onClick={() => setShowNewTag(false)} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
+              <button onClick={addCustomTag} className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs text-white hover:bg-indigo-500">Add</button>
+              <button onClick={() => { setShowNewTag(false); setNewTagName(""); }} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
             </div>
           ) : (
             <button
               onClick={() => setShowNewTag(true)}
               className="rounded-full border border-dashed border-zinc-600 px-3 py-1.5 text-xs text-zinc-500 hover:border-indigo-500 hover:text-indigo-400 transition"
             >
-              + New Collection
+              + New Category
             </button>
           )}
         </div>
-      )}
+      </div>
 
       {/* Search / Add */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-6">
@@ -296,7 +291,6 @@ export default function FavoriteCreatorsPage() {
               className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
             />
 
-            {/* Auto-result dropdown */}
             {(autoResult || autoLoading) && !searchResult && (
               <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg border border-zinc-700 bg-zinc-800 shadow-xl overflow-hidden">
                 {autoLoading && !autoResult && (
@@ -323,7 +317,7 @@ export default function FavoriteCreatorsPage() {
                           </svg>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500">@{autoResult.username} &middot; {autoResult.follower_count >= 1000 ? `${(autoResult.follower_count / 1000).toFixed(1)}K` : autoResult.follower_count} followers</p>
+                      <p className="text-xs text-zinc-500">@{autoResult.username} · {formatCount(autoResult.follower_count)} followers</p>
                     </div>
                     <span className="text-[10px] text-indigo-400 shrink-0">Select</span>
                   </button>
@@ -342,7 +336,6 @@ export default function FavoriteCreatorsPage() {
 
         {searchError && <p className="mt-2 text-sm text-red-400">{searchError}</p>}
 
-        {/* Preview card with tag selector */}
         {searchResult && (
           <div className="mt-3 rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-3 space-y-3">
             <div className="flex items-start gap-3">
@@ -362,32 +355,33 @@ export default function FavoriteCreatorsPage() {
                     </svg>
                   )}
                 </div>
-                <p className="text-xs text-zinc-500">@{searchResult.username} &middot; {searchResult.follower_count >= 1000 ? `${(searchResult.follower_count / 1000).toFixed(1)}K` : searchResult.follower_count} followers</p>
+                <p className="text-xs text-zinc-500">@{searchResult.username} · {formatCount(searchResult.follower_count)} followers</p>
                 {searchResult.bio && <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{searchResult.bio}</p>}
               </div>
             </div>
 
-            {/* Tag selector */}
-            <div>
-              <p className="text-xs text-zinc-500 mb-2">Add to lists:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => setSelectedTags((prev) =>
-                      prev.includes(tag.name) ? prev.filter((t) => t !== tag.name) : [...prev, tag.name]
-                    )}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      selectedTags.includes(tag.name)
-                        ? "bg-indigo-600 text-white"
-                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                    }`}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+            {tags.length > 0 && (
+              <div>
+                <p className="text-xs text-zinc-500 mb-2">Add to categories:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedTags((prev) =>
+                        prev.includes(tag.name) ? prev.filter((t) => t !== tag.name) : [...prev, tag.name]
+                      )}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        selectedTags.includes(tag.name)
+                          ? "bg-indigo-600 text-white"
+                          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                      }`}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               onClick={addFavorite}
@@ -399,7 +393,7 @@ export default function FavoriteCreatorsPage() {
         )}
       </div>
 
-      {/* Tagged grids */}
+      {/* Favorites list */}
       {loading ? (
         <p className="text-sm text-zinc-500 text-center py-8">Loading...</p>
       ) : favorites.length === 0 ? (
@@ -407,113 +401,102 @@ export default function FavoriteCreatorsPage() {
           <p className="text-zinc-500">No favorites yet. Search for an X creator above to get started.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {tags.map((tag) => {
-            const members = favorites.filter((f) => f.tags.includes(tag.name));
-            return (
-              <section key={tag.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-indigo-400">{tag.name}</h3>
-                  <span className="text-xs text-zinc-600">{members.length}</span>
-                  <div className="flex-1 border-t border-zinc-800" />
-                </div>
-                {members.length === 0 ? (
-                  <p className="text-xs text-zinc-600 py-2">No creators in this list yet.</p>
+        <div className="space-y-2">
+          {favorites.map((fav) => (
+            <div
+              key={fav.username}
+              className="group rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 transition hover:border-zinc-700"
+            >
+              <div className="flex items-center gap-3">
+                {/* Avatar */}
+                {fav.profile_image_url ? (
+                  <img src={fav.profile_image_url} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                    {members.map((fav) => (
-                      <div key={fav.username} className="group relative flex flex-col items-center text-center rounded-xl border border-zinc-800 bg-zinc-800/30 p-3 hover:border-zinc-600 transition">
-                        {fav.profile_image_url ? (
-                          <img src={fav.profile_image_url} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
-                        ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
-                            {fav.display_name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                        )}
-                        <p className="mt-2 text-[11px] font-medium text-white truncate max-w-full">{fav.display_name}</p>
-                        <p className="text-[10px] text-zinc-600 truncate max-w-full">@{fav.username}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <a href={`https://x.com/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-zinc-700/50 px-2 py-0.5 text-[9px] text-zinc-400 hover:text-white hover:bg-zinc-600 transition" title="View on X">
-                            <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                            X
-                          </a>
-                          <a href={`https://www.rareimagery.net/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] text-indigo-400 hover:text-white hover:bg-indigo-600/40 transition" title="View on RareImagery">
-                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-                            Rare
-                          </a>
-                        </div>
-                        <button
-                          onClick={() => toggleTag(fav.username, tag.name)}
-                          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] text-white opacity-0 group-hover:opacity-100 transition"
-                          title={`Remove from ${tag.name}`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 shrink-0">
+                    {fav.display_name?.[0]?.toUpperCase() || "?"}
                   </div>
                 )}
-              </section>
-            );
-          })}
 
-          {/* Untagged */}
-          {(() => {
-            const untagged = favorites.filter((f) => f.tags.length === 0);
-            if (untagged.length === 0) return null;
-            return (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Uncategorized</h3>
-                  <span className="text-xs text-zinc-600">{untagged.length}</span>
-                  <div className="flex-1 border-t border-zinc-800" />
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <a href={`https://x.com/${fav.username}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-white truncate hover:text-indigo-400 transition">
+                      {fav.display_name}
+                    </a>
+                    {fav.verified && (
+                      <svg className="h-3.5 w-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" />
+                      </svg>
+                    )}
+                    <span className="text-[11px] text-zinc-600">@{fav.username}</span>
+                    <span className="text-[11px] text-zinc-700">·</span>
+                    <span className="text-[11px] text-zinc-500">{formatCount(fav.follower_count)} followers</span>
+                  </div>
+
+                  {/* Current tags */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {fav.tags.length > 0 ? (
+                      fav.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400">
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-zinc-700 italic">No categories</span>
+                    )}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {untagged.map((fav) => (
-                    <div key={fav.username} className="group relative flex flex-col items-center text-center rounded-xl border border-zinc-800 bg-zinc-800/30 p-3 hover:border-zinc-600 transition">
-                      {fav.profile_image_url ? (
-                        <img src={fav.profile_image_url} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-700 group-hover:ring-indigo-500 transition" />
-                      ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20 text-sm font-bold text-indigo-400 ring-2 ring-zinc-700">
-                          {fav.display_name?.[0]?.toUpperCase() || "?"}
-                        </div>
-                      )}
-                      <p className="mt-2 text-[11px] font-medium text-white truncate max-w-full">{fav.display_name}</p>
-                      <p className="text-[10px] text-zinc-600 truncate max-w-full">@{fav.username}</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <a href={`https://x.com/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-zinc-700/50 px-2 py-0.5 text-[9px] text-zinc-400 hover:text-white hover:bg-zinc-600 transition">
-                          <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                          X
-                        </a>
-                        <a href={`https://www.rareimagery.net/${fav.username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 text-[9px] text-indigo-400 hover:text-white hover:bg-indigo-600/40 transition">
-                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-                          Rare
-                        </a>
-                      </div>
-                      {/* Quick tag buttons */}
-                      <div className="mt-2 flex flex-wrap justify-center gap-0.5">
-                        {tags.slice(0, 3).map((t) => (
-                          <button
-                            key={t.id}
-                            onClick={() => toggleTag(fav.username, t.name)}
-                            className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[7px] text-zinc-500 hover:bg-indigo-600/30 hover:text-indigo-300 transition"
-                          >
-                            +{t.name}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => removeFavorite(fav.username)}
-                        className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] text-white opacity-0 group-hover:opacity-100 transition"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+
+                {/* Actions */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setEditingTags(editingTags === fav.username ? null : fav.username)}
+                    className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
+                      editingTags === fav.username
+                        ? "bg-indigo-600 text-white"
+                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                    }`}
+                    title="Edit categories"
+                  >
+                    <svg className="h-3.5 w-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>
+                    Tags
+                  </button>
+                  <button
+                    onClick={() => removeFavorite(fav.username)}
+                    className="rounded-lg bg-zinc-800 px-2 py-1.5 text-zinc-600 hover:bg-red-600/20 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+                    title="Remove"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                  </button>
                 </div>
-              </section>
-            );
-          })()}
+              </div>
+
+              {/* Expanded tag editor */}
+              {editingTags === fav.username && tags.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-zinc-800">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Toggle categories</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => {
+                      const active = fav.tags.includes(tag.name);
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTag(fav.username, tag.name)}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                            active
+                              ? "bg-indigo-600 text-white"
+                              : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-white"
+                          }`}
+                        >
+                          {active ? "✓ " : "+ "}{tag.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
