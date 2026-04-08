@@ -62,6 +62,11 @@ export default function DesignStudioPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [showTokenHelp, setShowTokenHelp] = useState(false);
 
+  // Enhance prompt + Import X Post
+  const [enhancing, setEnhancing] = useState(false);
+  const [xPostUrl, setXPostUrl] = useState("");
+  const [importingPost, setImportingPost] = useState(false);
+
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -286,6 +291,64 @@ export default function DesignStudioPage() {
     }
   };
 
+  const handleEnhancePrompt = async () => {
+    if (!prompt.trim()) return;
+    setEnhancing(true);
+    try {
+      const res = await fetch("/api/design-studio/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), product_type: productType }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhanced) {
+          setPrompt(data.enhanced);
+          if (data.description && !description) setDescription(data.description);
+        }
+      }
+    } catch {} finally {
+      setEnhancing(false);
+    }
+  };
+
+  const handleImportXPost = async () => {
+    const url = xPostUrl.trim();
+    if (!url) return;
+    // Extract post ID from URL: https://x.com/user/status/1234567890
+    const match = url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/);
+    if (!match) {
+      setError("Paste a valid X post URL (e.g. https://x.com/user/status/123)");
+      return;
+    }
+    setImportingPost(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/design-studio/import-post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_url: url }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.text) setPrompt(data.text);
+        if (data.image_url) {
+          setRefPreview(data.image_url);
+          setRefDataUrl(null);
+        }
+        if (data.title) setTitle(data.title);
+        setXPostUrl("");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setError(err.error || "Failed to import post");
+      }
+    } catch {
+      setError("Failed to import post");
+    } finally {
+      setImportingPost(false);
+    }
+  };
+
   const selectedProduct = PRODUCT_TYPES.find((t) => t.value === productType);
 
   return (
@@ -339,6 +402,29 @@ export default function DesignStudioPage() {
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 mt-1.5">Auto-fills prompt from their bio + uses their PFP as reference image</p>
+      </div>
+
+      {/* Import X Post */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
+        <p className="text-xs font-medium text-zinc-400 mb-2">Import from an X post</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={xPostUrl}
+            onChange={(e) => setXPostUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleImportXPost()}
+            placeholder="Paste X post URL (e.g. https://x.com/user/status/123)"
+            className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+          />
+          <button
+            onClick={handleImportXPost}
+            disabled={importingPost || !xPostUrl.trim()}
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition"
+          >
+            {importingPost ? "Importing..." : "Import Post"}
+          </button>
+        </div>
+        <p className="text-[10px] text-zinc-600 mt-1.5">Extracts the post text as your prompt and image as reference</p>
       </div>
 
       {/* Reference image upload */}
@@ -409,6 +495,23 @@ export default function DesignStudioPage() {
           className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none resize-none"
           rows={3}
         />
+        <button
+          onClick={handleEnhancePrompt}
+          disabled={enhancing || !prompt.trim()}
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+        >
+          {enhancing ? (
+            <>
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              Enhancing...
+            </>
+          ) : (
+            <>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+              Enhance prompt with Grok AI
+            </>
+          )}
+        </button>
 
         {/* Product type selector */}
         <div className="flex gap-2">
