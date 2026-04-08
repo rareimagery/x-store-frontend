@@ -185,6 +185,9 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 8)", type: "number" },
     ],
+    x_spaces: [
+      { key: "heading", label: "Section Heading", type: "text" },
+    ],
   };
 
   const fields = fieldDefs[block.type] || [];

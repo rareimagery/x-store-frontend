@@ -763,6 +763,47 @@ function TopFollowersBlock({ block, profile, compact = false }: { block: PlacedB
 }
 
 /* ------------------------------------------------------------------ */
+/*  X Spaces                                                           */
+/* ------------------------------------------------------------------ */
+
+function XSpacesBlock({ block, profile }: { block: PlacedBlock; profile: CreatorProfile }) {
+  const heading = block.props.heading;
+
+  // X Spaces are fetched client-side since they require auth context
+  // For the public page, show a link to the creator's X profile for Spaces
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-white mb-3">{heading ? String(heading) : "X Spaces"}</h3>
+      <div className="rounded-xl border wf-card p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600/20">
+            <svg className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">Live & Upcoming Spaces</p>
+            <p className="text-xs wf-muted">Join @{profile.x_username}&apos;s audio rooms on X</p>
+          </div>
+        </div>
+        <a
+          href={`https://x.com/${profile.x_username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 rounded-lg border wf-border px-4 py-2.5 text-sm font-medium transition hover:border-zinc-600"
+          style={{ color: "var(--wf-accent)" }}
+        >
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          View Spaces on X
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Block Router                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -811,6 +852,7 @@ function RenderBlock({
     case "x_communities": return <XCommunitiesBlock block={block} communities={communities} />;
     case "my_favorites": return <MyFavorites block={block} favorites={favorites} creatorUsername={profile.x_username} compact={compact} />;
     case "top_followers": return <TopFollowersBlock block={block} profile={profile} compact={compact} />;
+    case "x_spaces": return <XSpacesBlock block={block} profile={profile} />;
     default:
       return (
         <div className="rounded-xl border wf-card p-4 text-xs wf-muted">
