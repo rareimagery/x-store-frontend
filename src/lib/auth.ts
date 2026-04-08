@@ -277,6 +277,7 @@ export const authOptions: NextAuthOptions = {
           const body = new URLSearchParams({
             code: params.code as string,
             grant_type: "authorization_code",
+            client_id: X_OAUTH_CLIENT_ID,
             redirect_uri: redirectUri,
             code_verifier: codeVerifier,
           });
@@ -397,69 +398,90 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
 
-      const xProfile = (profile || {}) as XProfile;
+      try {
+        const xProfile = (profile || {}) as XProfile;
 
-      // X OAuth 2.0 via next-auth returns username at the top level of the profile
-      const xUsername =
-        xProfile.username ??
-        xProfile.screen_name ??
-        xProfile.data?.username ??
-        "";
-      const normalizedXUsername = xUsername.trim().replace(/^@+/, "").toLowerCase();
+        // X OAuth 2.0 via next-auth returns username at the top level of the profile
+        const xUsername =
+          xProfile.username ??
+          xProfile.screen_name ??
+          xProfile.data?.username ??
+          "";
+        const normalizedXUsername = xUsername.trim().replace(/^@+/, "").toLowerCase();
 
-      console.log(`[auth] X login attempt: @${normalizedXUsername} (${account.providerAccountId})`);
+        console.log(`[auth] X login attempt: @${normalizedXUsername} (${account.providerAccountId})`);
 
-      if (!normalizedXUsername) {
-        console.error("[auth] Missing X username in profile");
-        return "/signup?error=MissingXProfile";
-      }
+        if (!normalizedXUsername) {
+          console.error("[auth] Missing X username in profile");
+          return "/signup?error=MissingXProfile";
+        }
 
-      const adminXUsernames = (process.env.ADMIN_X_USERNAMES || "")
-        .toLowerCase()
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (adminXUsernames.includes(normalizedXUsername)) {
-        console.log(`[auth] Admin detected: @${normalizedXUsername}`);
-        return true;
-      }
-
-      const existingByUsername = await findProfileByUsername(normalizedXUsername);
-      if (existingByUsername) {
-        console.log(`[auth] Found existing profile by username: @${normalizedXUsername}`);
-        return true;
-      }
-
-      const xUserId = account.providerAccountId;
-      if (!xUserId) {
-        console.error("[auth] Missing X user ID in account");
-        return "/signup?error=MissingXProfile";
-      }
-
-      const existingByXUserId = await findProfileByXUserId(xUserId);
-      if (existingByXUserId) {
-        console.log(`[auth] Found existing profile by X ID: ${xUserId}`);
-        return true;
-      }
-
-      console.log(`[auth] Checking subscription for @${normalizedXUsername}`);
-      const check = await checkRequiredPaidSubscription({
-        buyerXId: xUserId,
-        buyerUsername: normalizedXUsername,
-      });
-
-      if (!check.subscribed) {
-        console.warn(`[auth] Subscription check failed for @${normalizedXUsername}: ${check.error}`);
-        const infraFailure = /configured|failed|missing|drupal|api|404|not found/i.test(check.error || "");
-        if (infraFailure) {
-          console.warn(`[auth] Infrastructure failure detected, allowing @${normalizedXUsername} to fail-open`);
+        const adminXUsernames = (process.env.ADMIN_X_USERNAMES || "")
+          .toLowerCase()
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (adminXUsernames.includes(normalizedXUsername)) {
+          console.log(`[auth] Admin detected: @${normalizedXUsername}`);
           return true;
         }
-        return `/signup?error=PaidSubscriptionRequired&username=${normalizedXUsername}`;
-      }
 
-      console.log(`[auth] Successful login for @${normalizedXUsername}`);
-      return true;
+        // Wrap Drupal lookups in individual try-catch so a Drupal outage
+        // doesn't crash the entire signIn callback ("Something went wrong")
+        let existingByUsername = false;
+        try {
+          const found = await findProfileByUsername(normalizedXUsername);
+          existingByUsername = !!found;
+        } catch (err) {
+          console.error(`[auth] Drupal profile lookup failed for @${normalizedXUsername}:`, err);
+          // Drupal unreachable — fail open so users aren't locked out
+        }
+        if (existingByUsername) {
+          console.log(`[auth] Found existing profile by username: @${normalizedXUsername}`);
+          return true;
+        }
+
+        const xUserId = account.providerAccountId;
+        if (!xUserId) {
+          console.error("[auth] Missing X user ID in account");
+          return "/signup?error=MissingXProfile";
+        }
+
+        let existingByXUserId = false;
+        try {
+          existingByXUserId = await findProfileByXUserId(xUserId);
+        } catch (err) {
+          console.error(`[auth] Drupal X ID lookup failed for ${xUserId}:`, err);
+        }
+        if (existingByXUserId) {
+          console.log(`[auth] Found existing profile by X ID: ${xUserId}`);
+          return true;
+        }
+
+        console.log(`[auth] Checking subscription for @${normalizedXUsername}`);
+        const check = await checkRequiredPaidSubscription({
+          buyerXId: xUserId,
+          buyerUsername: normalizedXUsername,
+        });
+
+        if (!check.subscribed) {
+          console.warn(`[auth] Subscription check failed for @${normalizedXUsername}: ${check.error}`);
+          const infraFailure = /configured|failed|missing|drupal|api|404|not found|timeout|econnrefused|enotfound|fetch/i.test(check.error || "");
+          if (infraFailure) {
+            console.warn(`[auth] Infrastructure failure detected, allowing @${normalizedXUsername} to fail-open`);
+            return true;
+          }
+          return `/signup?error=PaidSubscriptionRequired&username=${normalizedXUsername}`;
+        }
+
+        console.log(`[auth] Successful login for @${normalizedXUsername}`);
+        return true;
+      } catch (err) {
+        // Catch-all: never let signIn crash with "Something went wrong".
+        // Log the real error and fail-open so users can still log in.
+        console.error("[auth] Unexpected error in signIn callback:", err);
+        return true;
+      }
     },
     async jwt({ token, account, profile, user }) {
       const appToken = token as AppToken;
@@ -594,6 +616,7 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development" || process.env.NEXTAUTH_DEBUG === "true",
   pages: {
     signIn: "/login",
+    error: "/auth/error",
   },
   session: {
     strategy: "jwt",
