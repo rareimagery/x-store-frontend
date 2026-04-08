@@ -66,6 +66,7 @@ export default function DesignStudioPage() {
   const [enhancing, setEnhancing] = useState(false);
   const [xPostUrl, setXPostUrl] = useState("");
   const [importingPost, setImportingPost] = useState(false);
+  const [quickTab, setQuickTab] = useState<"prompt" | "profile" | "post" | "upload">("prompt");
 
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
@@ -353,167 +354,143 @@ export default function DesignStudioPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center gap-3 mb-1">
-        <svg className="h-7 w-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-        </svg>
-        <h1 className="text-2xl font-bold text-white">Grok Creator Studio</h1>
-      </div>
-      <p className="text-sm text-zinc-400 mb-8">
+      <h1 className="text-2xl font-bold text-white mb-1">Grok Creator Studio</h1>
+      <p className="text-sm text-zinc-400 mb-6">
         Describe your design. Grok Imagine creates 4 variants. Pick your favorite. Printful fulfills it.
       </p>
 
-      {/* Quick generate from X profile */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
-        <p className="text-xs font-medium text-zinc-400 mb-2">Quick: Generate merch from an X profile</p>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
-            <input
-              type="text"
-              value={xHandle}
-              onChange={(e) => setXHandle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleXProfileGenerate()}
-              placeholder="username"
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
-            />
-          </div>
-          <button
-            onClick={handleXProfileGenerate}
-            disabled={xLooking || !xHandle.trim()}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-500 disabled:opacity-50 transition"
-          >
-            {xLooking ? (
-              <>
-                <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Looking up...
-              </>
-            ) : (
-              <>
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Generate from Profile
-              </>
-            )}
-          </button>
-        </div>
-        <p className="text-[10px] text-zinc-600 mt-1.5">Auto-fills prompt from their bio + uses their PFP as reference image</p>
-      </div>
-
-      {/* Import X Post */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
-        <p className="text-xs font-medium text-zinc-400 mb-2">Import from an X post</p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={xPostUrl}
-            onChange={(e) => setXPostUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleImportXPost()}
-            placeholder="Paste X post URL (e.g. https://x.com/user/status/123)"
-            className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
-          />
-          <button
-            onClick={handleImportXPost}
-            disabled={importingPost || !xPostUrl.trim()}
-            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition"
-          >
-            {importingPost ? "Importing..." : "Import Post"}
-          </button>
-        </div>
-        <p className="text-[10px] text-zinc-600 mt-1.5">Extracts the post text as your prompt and image as reference</p>
-      </div>
-
-      {/* Reference image upload */}
-      <div
-        className={`rounded-xl border-2 border-dashed p-5 text-center transition-colors ${
-          dragActive
-            ? "border-indigo-500 bg-indigo-500/5"
-            : refPreview
-              ? "border-zinc-700 bg-zinc-900/50"
-              : "border-zinc-700 bg-zinc-900/30 hover:border-zinc-600"
-        }`}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragActive(false);
-          const file = e.dataTransfer.files[0];
-          if (file) handleFileSelect(file);
-        }}
-      >
-        {refPreview ? (
-          <div className="flex items-center gap-4">
-            <img src={refPreview} alt="Reference" className="h-20 w-20 rounded-lg object-cover" />
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-white">Reference image attached</p>
-              <p className="text-xs text-zinc-500">Grok will use this as the base for your design</p>
-            </div>
+      {/* Quick start tabs */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
+        <div className="flex border-b border-zinc-800">
+          {([
+            { id: "prompt" as const, label: "Write a Prompt" },
+            { id: "profile" as const, label: "From X Profile" },
+            { id: "post" as const, label: "From X Post" },
+            { id: "upload" as const, label: "Upload Image" },
+          ]).map((tab) => (
             <button
-              onClick={clearReference}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-red-500/50 hover:text-red-400 transition"
+              key={tab.id}
+              onClick={() => setQuickTab(tab.id)}
+              className={`flex-1 px-3 py-2.5 text-xs font-medium transition ${
+                quickTab === tab.id
+                  ? "bg-zinc-800 text-white border-b-2 border-purple-500"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
             >
-              Remove
+              {tab.label}
             </button>
-          </div>
-        ) : (
-          <>
-            <svg className="mx-auto h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            <p className="text-sm text-zinc-400">Drag &amp; drop a reference image</p>
-            <p className="text-[10px] text-zinc-600 mb-3">Logo, artwork, photo, sketch — JPEG/PNG/WebP, max 4MB</p>
-            <label className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition">
-              Choose file
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+          ))}
+        </div>
+
+        <div className="p-4">
+          {/* Tab: Write a Prompt */}
+          {quickTab === "prompt" && (
+            <div className="space-y-3">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                placeholder="Cyberpunk samurai cat wearing neon sunglasses..."
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none resize-none"
+                rows={3}
               />
-            </label>
-            <p className="mt-2 text-[10px] text-zinc-600">Optional — or just type a prompt below</p>
-          </>
+              <button
+                onClick={handleEnhancePrompt}
+                disabled={enhancing || !prompt.trim()}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+              >
+                {enhancing ? (
+                  <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Enhancing...</>
+                ) : (
+                  <><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg> Enhance prompt with Grok AI</>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Tab: From X Profile */}
+          {quickTab === "profile" && (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-400">Enter any @username. We auto-fill the prompt from their bio and use their PFP as a reference image.</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+                  <input type="text" value={xHandle} onChange={(e) => setXHandle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleXProfileGenerate()} placeholder="username" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
+                </div>
+                <button onClick={handleXProfileGenerate} disabled={xLooking || !xHandle.trim()} className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2.5 text-sm font-medium text-white hover:from-purple-500 disabled:opacity-50 transition">
+                  {xLooking ? "Looking up..." : "Generate from Profile"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: From X Post */}
+          {quickTab === "post" && (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-400">Paste any X post URL. We extract the text as your prompt and the image as your reference.</p>
+              <div className="flex gap-2">
+                <input type="text" value={xPostUrl} onChange={(e) => setXPostUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleImportXPost()} placeholder="https://x.com/user/status/123456789" className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
+                <button onClick={handleImportXPost} disabled={importingPost || !xPostUrl.trim()} className="rounded-lg bg-zinc-800 border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition">
+                  {importingPost ? "Importing..." : "Import Post"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Upload Image */}
+          {quickTab === "upload" && (
+            <div
+              className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+                dragActive ? "border-indigo-500 bg-indigo-500/5" : refPreview ? "border-zinc-700" : "border-zinc-700 hover:border-zinc-600"
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={(e) => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f); }}
+            >
+              {refPreview ? (
+                <div className="flex items-center gap-4">
+                  <img src={refPreview} alt="Reference" className="h-16 w-16 rounded-lg object-cover" />
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-white">Reference image attached</p>
+                    <p className="text-xs text-zinc-500">Grok will use this as the base for your design</p>
+                  </div>
+                  <button onClick={clearReference} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-red-500/50 hover:text-red-400 transition">Remove</button>
+                </div>
+              ) : (
+                <>
+                  <svg className="mx-auto h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                  <p className="text-sm text-zinc-400">Drag &amp; drop a reference image</p>
+                  <p className="text-[10px] text-zinc-600 mb-3">Logo, artwork, photo, sketch — JPEG/PNG/WebP, max 4MB</p>
+                  <label className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition">
+                    Choose file
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+                  </label>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Reference preview (shows on any tab if image is attached) */}
+        {refPreview && quickTab !== "upload" && (
+          <div className="px-4 pb-3 flex items-center gap-3">
+            <img src={refPreview} alt="ref" className="h-10 w-10 rounded-lg object-cover" />
+            <span className="text-xs text-zinc-500">Reference image attached</span>
+            <button onClick={clearReference} className="ml-auto text-[10px] text-zinc-600 hover:text-red-400 transition">Remove</button>
+          </div>
+        )}
+
+        {/* Prompt preview (shows on non-prompt tabs when prompt is set) */}
+        {prompt && quickTab !== "prompt" && (
+          <div className="px-4 pb-3">
+            <p className="text-[10px] text-zinc-600 mb-1">Prompt:</p>
+            <p className="text-xs text-zinc-400 line-clamp-2">{prompt}</p>
+          </div>
         )}
       </div>
 
-      {/* Prompt input */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleGenerate();
-            }
-          }}
-          placeholder="Cyberpunk samurai cat wearing neon sunglasses..."
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none resize-none"
-          rows={3}
-        />
-        <button
-          onClick={handleEnhancePrompt}
-          disabled={enhancing || !prompt.trim()}
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-1.5"
-        >
-          {enhancing ? (
-            <>
-              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-              Enhancing...
-            </>
-          ) : (
-            <>
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-              Enhance prompt with Grok AI
-            </>
-          )}
-        </button>
-
-        {/* Product type selector */}
+      {/* Product type + Generate */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
         <div className="flex gap-2">
           {PRODUCT_TYPES.map((pt) => (
             <button
