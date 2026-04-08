@@ -85,13 +85,22 @@ const DEFAULT_SECTIONS: WikiSection[] = [
     title: "Console Dashboard Pages",
     content: `<strong>Workspace:</strong>
 • Page Building — Drag-and-drop wireframe editor (Main Content + Right Sidebar)
-• Grok Creator Studio — AI image generation → product publishing
+• Grok Creator Studio — AI-powered design studio with 4 input modes (see below)
 • Grok Library — Upload/manage Grok Imagine creations (images + videos)
 • My Favorites — Curate X creators into categorized collections
 • Social Feeds — Connect TikTok, Instagram, YouTube accounts
 • Music — Spotify + Apple Music playlist builder
 • X Communities — Showcase X Communities
 • X Articles — Import long-form X articles
+
+<strong>Grok Creator Studio (/console/design-studio):</strong>
+Tabbed interface with 4 ways to start a design:
+• <strong>Write a Prompt</strong> — Type a description + "Enhance with Grok AI" button (uses grok-3-mini to rewrite prompt and auto-generate product description)
+• <strong>From X Profile</strong> — Enter any @username, auto-fills prompt from their bio + uses PFP as reference
+• <strong>From X Post</strong> — Paste any X post URL, extracts text as prompt + first image as reference (POST /api/design-studio/import-post)
+• <strong>Upload Image</strong> — Drag-and-drop reference image (JPEG/PNG/WebP, max 4MB)
+Then: select product type (T-Shirt, Hoodie, Ballcap, Digital Drop) → Generate 4 Grok Imagine variants → select favorite → publish to Printful + Drupal Commerce → Share to X
+APIs: /api/design-studio/generate, /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
 
 <strong>Store (dropdown):</strong>
 • Products, Orders, Shipping, Accounting, Printful, Settings
@@ -180,7 +189,7 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
 <strong>Printful:</strong> /api/printful/connect, /api/printful/import, /api/printful/sync-drupal, /api/printful/status, /api/printful/products, /api/printful/catalog, /api/printful/orders, /api/printful/shipping-rates, /api/printful/webhook
 <strong>Social:</strong> /api/social/follow, /api/social/followers, /api/social/picks, /api/social/shoutouts, /api/social/seed-from-x
 <strong>Content:</strong> /api/favorites, /api/favorites/enrich, /api/gallery, /api/gallery/upload, /api/articles, /api/music, /api/communities, /api/social-feeds, /api/blocks, /api/builds
-<strong>Design:</strong> /api/design-studio/generate, /api/design-studio/publish
+<strong>Design:</strong> /api/design-studio/generate, /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
 <strong>Payments:</strong> /api/checkout, /api/webhooks/stripe, /api/subscriptions/*
 <strong>Admin:</strong> /api/invite/admin, /api/guide
 <strong>Other:</strong> /api/health, /api/x-lookup, /api/upload, /api/notifications/preferences`,

@@ -100,7 +100,7 @@ async function discoverPlatformState(baseUrl: string) {
     "health", "blocks", "builds", "favorites", "favorites/tags", "gallery",
     "music", "communities", "social-feeds", "articles",
     "printful/status", "x-lookup", "invite",
-    "design-studio/generate", "guide", "admin/wiki",
+    "design-studio/generate", "design-studio/enhance", "design-studio/import-post", "guide", "admin/wiki",
     "social/picks", "social/followers",
     "subscriptions/tiers", "notifications/preferences",
     "console/stores", "console/insights",
@@ -246,7 +246,7 @@ ${(state.apiRoutes || []).map((r: string) => `• /api/${r}`).join("\n")}
 <strong>Printful:</strong> connect, import, sync-drupal, status, products, catalog, orders, shipping-rates, webhook
 <strong>Social:</strong> follow, followers, picks, shoutouts, seed-from-x
 <strong>Content:</strong> favorites, favorites/enrich, gallery, gallery/upload, articles, music, communities, social-feeds, blocks, builds
-<strong>Design:</strong> design-studio/generate, design-studio/publish
+<strong>Design:</strong> design-studio/generate, design-studio/publish, design-studio/enhance, design-studio/import-post
 <strong>Admin:</strong> invite/admin, guide, admin/wiki
 <strong>Cron:</strong> code-audit, wiki-update, x-money-watcher`,
     },
