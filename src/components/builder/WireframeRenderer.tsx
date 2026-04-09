@@ -207,10 +207,11 @@ function productSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function ProductGrid({ block, products, compact = false }: { block: PlacedBlock; products: Product[]; compact?: boolean }) {
+function ProductGrid({ block, products, profile, compact = false }: { block: PlacedBlock; products: Product[]; profile: CreatorProfile; compact?: boolean }) {
   const maxItems = Number(block.props.max_items) || 6;
   const cols = Number(block.props.gallery_columns) || 3;
-  const heading = block.props.heading;
+  const storeName = (profile.title || `@${profile.x_username}`).replace(/\s*X\s*Profile\s*/i, "");
+  const storeHref = `/${profile.x_username}/store`;
   const shown = products.slice(0, maxItems);
 
   const gridClass = compact
@@ -219,7 +220,14 @@ function ProductGrid({ block, products, compact = false }: { block: PlacedBlock;
 
   return (
     <div>
-      {heading && <h3 className={`font-semibold text-white mb-3 ${compact ? "text-sm" : "text-lg"}`}>{String(heading)}</h3>}
+      <div className={`flex items-center justify-between mb-3`}>
+        <a href={storeHref} className={`font-semibold text-white hover:opacity-80 transition ${compact ? "text-sm" : "text-lg"}`}>
+          {storeName}&apos;s Store
+        </a>
+        <a href={storeHref} className="text-xs wf-accent hover:opacity-80 transition">
+          View all &rarr;
+        </a>
+      </div>
       <div className={`grid gap-3 ${gridClass}`}>
         {shown.map((p) => (
           <a
@@ -837,7 +845,7 @@ function RenderBlock({
     case "cta_section": return <CtaSection block={block} />;
     case "video_embed": return <VideoEmbed block={block} />;
     case "testimonial": return <Testimonial block={block} />;
-    case "product_grid": return <ProductGrid block={block} products={products} compact={compact} />;
+    case "product_grid": return <ProductGrid block={block} products={products} profile={profile} compact={compact} />;
     case "social_feed": return <SocialFeed block={block} profile={profile} compact={compact} />;
     case "spacer": return <Spacer block={block} />;
     case "newsletter": return <Newsletter block={block} />;
