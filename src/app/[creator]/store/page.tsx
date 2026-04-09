@@ -9,6 +9,7 @@ import {
 } from "@/lib/drupal";
 import BuilderGate from "@/components/builder/BuilderGate";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
 import { getStoreTheme } from "@/lib/storeTheme";
 
@@ -86,7 +87,10 @@ export default async function CreatorStorePage({
   }
 
   return (
+    <>
+    <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
+      <div className="pt-14" />
       <CreatorPageHeader profile={profile} activePage="store" />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -139,5 +143,6 @@ export default async function CreatorStorePage({
 
       <BuilderGate storeSlug={normalized} />
     </ThemedPage>
+    </>
   );
 }

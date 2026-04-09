@@ -938,9 +938,9 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <div className="-mt-16 sm:-mt-20 flex items-end gap-4">
-          <div className="h-28 w-28 sm:h-36 sm:w-36 shrink-0 rounded-full border-4 border-zinc-950 overflow-hidden wf-card">
+          <div className="relative z-10 h-28 w-28 sm:h-36 sm:w-36 shrink-0 rounded-full border-4 border-zinc-950 overflow-hidden wf-card">
             {profile.profile_picture_url ? (
               <img src={profile.profile_picture_url} alt={`@${profile.x_username}`} className="h-full w-full object-cover" />
             ) : (
@@ -989,22 +989,6 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             </a>
           ))}
 
-          {/* Open Your Store + Here's How */}
-          <a
-            href="/login"
-            className="shrink-0 ml-auto rounded-lg px-3 py-2 text-sm font-medium transition hover:opacity-90"
-            style={{ backgroundColor: colors.accent, color: "#fff" }}
-          >
-            Open Your Store
-          </a>
-          <a
-            href="/howto"
-            className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
-            style={{ borderColor: colors.accent, color: colors.accent }}
-          >
-            Here&apos;s How
-          </a>
-
           {/* Share on X */}
           <a
             href={`https://x.com/intent/tweet?${new URLSearchParams({
@@ -1013,7 +997,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             }).toString()}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
+            className="shrink-0 ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-80"
             style={{ borderColor: colors.border, color: colors.text }}
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
@@ -1022,6 +1006,24 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             Share
           </a>
         </nav>
+
+        {/* CTA buttons */}
+        <div className="mt-4 flex items-center gap-3">
+          <a
+            href="/login"
+            className="rounded-lg px-4 py-2 text-sm font-medium transition hover:opacity-90"
+            style={{ backgroundColor: colors.accent, color: "#fff" }}
+          >
+            Open Your Store
+          </a>
+          <a
+            href="/howto"
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:opacity-80"
+            style={{ borderColor: colors.accent, color: colors.accent }}
+          >
+            Here&apos;s How
+          </a>
+        </div>
 
         {/* ── 3-column wireframe blocks with mobile support ── */}
         <MobileColumnLayout

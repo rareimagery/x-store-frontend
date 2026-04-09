@@ -15,6 +15,7 @@ import WireframeRenderer from "@/components/builder/WireframeRenderer";
 import type { FavoriteCreator, XArticle, MusicTrack, XCommunity, GrokGalleryItem, SocialFeedAccount } from "@/components/builder/WireframeRenderer";
 import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
 import BuilderGate from "@/components/builder/BuilderGate";
+import StoreNav from "@/components/StoreNav";
 
 const RESERVED = new Set([
   "console", "login", "signup", "admin", "api", "stores", "products",
@@ -125,6 +126,8 @@ export default async function CreatorLandingPage({
   if (wireframeLayout) {
     return (
       <div className="min-h-screen bg-zinc-950">
+        <StoreNav creator={normalized} />
+        <div className="pt-14">
         <WireframeRenderer
           layout={wireframeLayout}
           profile={profile}
@@ -139,6 +142,7 @@ export default async function CreatorLandingPage({
           pageBackground={wireframeBuild?.pageBackground}
         />
         <BuilderGate storeSlug={normalized} />
+        </div>
       </div>
     );
   }
@@ -149,6 +153,8 @@ export default async function CreatorLandingPage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
+      <StoreNav creator={normalized} />
+      <div className="pt-14" />
       {/* Banner */}
       <div className="relative h-48 sm:h-64 w-full bg-zinc-900 overflow-hidden">
         {profile.banner_url && (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorProfile, DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
 import { getStoreTheme } from "@/lib/storeTheme";
 
@@ -63,7 +64,10 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
   const videos = gallery.filter((g) => g.type === "video");
 
   return (
+    <>
+    <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
+      <div className="pt-14" />
       <CreatorPageHeader profile={profile} activePage="gallery" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -157,5 +161,6 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
         </div>
       </div>
     </ThemedPage>
+    </>
   );
 }

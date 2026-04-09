@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import DonationCampaignCard, { DonorWall } from "@/components/DonationCampaign";
+import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
 import { getStoreTheme } from "@/lib/storeTheme";
 import type { DonationCampaign } from "@/app/api/donations/route";
@@ -64,7 +65,10 @@ export default async function DonatePage({
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
 
   return (
+    <>
+    <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
+      <div className="pt-14" />
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900/50">
         <div className="mx-auto max-w-3xl px-4 py-6">
@@ -128,5 +132,6 @@ export default async function DonatePage({
         </div>
       </div>
     </ThemedPage>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
 import FavoritesGrid from "@/components/FavoritesGrid";
+import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
 import { getStoreTheme } from "@/lib/storeTheme";
 
@@ -72,7 +73,10 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
   }
 
   return (
+    <>
+    <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
+      <div className="pt-14" />
       <CreatorPageHeader profile={profile} activePage="favorites" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -87,5 +91,6 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
         )}
       </div>
     </ThemedPage>
+    </>
   );
 }

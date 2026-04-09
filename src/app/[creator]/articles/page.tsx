@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCreatorProfile } from "@/lib/drupal";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
+import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
 import { getStoreTheme } from "@/lib/storeTheme";
 
@@ -69,7 +70,10 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
   if (!profile) notFound();
 
   return (
+    <>
+    <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
+      <div className="pt-14" />
       <CreatorPageHeader profile={profile} activePage="articles" />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
@@ -123,5 +127,6 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
         )}
       </div>
     </ThemedPage>
+    </>
   );
 }
