@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
-import { getStoreUrl, getStorePageUrl } from "@/lib/store-url";
+import { getStorePageUrl } from "@/lib/store-url";
 
 interface StoreProduct {
   id: string;
@@ -20,1037 +20,474 @@ const PRODUCT_TYPES = [
   { value: "digital_drop", label: "Digital Drop", emoji: "⚡" },
 ];
 
+type ChatMsg = { role: "user" | "assistant" | "system"; content: string };
+
 export default function DesignStudioPage() {
   const { storeSlug, hasStore } = useConsole();
+
+  // Core state
   const [prompt, setPrompt] = useState("");
   const [productType, setProductType] = useState("t_shirt");
-  const [generating, setGenerating] = useState(false);
-  const [designUrl, setDesignUrl] = useState<string | null>(null);
-  const [designVariants, setDesignVariants] = useState<string[]>([]);
-  const [usedPfp, setUsedPfp] = useState<{ used: boolean; username?: string }>({ used: false });
-  const [usedUpload, setUsedUpload] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Reference image upload
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const [refDataUrl, setRefDataUrl] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [designVariants, setDesignVariants] = useState<string[]>([]);
+  const [designUrl, setDesignUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  // Publish
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [published, setPublished] = useState<{
-    product_type: string;
-    mockup_url: string | null;
-    retail_price: string;
-    design_url: string | null;
-    printful_synced: boolean;
-  } | null>(null);
+  const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean } | null>(null);
 
-  // Printful connection
+  // Printful
   const [printfulKey, setPrintfulKey] = useState("");
   const [printfulConnected, setPrintfulConnected] = useState<string | null>(null);
   const [storeUuid, setStoreUuid] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
-
-  // X Profile quick generate
-  const [xHandle, setXHandle] = useState("");
-  const [xLooking, setXLooking] = useState(false);
-
-  // Printful import
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [showTokenHelp, setShowTokenHelp] = useState(false);
 
-  // Enhance prompt + Import X Post
-  const [enhancing, setEnhancing] = useState(false);
-  const [xPostUrl, setXPostUrl] = useState("");
-  const [importingPost, setImportingPost] = useState(false);
-  const [quickTab, setQuickTab] = useState<"prompt" | "profile" | "post" | "upload">("prompt");
-
-  // Grok chat assistant
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatSending, setChatSending] = useState(false);
-  const [chatOpen, setChatOpen] = useState(true);
-
-  // Store products
+  // Products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Check Printful status and load products on mount
+  // Chat — the primary interface
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Helpers for quick actions
+  const [xLooking, setXLooking] = useState(false);
+  const [importingPost, setImportingPost] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  // Scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, chatSending]);
+
+  // Load Printful + products on mount
   useEffect(() => {
     if (!hasStore) return;
-
-    // Check Printful connection
     fetch(`/api/printful/status?slug=${encodeURIComponent(storeSlug || "")}`)
       .then((r) => r.json())
-      .then((d) => {
-        if (d.store_uuid) setStoreUuid(d.store_uuid);
-        if (d.connected) setPrintfulConnected(d.printful_store_id ? `Store #${d.printful_store_id}` : "Connected");
-      })
+      .then((d) => { if (d.store_uuid) setStoreUuid(d.store_uuid); if (d.connected) setPrintfulConnected(d.printful_store_id ? `Store #${d.printful_store_id}` : "Connected"); })
       .catch(() => {});
-
-    // Load store products from Drupal
     fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`)
       .then((r) => r.json())
-      .then((d) => {
-        const products = d.products ?? d ?? [];
-        setStoreProducts(Array.isArray(products) ? products : []);
-      })
+      .then((d) => { const p = d.products ?? d ?? []; setStoreProducts(Array.isArray(p) ? p : []); })
       .catch(() => {})
       .finally(() => setLoadingProducts(false));
   }, [hasStore, storeSlug]);
 
-  const connectPrintful = useCallback(async () => {
-    if (!printfulKey.trim()) return;
-    setConnecting(true);
-    setConnectError(null);
-    try {
-      const res = await fetch("/api/printful/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: printfulKey.trim(), storeId: storeUuid }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setConnectError(data.error || "Connection failed");
-        return;
-      }
-      setPrintfulConnected(data.printful_store || "Connected");
-      setPrintfulKey("");
-    } catch {
-      setConnectError("Connection failed");
-    } finally {
-      setConnecting(false);
-    }
-  }, [printfulKey]);
-
-  if (!hasStore || !storeSlug) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-white mb-2">No Store Found</h2>
-          <p className="text-sm text-zinc-500">Create a store first to use the Design Studio.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleFileSelect = (file: File) => {
-    if (file.size > 4 * 1024 * 1024) {
-      setError("Image too large (max 4MB)");
-      return;
-    }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Only JPEG, PNG, or WebP images");
-      return;
-    }
-    setError(null);
-    setRefPreview(URL.createObjectURL(file));
-    const reader = new FileReader();
-    reader.onload = () => setRefDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
+  // Build context string for the chat API
+  const buildContext = () => {
+    const parts: string[] = [];
+    const pl = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "T-Shirt";
+    parts.push(`Product: ${pl}`);
+    if (prompt) parts.push(`Current prompt: "${prompt}"`);
+    if (refPreview) parts.push("Reference image is attached");
+    if (designVariants.length > 0) parts.push(`${designVariants.length} variants generated`);
+    if (published) parts.push("Design has been published to store");
+    return parts.join(". ");
   };
 
-  const clearReference = () => {
-    setRefPreview(null);
-    setRefDataUrl(null);
-  };
-
-  const handleXProfileGenerate = async () => {
-    const handle = xHandle.trim().replace(/^@/, "");
-    if (!handle) return;
-    setXLooking(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(handle)}`);
-      if (!res.ok) {
-        setError(`@${handle} not found on X`);
-        setXLooking(false);
-        return;
-      }
-      const profile = await res.json();
-      const productLabel = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "T-Shirt";
-      const bioSnippet = (profile.bio || "").slice(0, 100);
-      const autoPrompt = `Premium ${productLabel} merch design inspired by @${handle}. Theme: ${bioSnippet}. Print-ready, centered, vibrant, high contrast for fabric.`;
-      setPrompt(autoPrompt);
-      setTitle(`@${handle} ${productLabel}`);
-      // Use their PFP as reference
-      if (profile.profile_image_url) {
-        setRefPreview(profile.profile_image_url);
-        setRefDataUrl(null); // PFP detection in prompt handles this via @handle pfp pattern
-        setPrompt(`@${handle} pfp ${autoPrompt}`);
-      }
-      setXHandle("");
-    } catch {
-      setError("X lookup failed");
-    } finally {
-      setXLooking(false);
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!prompt.trim() && !refDataUrl) return;
-    setGenerating(true);
-    setDesignUrl(null);
-    setDesignVariants([]);
-    setUsedPfp({ used: false });
-    setUsedUpload(false);
-    setError(null);
-    setPublished(null);
-
-    try {
-      const res = await fetch("/api/design-studio/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: prompt.trim() || "create a design from this image",
-          product_type: productType,
-          reference_image: refDataUrl || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Generation failed");
-        return;
-      }
-
-      const urls: string[] = data.image_urls || [data.image_url];
-      setDesignVariants(urls);
-      setDesignUrl(urls[0]);
-      setUsedPfp({ used: data.used_pfp || false, username: data.pfp_username });
-      setUsedUpload(data.used_upload || false);
-      if (!title) {
-        setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
-      }
-
-      // Log generation cost ($0.02 per image)
-      const imageCount = urls.length;
-      fetch("/api/console/cost-dashboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: "grok_ai",
-          amount: imageCount * 0.02,
-          description: `Grok Imagine: ${imageCount} variants for "${prompt.trim().slice(0, 50)}"`,
-        }),
-      }).catch(() => {});
-
-      // Auto-save all variants to gallery
-      const now = new Date();
-      const dateTag = `${now.getMonth() + 1}/${now.getDate()}`;
-      const shortPrompt = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
-      const productLabel = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "";
-      for (let vi = 0; vi < urls.length; vi++) {
-        const variantName = `${shortPrompt}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${dateTag}`;
-        fetch("/api/gallery", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "add",
-            item: {
-              id: `grok_${Date.now()}_${vi}`,
-              url: urls[vi],
-              prompt: prompt.trim(),
-              name: variantName,
-              type: "image",
-              created_at: now.toISOString(),
-              product_type: productType,
-              folder: productLabel,
-              saved: false,
-            },
-          }),
-        }).catch(() => {});
-      }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!designUrl || !title.trim()) return;
-    setPublishing(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/design-studio/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: designUrl,
-          product_type: productType,
-          title: title.trim(),
-          description: description.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Publish failed");
-        return;
-      }
-
-      setPublished({
-        product_type: data.product_type,
-        mockup_url: data.mockup_url,
-        retail_price: data.retail_price,
-        design_url: data.design_url,
-        printful_synced: !!data.printful_product_id,
-      });
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const handleEnhancePrompt = async () => {
-    if (!prompt.trim()) return;
-    setEnhancing(true);
-    try {
-      const res = await fetch("/api/design-studio/enhance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), product_type: productType }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.enhanced) {
-          setPrompt(data.enhanced);
-          if (data.description && !description) setDescription(data.description);
-        }
-      }
-    } catch {} finally {
-      setEnhancing(false);
-    }
-  };
-
-  const handleImportXPost = async () => {
-    const url = xPostUrl.trim();
-    if (!url) return;
-    // Extract post ID from URL: https://x.com/user/status/1234567890
-    const match = url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/);
-    if (!match) {
-      setError("Paste a valid X post URL (e.g. https://x.com/user/status/123)");
-      return;
-    }
-    setImportingPost(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/design-studio/import-post`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post_url: url }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.text) setPrompt(data.text);
-        if (data.image_url) {
-          setRefPreview(data.image_url);
-          setRefDataUrl(null);
-        }
-        if (data.title) setTitle(data.title);
-        setXPostUrl("");
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setError(err.error || "Failed to import post");
-      }
-    } catch {
-      setError("Failed to import post");
-    } finally {
-      setImportingPost(false);
-    }
-  };
-
-  const handleChatSend = async () => {
-    const msg = chatInput.trim();
+  // --- Chat send ---
+  const handleChatSend = async (overrideMsg?: string) => {
+    const msg = (overrideMsg || chatInput).trim();
     if (!msg || chatSending) return;
-    const userMsg = { role: "user" as const, content: msg };
-    const updated = [...chatMessages, userMsg];
-    setChatMessages(updated);
-    setChatInput("");
+    if (!overrideMsg) setChatInput("");
+    const userMsg: ChatMsg = { role: "user", content: msg };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setChatSending(true);
     try {
       const res = await fetch("/api/design-studio/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: updated.map((m) => ({ role: m.role, content: m.content })),
+          messages: updated.filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: m.content })),
           productType,
+          context: buildContext(),
         }),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.reply) {
-          setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-        }
+        if (data.reply) setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
       }
     } catch {} finally {
       setChatSending(false);
     }
   };
 
+  // --- Apply suggestion from chat ---
   const applySuggestion = (text: string) => {
-    // Extract bold text as the suggested prompt
-    const boldMatch = text.match(/\*\*(.+?)\*\*/);
-    if (boldMatch) {
-      setPrompt(boldMatch[1]);
-      setQuickTab("prompt");
-    }
+    const match = text.match(/\*\*(.+?)\*\*/);
+    if (match) setPrompt(match[1]);
   };
+
+  // --- System message (auto-posted to chat as context) ---
+  const addSystemMsg = (text: string) => {
+    setMessages((prev) => [...prev, { role: "system", content: text }]);
+  };
+
+  // --- File upload ---
+  const handleFileSelect = (file: File) => {
+    if (file.size > 4 * 1024 * 1024) { setError("Image too large (max 4MB)"); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setError("Only JPEG, PNG, or WebP"); return; }
+    setError(null);
+    setRefPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => setRefDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
+    addSystemMsg("📎 Reference image uploaded");
+  };
+
+  // --- X Profile lookup ---
+  const handleXProfile = async () => {
+    const handle = chatInput.trim().replace(/^@/, "");
+    if (!handle) return;
+    setChatInput("");
+    setXLooking(true);
+    addSystemMsg(`Looking up @${handle}...`);
+    try {
+      const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(handle)}`);
+      if (!res.ok) { addSystemMsg(`❌ @${handle} not found on X`); return; }
+      const profile = await res.json();
+      const pl = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "T-Shirt";
+      const bio = (profile.bio || "").slice(0, 100);
+      const auto = `Premium ${pl} merch design inspired by @${handle}. Theme: ${bio}. Print-ready, centered, vibrant, high contrast.`;
+      setPrompt(auto);
+      setTitle(`@${handle} ${pl}`);
+      if (profile.profile_image_url) { setRefPreview(profile.profile_image_url); setRefDataUrl(null); }
+      addSystemMsg(`✅ Loaded @${handle} — prompt and PFP set. Edit the prompt or hit Generate.`);
+    } catch { addSystemMsg("❌ X lookup failed"); } finally { setXLooking(false); }
+  };
+
+  // --- Import X Post ---
+  const handleImportPost = async () => {
+    const url = chatInput.trim();
+    const match = url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/);
+    if (!match) { setError("Paste a valid X post URL"); return; }
+    setChatInput("");
+    setImportingPost(true);
+    addSystemMsg(`Importing post...`);
+    try {
+      const res = await fetch("/api/design-studio/import-post", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ post_url: url }) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.text) setPrompt(data.text);
+        if (data.image_url) { setRefPreview(data.image_url); setRefDataUrl(null); }
+        if (data.title) setTitle(data.title);
+        addSystemMsg("✅ Post imported — text and image loaded. Edit the prompt or hit Generate.");
+      } else { addSystemMsg("❌ Failed to import post"); }
+    } catch { addSystemMsg("❌ Import failed"); } finally { setImportingPost(false); }
+  };
+
+  // --- Enhance prompt ---
+  const handleEnhance = async () => {
+    if (!prompt.trim()) return;
+    setEnhancing(true);
+    addSystemMsg("✨ Enhancing prompt with Grok AI...");
+    try {
+      const res = await fetch("/api/design-studio/enhance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: prompt.trim(), product_type: productType }) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhanced) { setPrompt(data.enhanced); addSystemMsg(`✅ Prompt enhanced. Ready to generate.`); }
+        if (data.description && !description) setDescription(data.description);
+      }
+    } catch {} finally { setEnhancing(false); }
+  };
+
+  // --- Generate ---
+  const handleGenerate = async () => {
+    if (!prompt.trim() && !refDataUrl) return;
+    setGenerating(true);
+    setDesignUrl(null);
+    setDesignVariants([]);
+    setError(null);
+    setPublished(null);
+    addSystemMsg(`🎨 Generating 4 variants for ${PRODUCT_TYPES.find((t) => t.value === productType)?.label}...`);
+    try {
+      const res = await fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || undefined }) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Generation failed"); addSystemMsg(`❌ ${data.error || "Generation failed"}`); return; }
+      const urls: string[] = data.image_urls || [data.image_url];
+      setDesignVariants(urls);
+      setDesignUrl(urls[0]);
+      if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${PRODUCT_TYPES.find((t) => t.value === productType)?.label || ""}`);
+      addSystemMsg(`✅ ${urls.length} variants ready! Pick your favorite below, then publish.`);
+      // Auto-save to gallery
+      const now = new Date();
+      const dateTag = `${now.getMonth() + 1}/${now.getDate()}`;
+      const shortPrompt = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
+      const productLabel = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "";
+      for (let vi = 0; vi < urls.length; vi++) {
+        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `grok_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${shortPrompt}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${dateTag}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: productLabel, saved: false } }) }).catch(() => {});
+      }
+    } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
+  };
+
+  // --- Publish ---
+  const handlePublish = async () => {
+    if (!designUrl || !title.trim()) return;
+    setPublishing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), description: description.trim() || undefined }) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Publish failed"); return; }
+      setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id });
+      addSystemMsg(`🎉 "${title}" published to your store!${data.printful_product_id ? " Synced to Printful." : ""}`);
+    } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
+  };
+
+  // --- Printful connect ---
+  const connectPrintful = useCallback(async () => {
+    if (!printfulKey.trim()) return;
+    setConnecting(true); setConnectError(null);
+    try {
+      const res = await fetch("/api/printful/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: printfulKey.trim(), storeId: storeUuid }) });
+      const data = await res.json();
+      if (!res.ok) { setConnectError(data.error || "Connection failed"); return; }
+      setPrintfulConnected(data.printful_store || "Connected");
+      setPrintfulKey("");
+    } catch { setConnectError("Connection failed"); } finally { setConnecting(false); }
+  }, [printfulKey, storeUuid]);
+
+  const resetDesign = () => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); setRefPreview(null); setRefDataUrl(null); };
+
+  if (!hasStore || !storeSlug) {
+    return <div className="flex items-center justify-center py-20"><div className="text-center"><h2 className="text-xl font-bold text-white mb-2">No Store Found</h2><p className="text-sm text-zinc-500">Create a store first to use the Design Studio.</p></div></div>;
+  }
 
   const selectedProduct = PRODUCT_TYPES.find((t) => t.value === productType);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-bold text-white mb-1">Grok Creator Studio</h1>
-      <p className="text-sm text-zinc-400 mb-6">
-        Describe your design. Grok Imagine creates 4 variants. Pick your favorite. Printful fulfills it.
-      </p>
+      <p className="text-sm text-zinc-400 mb-4">Chat with Grok to design merch. Generate variants. Publish to your store.</p>
 
-      {/* Quick start tabs */}
+      {/* === MAIN CHAT === */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
-        <div className="flex border-b border-zinc-800">
-          {([
-            { id: "prompt" as const, label: "Write a Prompt" },
-            { id: "profile" as const, label: "From X Profile" },
-            { id: "post" as const, label: "From X Post" },
-            { id: "upload" as const, label: "Upload Image" },
-          ]).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setQuickTab(tab.id)}
-              className={`flex-1 px-3 py-2.5 text-xs font-medium transition ${
-                quickTab === tab.id
-                  ? "bg-zinc-800 text-white border-b-2 border-purple-500"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-4">
-          {/* Tab: Write a Prompt */}
-          {quickTab === "prompt" && (
-            <div className="space-y-3">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                placeholder="Cyberpunk samurai cat wearing neon sunglasses..."
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none resize-none"
-                rows={3}
-              />
-              <button
-                onClick={handleEnhancePrompt}
-                disabled={enhancing || !prompt.trim()}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-1.5"
-              >
-                {enhancing ? (
-                  <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Enhancing...</>
-                ) : (
-                  <><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg> Enhance prompt with Grok AI</>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* Tab: From X Profile */}
-          {quickTab === "profile" && (
-            <div className="space-y-3">
-              <p className="text-xs text-zinc-400">Enter any @username. We auto-fill the prompt from their bio and use their PFP as a reference image.</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
-                  <input type="text" value={xHandle} onChange={(e) => setXHandle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleXProfileGenerate()} placeholder="username" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
-                </div>
-                <button onClick={handleXProfileGenerate} disabled={xLooking || !xHandle.trim()} className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2.5 text-sm font-medium text-white hover:from-purple-500 disabled:opacity-50 transition">
-                  {xLooking ? "Looking up..." : "Generate from Profile"}
-                </button>
+        {/* Messages */}
+        <div className="h-72 overflow-y-auto px-4 py-3 space-y-2.5">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <svg className="h-8 w-8 text-purple-500/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+              <p className="text-xs text-zinc-500 mb-3">Describe what you want to create, or use the tools below</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {["Design a hoodie with my brand logo", "Create merch from my X profile", "Suggest trending designs"].map((q) => (
+                  <button key={q} onClick={() => handleChatSend(q)} className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition">{q}</button>
+                ))}
               </div>
             </div>
           )}
-
-          {/* Tab: From X Post */}
-          {quickTab === "post" && (
-            <div className="space-y-3">
-              <p className="text-xs text-zinc-400">Paste any X post URL. We extract the text as your prompt and the image as your reference.</p>
-              <div className="flex gap-2">
-                <input type="text" value={xPostUrl} onChange={(e) => setXPostUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleImportXPost()} placeholder="https://x.com/user/status/123456789" className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
-                <button onClick={handleImportXPost} disabled={importingPost || !xPostUrl.trim()} className="rounded-lg bg-zinc-800 border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:border-purple-500 hover:text-white disabled:opacity-50 transition">
-                  {importingPost ? "Importing..." : "Import Post"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tab: Upload Image */}
-          {quickTab === "upload" && (
-            <div
-              className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                dragActive ? "border-indigo-500 bg-indigo-500/5" : refPreview ? "border-zinc-700" : "border-zinc-700 hover:border-zinc-600"
-              }`}
-              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-              onDragLeave={() => setDragActive(false)}
-              onDrop={(e) => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f); }}
-            >
-              {refPreview ? (
-                <div className="flex items-center gap-4">
-                  <img src={refPreview} alt="Reference" className="h-16 w-16 rounded-lg object-cover" />
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-white">Reference image attached</p>
-                    <p className="text-xs text-zinc-500">Grok will use this as the base for your design</p>
-                  </div>
-                  <button onClick={clearReference} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-red-500/50 hover:text-red-400 transition">Remove</button>
-                </div>
-              ) : (
-                <>
-                  <svg className="mx-auto h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                  <p className="text-sm text-zinc-400">Drag &amp; drop a reference image</p>
-                  <p className="text-[10px] text-zinc-600 mb-3">Logo, artwork, photo, sketch — JPEG/PNG/WebP, max 4MB</p>
-                  <label className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition">
-                    Choose file
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
-                  </label>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Reference preview (shows on any tab if image is attached) */}
-        {refPreview && quickTab !== "upload" && (
-          <div className="px-4 pb-3 flex items-center gap-3">
-            <img src={refPreview} alt="ref" className="h-10 w-10 rounded-lg object-cover" />
-            <span className="text-xs text-zinc-500">Reference image attached</span>
-            <button onClick={clearReference} className="ml-auto text-[10px] text-zinc-600 hover:text-red-400 transition">Remove</button>
-          </div>
-        )}
-
-        {/* Prompt preview (shows on non-prompt tabs when prompt is set) */}
-        {prompt && quickTab !== "prompt" && (
-          <div className="px-4 pb-3">
-            <p className="text-[10px] text-zinc-600 mb-1">Prompt:</p>
-            <p className="text-xs text-zinc-400 line-clamp-2">{prompt}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Grok Chat Assistant — always visible */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
-        <button
-          onClick={() => setChatOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-800/50 transition"
-        >
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-            </svg>
-            <span className="text-xs font-semibold text-white">Grok Design Assistant</span>
-            {chatMessages.length > 0 && (
-              <span className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-medium text-purple-400">
-                {chatMessages.length}
-              </span>
-            )}
-          </div>
-          <svg className={`h-4 w-4 text-zinc-500 transition-transform ${chatOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        {chatOpen && (
-          <div className="border-t border-zinc-800">
-            {/* Messages */}
-            <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-3">
-              {chatMessages.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-xs text-zinc-500 mb-2">Ask Grok to help craft your design prompt</p>
-                  <div className="flex flex-wrap justify-center gap-1.5">
-                    {[
-                      "Help me design merch for my brand",
-                      "Suggest a trending design style",
-                      "Turn my bio into a merch concept",
-                    ].map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => { setChatInput(q); }}
-                        className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition"
-                      >
-                        {q}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                msg.role === "user" ? "bg-indigo-600/30 text-indigo-100"
+                : msg.role === "system" ? "bg-zinc-800/50 text-zinc-500 italic"
+                : "bg-zinc-800 text-zinc-300"
+              }`}>
+                {msg.role === "assistant" ? (
+                  <div>
+                    <p className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.+?)\*\*/g, "→ $1")}</p>
+                    {msg.content.includes("**") && (
+                      <button onClick={() => applySuggestion(msg.content)} className="mt-1.5 flex items-center gap-1 rounded-lg border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-300 hover:bg-purple-500/20 transition">
+                        Use this prompt
                       </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-indigo-600/30 text-indigo-100"
-                      : "bg-zinc-800 text-zinc-300"
-                  }`}>
-                    {msg.role === "assistant" ? (
-                      <div>
-                        <p className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.+?)\*\*/g, "→ $1")}</p>
-                        {msg.content.includes("**") && (
-                          <button
-                            onClick={() => applySuggestion(msg.content)}
-                            className="mt-2 flex items-center gap-1 rounded-lg border border-purple-500/40 bg-purple-500/10 px-2.5 py-1 text-[10px] font-medium text-purple-300 hover:bg-purple-500/20 transition"
-                          >
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            Use this prompt
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <p>{msg.content}</p>
                     )}
                   </div>
-                </div>
-              ))}
-              {chatSending && (
-                <div className="flex justify-start">
-                  <div className="rounded-xl bg-zinc-800 px-3 py-2">
-                    <div className="flex gap-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </div>
-                  </div>
-                </div>
-              )}
+                ) : <p>{msg.content}</p>}
+              </div>
             </div>
+          ))}
+          {chatSending && (
+            <div className="flex justify-start"><div className="rounded-xl bg-zinc-800 px-3 py-2"><div className="flex gap-1"><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" /><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} /><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} /></div></div></div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
 
-            {/* Input */}
-            <div className="border-t border-zinc-800 px-4 py-2.5 flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleChatSend()}
-                placeholder="Ask Grok for design ideas..."
-                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
-              />
-              <button
-                onClick={handleChatSend}
-                disabled={chatSending || !chatInput.trim()}
-                className="rounded-lg bg-purple-600 px-3 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition"
-              >
-                {chatSending ? (
-                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                ) : (
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-                )}
-              </button>
-            </div>
+        {/* Current state bar */}
+        {(prompt || refPreview) && (
+          <div className="border-t border-zinc-800 px-4 py-2 flex items-center gap-3 bg-zinc-900/80">
+            {refPreview && <img src={refPreview} alt="ref" className="h-8 w-8 rounded object-cover" />}
+            {prompt && <p className="text-[10px] text-zinc-500 flex-1 line-clamp-1">{prompt}</p>}
+            <button onClick={() => { setPrompt(""); setRefPreview(null); setRefDataUrl(null); }} className="text-[10px] text-zinc-600 hover:text-red-400">Clear</button>
           </div>
         )}
-      </div>
 
-      {/* Product type + Generate */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
-        <div className="flex gap-2">
-          {PRODUCT_TYPES.map((pt) => (
-            <button
-              key={pt.value}
-              onClick={() => setProductType(pt.value)}
-              className={`flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
-                productType === pt.value
-                  ? "border-indigo-500 bg-indigo-950/40 text-white"
-                  : "border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600"
-              }`}
-            >
-              <span className="text-lg">{pt.emoji}</span>
-              <span className="ml-1.5">{pt.label}</span>
+        {/* Chat input + action buttons */}
+        <div className="border-t border-zinc-800 px-3 py-2.5">
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+              placeholder="Describe your design idea..."
+              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+            />
+            <button onClick={() => handleChatSend()} disabled={chatSending || !chatInput.trim()} className="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
             </button>
-          ))}
-        </div>
+          </div>
 
-        <button
-          onClick={handleGenerate}
-          disabled={generating || !prompt.trim()}
-          className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {generating ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Generating 4 variants with Grok Imagine...
-            </span>
-          ) : (
-            "Generate 4 Design Variants"
-          )}
-        </button>
+          {/* Action row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={handleXProfile} disabled={xLooking || !chatInput.trim()} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+              {xLooking ? "Looking up..." : "From @profile"}
+            </button>
+            <button onClick={handleImportPost} disabled={importingPost || !chatInput.trim()} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.686-3.748a4.5 4.5 0 00-6.364-6.364L4.5 6.75" /></svg>
+              {importingPost ? "Importing..." : "From X post"}
+            </button>
+            <label className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition flex items-center gap-1 cursor-pointer">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+              Upload image
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+            </label>
+            <button onClick={handleEnhance} disabled={enhancing || !prompt.trim()} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+              {enhancing ? "Enhancing..." : "Enhance"}
+            </button>
+            <div className="ml-auto flex items-center gap-1.5">
+              {PRODUCT_TYPES.map((pt) => (
+                <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-full px-2 py-0.5 text-[10px] transition ${productType === pt.value ? "bg-purple-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`} title={pt.label}>
+                  {pt.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {error && (
-        <div className="mt-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
+      {/* Generate button */}
+      <button
+        onClick={handleGenerate}
+        disabled={generating || (!prompt.trim() && !refDataUrl)}
+        className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+      >
+        {generating ? (
+          <span className="flex items-center justify-center gap-2">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+            Generating {selectedProduct?.label} variants...
+          </span>
+        ) : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} Variants`}
+      </button>
 
-      {/* Generated design variants */}
+      {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}
+
+      {/* === RESULTS === */}
       {designVariants.length > 0 && (
-        <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-          {/* Variant selection grid */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
           {designVariants.length > 1 && (
             <div className="p-4 border-b border-zinc-800">
-              <p className="text-xs font-medium text-zinc-400 mb-3">
-                {designVariants.length} variants generated — select your favorite
-              </p>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {designVariants.map((url, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setDesignUrl(url)}
-                    className={`relative rounded-xl overflow-hidden border-2 transition ${
-                      designUrl === url
-                        ? "border-purple-500 ring-2 ring-purple-500/30 scale-[1.02]"
-                        : "border-zinc-700 hover:border-zinc-500"
-                    }`}
-                  >
-                    <img src={url} alt={`Variant ${i + 1}`} className="aspect-square w-full object-cover" />
-                    {designUrl === url && (
-                      <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-purple-500">
-                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    <div className="absolute bottom-1 left-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] text-white">
-                      {i + 1}
-                    </div>
+                  <button key={i} onClick={() => setDesignUrl(url)} className={`relative rounded-lg overflow-hidden border-2 transition ${designUrl === url ? "border-purple-500 ring-1 ring-purple-500/30" : "border-zinc-700 hover:border-zinc-500"}`}>
+                    <img src={url} alt={`v${i + 1}`} className="aspect-square w-full object-cover" />
+                    {designUrl === url && <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center"><svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div>}
                   </button>
                 ))}
               </div>
             </div>
           )}
+          <div className="bg-zinc-800"><img src={designUrl!} alt="Design" className="w-full max-h-[400px] object-contain mx-auto" /></div>
 
-          {/* Selected design large preview */}
-          <div className="relative bg-zinc-800">
-            <img
-              src={designUrl!}
-              alt="Selected design"
-              className="w-full max-h-[512px] object-contain mx-auto"
-            />
-          </div>
-
-          {(usedPfp.used || usedUpload) && (
-            <div className="px-4 py-2 border-t border-zinc-800 flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-xs text-emerald-400">
-                {usedUpload
-                  ? "Used uploaded reference image"
-                  : `Used @${usedPfp.username} PFP as reference`}
-              </span>
-            </div>
-          )}
-
-          {/* Publish to Printful */}
+          {/* Publish */}
           {!published ? (
-            <div className="p-4 border-t border-zinc-800 space-y-3">
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Product title..."
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Short description (optional)..."
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePublish}
-                  disabled={publishing || !title.trim()}
-                  className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition"
-                >
-                  {publishing ? "Publishing to Printful..." : `Publish ${selectedProduct?.emoji} to Printful`}
+            <div className="p-4 border-t border-zinc-800 space-y-2">
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product title..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+              <div className="flex gap-2">
+                <button onClick={handlePublish} disabled={publishing || !title.trim()} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">
+                  {publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}
                 </button>
-                <button
-                  onClick={() => { setDesignUrl(null); setDesignVariants([]); setTitle(""); }}
-                  className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition"
-                >
-                  Discard
-                </button>
+                <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
               </div>
             </div>
           ) : (
             <div className="p-4 border-t border-zinc-800">
-              <div className="flex items-center gap-2 text-green-400 mb-3">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-semibold">Product Created in Your Store!</span>
+              <div className="flex items-center gap-2 text-green-400 mb-2">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span className="font-semibold text-sm">Published!</span>
               </div>
-              <div className="text-sm text-zinc-400 space-y-1">
-                <p>{published.product_type} &middot; ${published.retail_price}</p>
-                {published.printful_synced && (
-                  <p className="text-indigo-400">Synced to Printful for fulfillment</p>
-                )}
-                {!published.printful_synced && productType !== "digital_drop" && (
-                  <p className="text-amber-400">Printful not connected &mdash; product saved to store only</p>
-                )}
-                {productType === "digital_drop" && (
-                  <p className="text-emerald-400">Digital drop — instant delivery on purchase</p>
-                )}
-                {published.mockup_url && (
-                  <img src={published.mockup_url} alt="Mockup" className="mt-2 rounded-lg max-h-48 object-contain" />
-                )}
-              </div>
-
-              {/* Share to X */}
-              <a
-                href={`https://x.com/intent/tweet?${new URLSearchParams({
-                  text: `Just dropped "${title}" on RareImagery! Check it out`,
-                  url: getStorePageUrl(storeSlug || "", "store"),
-                }).toString()}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Share Drop to X
+              <a href={`https://x.com/intent/tweet?${new URLSearchParams({ text: `Just dropped "${title}" on RareImagery!`, url: getStorePageUrl(storeSlug || "", "store") }).toString()}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                Share to X
               </a>
-
-              <button
-                onClick={() => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); clearReference(); }}
-                className="mt-2 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition w-full"
-              >
-                Create Another Design
-              </button>
+              <button onClick={resetDesign} className="mt-2 w-full rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:text-white transition">Create Another</button>
             </div>
           )}
         </div>
       )}
-      {/* Printful Connection */}
-      <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <h2 className="text-sm font-semibold text-white">Printful</h2>
-          </div>
-          {printfulConnected && (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              {printfulConnected}
-            </span>
-          )}
-        </div>
 
+      {/* === PRINTFUL === */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-white">Printful</span>
+          {printfulConnected && <span className="text-[10px] text-emerald-400">Connected</span>}
+        </div>
         {printfulConnected ? (
-          <div className="space-y-3">
-            <p className="text-xs text-zinc-500">
-              Printful is connected. Designs you publish will auto-sync for print-on-demand fulfillment.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={async () => {
-                  if (!storeUuid) return;
-                  setSyncing(true);
-                  setSyncResult(null);
-                  try {
-                    const res = await fetch("/api/printful/import", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ storeId: storeUuid }),
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                      setSyncResult(`Imported ${data.imported} product${data.imported !== 1 ? "s" : ""} (${data.skipped} already existed)`);
-                      // Reload products
-                      fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`)
-                        .then((r) => r.json())
-                        .then((d) => setStoreProducts(Array.isArray(d.products ?? d) ? (d.products ?? d) : []))
-                        .catch(() => {});
-                    } else {
-                      setSyncResult(data.error || "Import failed");
-                    }
-                  } catch {
-                    setSyncResult("Import failed");
-                  } finally {
-                    setSyncing(false);
-                  }
-                }}
-                disabled={syncing}
-                className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-indigo-500 hover:text-white disabled:opacity-50 transition"
-              >
-                {syncing ? "Importing..." : "Import Products from Printful"}
-              </button>
-              {syncResult && <span className="text-xs text-zinc-400">{syncResult}</span>}
-              <button
-                onClick={() => setShowTokenHelp(true)}
-                className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-indigo-400 transition"
-              >
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
-                Help
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <button onClick={async () => { if (!storeUuid) return; setSyncing(true); setSyncResult(null); try { const r = await fetch("/api/printful/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: storeUuid }) }); const d = await r.json(); setSyncResult(r.ok ? `Imported ${d.imported}` : d.error); if (r.ok) fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`).then(r => r.json()).then(d => setStoreProducts(Array.isArray(d.products ?? d) ? (d.products ?? d) : [])).catch(() => {}); } catch { setSyncResult("Failed"); } finally { setSyncing(false); } }} disabled={syncing} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-indigo-500 disabled:opacity-50 transition">{syncing ? "Importing..." : "Import Products"}</button>
+            {syncResult && <span className="text-[10px] text-zinc-400">{syncResult}</span>}
+            <button onClick={() => setShowTokenHelp(true)} className="text-[10px] text-zinc-500 hover:text-indigo-400 ml-auto">Help</button>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-zinc-500">
-              Connect your Printful account to enable print-on-demand fulfillment for your designs.
-            </p>
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={printfulKey}
-                onChange={(e) => setPrintfulKey(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && connectPrintful()}
-                placeholder="Paste your Printful Private Token..."
-                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
-              />
-              <button
-                onClick={connectPrintful}
-                disabled={connecting || !printfulKey.trim()}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition"
-              >
-                {connecting ? "Connecting..." : "Connect"}
-              </button>
+              <input type="text" value={printfulKey} onChange={(e) => setPrintfulKey(e.target.value)} onKeyDown={(e) => e.key === "Enter" && connectPrintful()} placeholder="Printful Private Token..." className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+              <button onClick={connectPrintful} disabled={connecting || !printfulKey.trim()} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-500 disabled:opacity-50 transition">{connecting ? "..." : "Connect"}</button>
             </div>
-            {connectError && <p className="text-xs text-red-400">{connectError}</p>}
-            <button
-              onClick={() => setShowTokenHelp(true)}
-              className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
-              How to find your token
-            </button>
+            {connectError && <p className="text-[10px] text-red-400">{connectError}</p>}
+            <button onClick={() => setShowTokenHelp(true)} className="text-[10px] text-indigo-400 hover:text-indigo-300">How to find your token</button>
           </div>
-
         )}
       </div>
 
+      {/* Token help modal */}
       {showTokenHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTokenHelp(false)}>
           <div className="relative mx-4 w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowTokenHelp(false)}
-              className="absolute top-3 right-3 text-zinc-500 hover:text-white transition"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-
+            <button onClick={() => setShowTokenHelp(false)} className="absolute top-3 right-3 text-zinc-500 hover:text-white"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
             <h3 className="text-lg font-bold text-white mb-4">Find Your Printful Token</h3>
-
-            <ol className="space-y-4 text-sm text-zinc-300">
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span>
-                <div>
-                  <p className="font-medium text-white">Go to Printful Settings</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Log in to{" "}
-                    <a href="https://www.printful.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">printful.com/dashboard</a>
-                    {" "}and click <strong>Settings</strong> in the left sidebar.
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span>
-                <div>
-                  <p className="font-medium text-white">Open the API tab</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Click <strong>API</strong> in the settings menu, or go directly to{" "}
-                    <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Settings &rarr; API</a>.
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">3</span>
-                <div>
-                  <p className="font-medium text-white">Create a Private Token</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Click <strong>&quot;Create token&quot;</strong>, give it a name (e.g. &quot;RareImagery&quot;), and <strong>select all scopes</strong> so we can read your products and create orders.
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">4</span>
-                <div>
-                  <p className="font-medium text-white">Copy and paste it here</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Copy the token and paste it into the field above. Your products will be automatically imported.
-                  </p>
-                </div>
-              </li>
+            <ol className="space-y-3 text-sm text-zinc-300">
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span><div><p className="font-medium text-white">Go to Printful Settings</p><p className="text-xs text-zinc-500">Log in to <a href="https://www.printful.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">printful.com/dashboard</a> → Settings</p></div></li>
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span><div><p className="font-medium text-white">Open API tab</p><p className="text-xs text-zinc-500"><a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Settings → API</a></p></div></li>
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">3</span><div><p className="font-medium text-white">Create Private Token</p><p className="text-xs text-zinc-500">Select all scopes, name it &quot;RareImagery&quot;</p></div></li>
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">4</span><div><p className="font-medium text-white">Paste it above</p></div></li>
             </ol>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <a
-                href="https://www.printful.com/dashboard/developer/api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-500 transition"
-              >
-                Open Printful API Settings
-              </a>
-              <button
-                onClick={() => setShowTokenHelp(false)}
-                className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white transition"
-              >
-                Got it
-              </button>
+            <div className="mt-4 flex justify-end gap-2">
+              <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-500">Open Printful API</a>
+              <button onClick={() => setShowTokenHelp(false)} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-white">Got it</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Store Products */}
-      <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-        <h2 className="text-sm font-semibold text-white mb-3">Your Store Products</h2>
-        {loadingProducts ? (
-          <p className="text-xs text-zinc-500">Loading products...</p>
-        ) : storeProducts.length === 0 ? (
-          <p className="text-xs text-zinc-500">No products yet. Generate a design above and publish it to create your first product.</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* === PRODUCTS === */}
+      {storeProducts.length > 0 && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+          <h2 className="text-xs font-semibold text-white mb-3">Your Products</h2>
+          <div className="grid grid-cols-3 gap-2">
             {storeProducts.map((p) => (
-              <a
-                key={p.id}
-                href={`/products/${p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
-                className="group rounded-xl border border-zinc-800 bg-zinc-800/50 overflow-hidden transition hover:border-zinc-600"
-              >
-                {p.image_url ? (
-                  <div className="aspect-square overflow-hidden">
-                    <img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
-                  </div>
-                ) : (
-                  <div className="aspect-square flex items-center justify-center bg-zinc-800">
-                    <svg className="h-8 w-8 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                )}
-                <div className="p-2">
-                  <p className="text-xs font-medium text-white truncate">{p.title}</p>
-                </div>
-              </a>
+              <div key={p.id} className="rounded-lg border border-zinc-800 bg-zinc-800/50 overflow-hidden">
+                {p.image_url ? <img src={p.image_url} alt={p.title} className="aspect-square w-full object-cover" /> : <div className="aspect-square bg-zinc-800 flex items-center justify-center"><svg className="h-6 w-6 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>}
+                <p className="p-1.5 text-[10px] text-white truncate">{p.title}</p>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

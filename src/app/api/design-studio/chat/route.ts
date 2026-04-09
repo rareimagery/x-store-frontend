@@ -29,14 +29,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "XAI_API_KEY not configured" }, { status: 500 });
   }
 
-  const { messages, productType } = await req.json();
+  const { messages, productType, context } = await req.json();
   if (!Array.isArray(messages) || messages.length === 0) {
     return NextResponse.json({ error: "Messages required" }, { status: 400 });
   }
 
-  const systemContent = productType
-    ? `${SYSTEM_PROMPT}\n\nThe user is currently designing for: ${productType}`
-    : SYSTEM_PROMPT;
+  let systemContent = SYSTEM_PROMPT;
+  if (productType) systemContent += `\n\nCurrent product type: ${productType}`;
+  if (context) systemContent += `\n\nCurrent studio state: ${context}`;
 
   try {
     const res = await fetch(XAI_API_URL, {
