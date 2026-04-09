@@ -611,7 +611,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               <tbody>
                 <tr><td><strong>How To</strong></td><td>This guide &mdash; always accessible from your dashboard</td></tr>
                 <tr><td><strong>Page Building</strong></td><td>Drag-and-drop layout editor for your public storefront</td></tr>
-                <tr><td><strong>Grok Creator Studio</strong></td><td>Multi-engine AI design tool. Chat with Grok, generate with Ideogram (best text), Flux (photorealistic), Grok AI (creative), or composite your exact image with text overlay.</td></tr>
+                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs from text, edit uploaded images, or composite your exact image with text overlay. Publishes directly to Printful.</td></tr>
                 <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
                 <tr><td><strong>My Favorites</strong></td><td>Curate favorite X creators into collections for your public page</td></tr>
                 <tr><td><strong>Social Feeds</strong></td><td>Connect TikTok, Instagram, and YouTube accounts</td></tr>

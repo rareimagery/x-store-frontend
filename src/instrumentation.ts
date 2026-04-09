@@ -36,7 +36,6 @@ export function register() {
     ["TIKTOK_CLIENT_SECRET", "TikTok Login Kit client secret"],
     ["INSTAGRAM_CLIENT_ID", "Instagram/Meta OAuth app ID"],
     ["INSTAGRAM_CLIENT_SECRET", "Instagram/Meta OAuth app secret"],
-    ["REPLICATE_API_TOKEN", "Replicate API token (Ideogram v3 image generation)"],
   ];
 
   const missingRecommended = recommended.filter(([key]) => !process.env[key]);

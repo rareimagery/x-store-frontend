@@ -13,29 +13,27 @@ const PRODUCT_TYPES = [
   { value: "digital_drop", label: "Digital Drop", emoji: "⚡" },
 ];
 
+type Engine = "grok" | "composite";
+
 export default function DesignStudioPage() {
   const { storeSlug, hasStore } = useConsole();
 
-  // Core
   const [prompt, setPrompt] = useState("");
   const [productType, setProductType] = useState("t_shirt");
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const [refDataUrl, setRefDataUrl] = useState<string | null>(null);
-  const [referenceMode, setReferenceMode] = useState<"exact" | "creative" | "composite">("exact");
-  const [aiProvider, setAiProvider] = useState<"auto" | "ideogram" | "flux" | "grok">("auto");
+  const [engine, setEngine] = useState<Engine>("grok");
   const [generating, setGenerating] = useState(false);
   const [designVariants, setDesignVariants] = useState<string[]>([]);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  // Publish
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean } | null>(null);
 
-  // Printful
   const [printfulKey, setPrintfulKey] = useState("");
   const [printfulConnected, setPrintfulConnected] = useState<string | null>(null);
   const [storeUuid, setStoreUuid] = useState<string | null>(null);
@@ -45,11 +43,8 @@ export default function DesignStudioPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [showTokenHelp, setShowTokenHelp] = useState(false);
 
-  // Products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Action states
   const [xLooking, setXLooking] = useState(false);
   const [xHandle, setXHandle] = useState("");
   const [importingPost, setImportingPost] = useState(false);
@@ -63,10 +58,9 @@ export default function DesignStudioPage() {
     fetch(`/api/printful/status?slug=${encodeURIComponent(storeSlug || "")}`)
       .then(r => r.json()).then(d => { if (d.store_uuid) setStoreUuid(d.store_uuid); if (d.connected) setPrintfulConnected(d.printful_store_id ? `Store #${d.printful_store_id}` : "Connected"); }).catch(() => {});
     fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`)
-      .then(r => r.json()).then(d => { const p = d.products ?? d ?? []; setStoreProducts(Array.isArray(p) ? p : []); }).catch(() => {}).finally(() => setLoadingProducts(false));
+      .then(r => r.json()).then(d => { const p = d.products ?? d ?? []; setStoreProducts(Array.isArray(p) ? p : []); }).catch(() => {});
   }, [hasStore, storeSlug]);
 
-  // --- Actions ---
   const handleFileSelect = (file: File) => {
     if (file.size > 4 * 1024 * 1024) { setError("Max 4MB"); return; }
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setError("JPEG, PNG, or WebP only"); return; }
@@ -75,7 +69,7 @@ export default function DesignStudioPage() {
     const reader = new FileReader();
     reader.onload = () => setRefDataUrl(reader.result as string);
     reader.readAsDataURL(file);
-    setStatus("Image attached — Exact+Text preserves it perfectly, Grok edits around it, Ideogram/Flux are text-only.");
+    setStatus("Image attached — Exact+Text preserves it perfectly, Grok AI edits around it.");
   };
 
   const handleXProfile = async () => {
@@ -91,15 +85,13 @@ export default function DesignStudioPage() {
       setPrompt(`Premium ${pl} design inspired by @${handle}. Theme: ${bio}. Print-ready, centered, vibrant, high contrast.`);
       setTitle(`@${handle} ${pl}`);
       if (profile.profile_image_url) { setRefPreview(profile.profile_image_url); setRefDataUrl(null); }
-      setStatus(`Loaded @${handle} — prompt and image set`);
-      setShowXProfile(false); setXHandle("");
+      setStatus(`Loaded @${handle}`); setShowXProfile(false); setXHandle("");
     } catch { setStatus("X lookup failed"); } finally { setXLooking(false); }
   };
 
   const handleImportPost = async () => {
     const url = xPostUrl.trim();
-    const match = url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/);
-    if (!match) { setError("Paste a valid X post URL"); return; }
+    if (!url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/)) { setError("Paste a valid X post URL"); return; }
     setImportingPost(true); setStatus("Importing post...");
     try {
       const res = await fetch("/api/design-studio/import-post", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ post_url: url }) });
@@ -108,9 +100,8 @@ export default function DesignStudioPage() {
         if (data.text) setPrompt(data.text);
         if (data.image_url) { setRefPreview(data.image_url); setRefDataUrl(null); }
         if (data.title) setTitle(data.title);
-        setStatus("Post imported — prompt and image set");
-        setShowXPost(false); setXPostUrl("");
-      } else { setStatus("Failed to import post"); }
+        setStatus("Post imported"); setShowXPost(false); setXPostUrl("");
+      } else { setStatus("Failed to import"); }
     } catch { setStatus("Import failed"); } finally { setImportingPost(false); }
   };
 
@@ -127,15 +118,14 @@ export default function DesignStudioPage() {
     } catch {} finally { setEnhancing(false); }
   };
 
-  // --- Generate ---
   const handleGenerate = async () => {
     if (!prompt.trim() && !refDataUrl && !refPreview) return;
     setGenerating(true); setDesignUrl(null); setDesignVariants([]); setError(null); setPublished(null);
     const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label;
 
     // Composite mode
-    if (referenceMode === "composite" && (refDataUrl || refPreview)) {
-      setStatus(`Compositing ${pl} variants...`);
+    if (engine === "composite" && (refDataUrl || refPreview)) {
+      setStatus(`Creating 4 style variants...`);
       try {
         let topText = "", bottomText = "";
         const p = prompt.trim();
@@ -146,7 +136,7 @@ export default function DesignStudioPage() {
         if (!topText && !bottomText) {
           const parts = p.split(/\s+and\s+/i);
           if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
-          else { bottomText = p.replace(/^add\s+/i, "").replace(/use.*image.*?(?:and|,)\s*/i, "").replace(/['"]/g, ""); }
+          else if (p) { bottomText = p.replace(/^(?:use|add|put)\s+.*?(?:image|photo|picture).*?(?:and|,|to)\s*/i, "").replace(/['"]/g, "") || p; }
         }
         const styles = ["bold", "neon", "streetwear", "vintage"];
         const results = await Promise.all(styles.map(style =>
@@ -155,103 +145,30 @@ export default function DesignStudioPage() {
         const urls = results.filter(r => r?.success).map(r => r.image_url);
         if (urls.length === 0) { setError("Composite failed"); return; }
         setDesignVariants(urls); setDesignUrl(urls[0]);
-        if (!title) setTitle(`${(topText || bottomText).slice(0, 30)} ${pl || ""}`);
-        setStatus(`${urls.length} style variants ready`);
+        if (!title) setTitle(`${(topText || bottomText || p).slice(0, 30)} ${pl || ""}`);
+        setStatus(`4 styles: Bold, Neon, Streetwear, Vintage`);
         const now = new Date();
         for (let vi = 0; vi < urls.length; vi++) {
-          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText).slice(0, 20)} ${styles[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText || p).slice(0, 20)} ${styles[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
         }
-      } catch (err: any) { setError(err.message || "Composite failed"); } finally { setGenerating(false); }
+      } catch (err: any) { setError(err.message || "Failed"); } finally { setGenerating(false); }
       return;
     }
 
-    // Auto mode: pick engines based on whether an image is attached
-    if (aiProvider === "auto") {
-      const hasImage = !!(refDataUrl || refPreview);
-
-      if (hasImage) {
-        // With image: Exact+Text composite styles + Grok Edit (which actually uses the image)
-        setStatus(`Creating composites + Grok AI edit...`);
-        try {
-          let topText = "", bottomText = "";
-          const p = prompt.trim();
-          const topMatch = p.match(/['""']([^'""']+)['""']?\s*(?:on top|above|at the top)/i);
-          const bottomMatch = p.match(/['""']([^'""']+)['""']?\s*(?:below|at the bottom|underneath)/i);
-          if (topMatch) topText = topMatch[1];
-          if (bottomMatch) bottomText = bottomMatch[1];
-          if (!topText && !bottomText) {
-            const parts = p.split(/\s+and\s+/i);
-            if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
-            else if (p) { bottomText = p.replace(/^(?:use|add|put)\s+.*?(?:image|photo|picture).*?(?:and|,|to)\s*/i, "").replace(/['"]/g, "") || p; }
-          }
-          // Run composite (1 style) + Grok Edit (2 variants) in parallel
-          const [compositeRes, grokRes] = await Promise.allSettled([
-            (topText || bottomText)
-              ? fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style: "bold", product_type: productType }) }).then(r => r.json()).then(d => d.success ? [d.image_url] : [])
-              : Promise.resolve([]),
-            fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: p || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview, reference_mode: "exact", provider: "grok", variants: 3 }) }).then(async r => { const d = await r.json().catch(() => ({})); return r.ok ? (d.image_urls || [d.image_url]).filter(Boolean) : []; }),
-          ]);
-          const urls: string[] = [];
-          const resultLabels: string[] = [];
-          if (compositeRes.status === "fulfilled") { for (const u of compositeRes.value) { urls.push(u); resultLabels.push("Exact+Text"); } }
-          if (grokRes.status === "fulfilled") { for (const u of grokRes.value) { urls.push(u); resultLabels.push("Grok Edit"); } }
-          if (urls.length === 0) { setError("Generation failed"); return; }
-          setDesignVariants(urls); setDesignUrl(urls[0]);
-          if (!title) setTitle(`${(topText || bottomText || p).slice(0, 30)} ${pl || ""}`);
-          setStatus(`${urls.length} results: ${resultLabels.join(", ")}`);
-          const now = new Date();
-          for (let vi = 0; vi < urls.length; vi++) {
-            fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText || p).slice(0, 20)} ${resultLabels[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
-          }
-        } catch (err: any) { setError(err.message || "Generation failed"); } finally { setGenerating(false); }
-        return;
-      }
-
-      // No image: one from each AI engine
-      setStatus(`Generating from all engines...`);
-      const providers = ["grok", "ideogram", "flux"] as const;
-      const labels: Record<string, string> = { grok: "Grok", ideogram: "Ideogram", flux: "Flux" };
-      try {
-        const results = await Promise.allSettled(
-          providers.map(p =>
-            fetch("/api/design-studio/generate", {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prompt: prompt.trim() || "create a design", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: referenceMode, provider: p, variants: 1 }),
-            }).then(async r => { const d = await r.json().catch(() => ({})); return r.ok ? { url: d.image_url || d.image_urls?.[0], provider: p } : null; })
-          )
-        );
-        const urls: string[] = [];
-        const providerLabels: string[] = [];
-        for (const r of results) {
-          if (r.status === "fulfilled" && r.value?.url) { urls.push(r.value.url); providerLabels.push(labels[r.value.provider]); }
-        }
-        if (urls.length === 0) { setError("All engines failed"); return; }
-        setDesignVariants(urls); setDesignUrl(urls[0]);
-        if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
-        setStatus(`${urls.length} results: ${providerLabels.join(", ")}`);
-        const now = new Date();
-        const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
-        for (let vi = 0; vi < urls.length; vi++) {
-          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short} ${providerLabels[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
-        }
-      } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
-      return;
-    }
-
-    // Single engine generation
-    const providerLabel = aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : "Grok";
-    setStatus(`Generating ${pl} via ${providerLabel}...`);
+    // Grok AI
+    const hasImage = !!(refDataUrl || refPreview);
+    setStatus(hasImage ? `Grok is editing your image for ${pl}...` : `Grok is generating ${pl} designs...`);
     try {
       const res = await fetch("/api/design-studio/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: referenceMode, provider: aiProvider, variants: 4 }),
+        body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: "exact", variants: 4 }),
       });
       let data; try { data = await res.json(); } catch { data = { error: `Server error (${res.status})` }; }
       if (!res.ok) { setError(data.error || "Generation failed"); return; }
       const urls: string[] = data.image_urls || [data.image_url];
       setDesignVariants(urls); setDesignUrl(urls[0]);
       if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
-      setStatus(`${urls.length} variants ready — pick your favorite`);
+      setStatus(`${urls.length} variants ready${data.used_edits ? " (edited your image)" : ""}`);
       const now = new Date();
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
       for (let vi = 0; vi < urls.length; vi++) {
@@ -260,7 +177,6 @@ export default function DesignStudioPage() {
     } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
   };
 
-  // --- Publish ---
   const handlePublish = async () => {
     if (!designUrl || !title.trim()) return;
     setPublishing(true); setError(null);
@@ -291,23 +207,17 @@ export default function DesignStudioPage() {
   }
 
   const selectedProduct = PRODUCT_TYPES.find(t => t.value === productType);
+  const hasImage = !!(refPreview || refDataUrl);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-xl font-bold text-white mb-0.5">Grok Creator Studio</h1>
       <p className="text-xs text-zinc-500 mb-4">Design merch. Generate. Publish.</p>
 
-      {/* === PROMPT === */}
+      {/* PROMPT */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-3">
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="Describe your design... e.g. 'Bold streetwear hoodie with graffiti text RARE'"
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none resize-none"
-          rows={3}
-        />
+        <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Describe your design... e.g. 'Bold streetwear hoodie with graffiti text RARE'" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none resize-none" rows={3} />
 
-        {/* Reference image + enhance */}
         <div className="flex items-center gap-3 mt-2">
           {refPreview && (
             <div className="flex items-center gap-2">
@@ -322,7 +232,6 @@ export default function DesignStudioPage() {
           </button>
         </div>
 
-        {/* Input tools */}
         <div className="flex items-center gap-2 mt-3">
           <button onClick={() => { setShowXProfile(!showXProfile); setShowXPost(false); }} className={`rounded-lg border px-3 py-1.5 text-xs transition flex items-center gap-1.5 ${showXProfile ? "border-purple-500 text-purple-400" : "border-zinc-700 text-zinc-400 hover:border-purple-500 hover:text-white"}`}>
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
@@ -339,18 +248,12 @@ export default function DesignStudioPage() {
           </label>
         </div>
 
-        {/* Inline X Profile input */}
         {showXProfile && (
           <div className="flex gap-2 mt-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
-              <input type="text" value={xHandle} onChange={e => setXHandle(e.target.value)} onKeyDown={e => e.key === "Enter" && handleXProfile()} placeholder="username" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
-            </div>
+            <div className="relative flex-1"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span><input type="text" value={xHandle} onChange={e => setXHandle(e.target.value)} onKeyDown={e => e.key === "Enter" && handleXProfile()} placeholder="username" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" /></div>
             <button onClick={handleXProfile} disabled={xLooking || !xHandle.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">{xLooking ? "Loading..." : "Load"}</button>
           </div>
         )}
-
-        {/* Inline X Post input */}
         {showXPost && (
           <div className="flex gap-2 mt-2">
             <input type="text" value={xPostUrl} onChange={e => setXPostUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleImportPost()} placeholder="https://x.com/user/status/123456789" className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
@@ -359,7 +262,7 @@ export default function DesignStudioPage() {
         )}
       </div>
 
-      {/* === PRODUCT + ENGINE === */}
+      {/* PRODUCT + ENGINE */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-3 space-y-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Product</p>
@@ -374,39 +277,29 @@ export default function DesignStudioPage() {
         </div>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Engine</p>
-          <div className="grid grid-cols-5 gap-2">
-            {([
-              { id: "auto", label: "Auto", desc: refPreview ? "Exact+Text + Grok Edit" : "One from each engine", color: "white", composite: false },
-              { id: "composite", label: "Exact+Text", desc: refPreview ? "Your exact image + text" : "Upload an image first", color: "blue", composite: true },
-              { id: "ideogram", label: "Ideogram", desc: "Best text in images (text-only)", color: "purple", composite: false },
-              { id: "flux", label: "Flux", desc: "Photorealistic (text-only)", color: "cyan", composite: false },
-              { id: "grok", label: "Grok", desc: refPreview ? "Edits your uploaded image" : "Creative/artistic", color: "emerald", composite: false },
-            ] as const).map(eng => {
-              const isActive = eng.composite ? referenceMode === "composite" : referenceMode !== "composite" && aiProvider === eng.id;
-              const bc = isActive ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50" : "border-zinc-700";
-              const bg = isActive ? eng.color === "blue" ? "bg-blue-500/10" : eng.color === "purple" ? "bg-purple-500/10" : eng.color === "cyan" ? "bg-cyan-500/10" : eng.color === "emerald" ? "bg-emerald-500/10" : "bg-white/5" : "";
-              const tc = isActive ? eng.color === "blue" ? "text-blue-400" : eng.color === "purple" ? "text-purple-400" : eng.color === "cyan" ? "text-cyan-400" : eng.color === "emerald" ? "text-emerald-400" : "text-white" : "text-zinc-400";
-              return (
-                <button key={eng.id} onClick={() => { if (eng.composite) setReferenceMode("composite"); else { setAiProvider(eng.id as typeof aiProvider); if (referenceMode === "composite") setReferenceMode("exact"); } }} className={`rounded-lg border px-2 py-2 text-center transition hover:border-zinc-600 ${bc} ${bg}`}>
-                  <span className={`text-xs font-semibold block ${tc}`}>{eng.label}</span>
-                  <span className="text-[9px] text-zinc-600 block mt-0.5">{eng.desc}</span>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setEngine("grok")} className={`rounded-lg border px-3 py-3 text-center transition ${engine === "grok" ? "border-purple-500 bg-purple-500/10" : "border-zinc-700 hover:border-zinc-600"}`}>
+              <span className={`text-sm font-semibold block ${engine === "grok" ? "text-purple-400" : "text-zinc-400"}`}>Grok AI</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">{hasImage ? "Edits your uploaded image" : "AI-generated designs"}</span>
+            </button>
+            <button onClick={() => setEngine("composite")} disabled={!hasImage} className={`rounded-lg border px-3 py-3 text-center transition ${engine === "composite" ? "border-blue-500 bg-blue-500/10" : !hasImage ? "border-zinc-800 opacity-40" : "border-zinc-700 hover:border-zinc-600"}`}>
+              <span className={`text-sm font-semibold block ${engine === "composite" ? "text-blue-400" : "text-zinc-400"}`}>Exact + Text</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">{hasImage ? "Your exact image + text overlay" : "Upload an image first"}</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* === GENERATE === */}
-      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-3 ${referenceMode === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
+      {/* GENERATE */}
+      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-3 ${engine === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
         {generating ? (
           <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{status || "Generating..."}</span>
-        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label}`}
+        ) : engine === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label}`}
       </button>
 
       {error && <div className="mb-3 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}
 
-      {/* === RESULTS === */}
+      {/* RESULTS */}
       {designVariants.length > 0 && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-3">
           {designVariants.length > 1 && (
@@ -442,12 +335,9 @@ export default function DesignStudioPage() {
         </div>
       )}
 
-      {/* === PRINTFUL === */}
+      {/* PRINTFUL */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-white">Printful</span>
-          {printfulConnected && <span className="text-[10px] text-emerald-400">Connected</span>}
-        </div>
+        <div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold text-white">Printful</span>{printfulConnected && <span className="text-[10px] text-emerald-400">Connected</span>}</div>
         {printfulConnected ? (
           <div className="flex items-center gap-2">
             <button onClick={async () => { if (!storeUuid) return; setSyncing(true); setSyncResult(null); try { const r = await fetch("/api/printful/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: storeUuid }) }); const d = await r.json(); setSyncResult(r.ok ? `Imported ${d.imported}` : d.error); if (r.ok) fetch(`/api/stores/products?slug=${encodeURIComponent(storeSlug || "")}`).then(r => r.json()).then(d => setStoreProducts(Array.isArray(d.products ?? d) ? (d.products ?? d) : [])).catch(() => {}); } catch { setSyncResult("Failed"); } finally { setSyncing(false); } }} disabled={syncing} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-indigo-500 disabled:opacity-50 transition">{syncing ? "Importing..." : "Import Products"}</button>
@@ -472,8 +362,8 @@ export default function DesignStudioPage() {
             <button onClick={() => setShowTokenHelp(false)} className="absolute top-3 right-3 text-zinc-500 hover:text-white"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
             <h3 className="text-lg font-bold text-white mb-4">Find Your Printful Token</h3>
             <ol className="space-y-3 text-sm text-zinc-300">
-              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span><div><p className="font-medium text-white">Printful Settings</p><p className="text-xs text-zinc-500"><a href="https://www.printful.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">printful.com/dashboard</a> &rarr; Settings</p></div></li>
-              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span><div><p className="font-medium text-white">API tab</p><p className="text-xs text-zinc-500"><a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Settings &rarr; API</a></p></div></li>
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span><div><p className="font-medium text-white">Printful Settings</p><p className="text-xs text-zinc-500"><a href="https://www.printful.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">printful.com/dashboard</a> → Settings</p></div></li>
+              <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span><div><p className="font-medium text-white">API tab</p><p className="text-xs text-zinc-500"><a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Settings → API</a></p></div></li>
               <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">3</span><div><p className="font-medium text-white">Create Private Token</p><p className="text-xs text-zinc-500">All scopes, name it &quot;RareImagery&quot;</p></div></li>
               <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">4</span><div><p className="font-medium text-white">Paste above</p></div></li>
             </ol>
