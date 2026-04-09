@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { generateDesign } from "@/lib/grok-imagine";
-import { generateWithIdeogram, isIdeogramConfigured } from "@/lib/ideogram";
+import { generateWithIdeogram, generateWithFlux, isIdeogramConfigured } from "@/lib/ideogram";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 
 const designLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
 
 export const maxDuration = 60;
 
-type Provider = "grok" | "ideogram" | "auto";
+type Provider = "grok" | "ideogram" | "flux" | "auto";
 
 // Detect if prompt is text-heavy (mentions adding text, words, typography)
 function isTextHeavyPrompt(prompt: string): boolean {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fallback if requested provider isn't configured
-  if (provider === "ideogram" && !isIdeogramConfigured()) {
+  if ((provider === "ideogram" || provider === "flux") && !isIdeogramConfigured()) {
     provider = "grok";
   }
 
@@ -75,6 +75,22 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    if (provider === "flux") {
+      const result = await generateWithFlux({
+        prompt: prompt.trim(),
+        productType,
+      });
+
+      return NextResponse.json({
+        success: true,
+        image_url: result.url,
+        image_urls: result.urls,
+        provider: "flux",
+        product_type: productType,
+        original_prompt: prompt.trim(),
+      });
+    }
+
     if (provider === "ideogram") {
       const result = await generateWithIdeogram({
         prompt: prompt.trim(),

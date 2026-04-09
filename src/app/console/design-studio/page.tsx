@@ -24,7 +24,7 @@ export default function DesignStudioPage() {
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const [refDataUrl, setRefDataUrl] = useState<string | null>(null);
   const [referenceMode, setReferenceMode] = useState<"exact" | "creative" | "composite">("exact");
-  const [aiProvider, setAiProvider] = useState<"auto" | "ideogram" | "grok">("auto");
+  const [aiProvider, setAiProvider] = useState<"auto" | "ideogram" | "flux" | "grok">("auto");
   const [generating, setGenerating] = useState(false);
   const [designVariants, setDesignVariants] = useState<string[]>([]);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
@@ -420,19 +420,21 @@ export default function DesignStudioPage() {
               <button onClick={() => setReferenceMode("composite")} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${referenceMode === "composite" ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-zinc-700 text-zinc-600"}`} title="Your exact image + text overlay (no AI)">
                 Exact+Text
               </button>
-              {(["auto", "ideogram", "grok"] as const).map(p => (
+              {(["auto", "ideogram", "flux", "grok"] as const).map(p => (
                 <button key={p} onClick={() => { setAiProvider(p); if (referenceMode === "composite") setReferenceMode("exact"); }} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${
                   referenceMode !== "composite" && aiProvider === p
                     ? p === "ideogram" ? "border-purple-500/50 text-purple-400 bg-purple-500/10"
+                      : p === "flux" ? "border-cyan-500/50 text-cyan-400 bg-cyan-500/10"
                       : p === "grok" ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
                       : "border-white/30 text-white bg-white/10"
                     : "border-zinc-700 text-zinc-600"
                 }`} title={
-                  p === "auto" ? "Auto-pick best engine for your prompt" :
-                  p === "ideogram" ? "Ideogram v3: best text rendering + quality" :
-                  "Grok Imagine: creative/artistic generation"
+                  p === "auto" ? "Auto-pick best engine" :
+                  p === "ideogram" ? "Ideogram v3: best text rendering" :
+                  p === "flux" ? "Flux 2 Pro: photorealistic + artistic" :
+                  "Grok Imagine: creative generation"
                 }>
-                  {p === "auto" ? "Auto" : p === "ideogram" ? "Ideogram" : "Grok"}
+                  {p === "auto" ? "Auto" : p === "ideogram" ? "Ideogram" : p === "flux" ? "Flux" : "Grok"}
                 </button>
               ))}
             </div>
@@ -444,7 +446,7 @@ export default function DesignStudioPage() {
       <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-4 ${referenceMode === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
         {generating ? (
           <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{referenceMode === "composite" ? "Compositing..." : "Generating..."}</span>
-        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} via ${aiProvider === "ideogram" ? "Ideogram" : aiProvider === "grok" ? "Grok" : "AI"}`}
+        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} via ${aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : aiProvider === "grok" ? "Grok" : "AI"}`}
       </button>
 
       {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}

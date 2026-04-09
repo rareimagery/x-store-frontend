@@ -32,6 +32,52 @@ export function isIdeogramConfigured(): boolean {
   return !!REPLICATE_TOKEN;
 }
 
+// ---------------------------------------------------------------------------
+// Flux 2 Pro — high quality photorealistic generation via Replicate
+// ---------------------------------------------------------------------------
+
+export interface FluxResult {
+  url: string;
+  urls: string[];
+  provider: "flux";
+}
+
+export async function generateWithFlux(
+  options: { prompt: string; numImages?: number; productType?: string; aspectRatio?: string }
+): Promise<FluxResult> {
+  if (!REPLICATE_TOKEN) throw new Error("REPLICATE_API_TOKEN not configured");
+  const replicate = new Replicate({ auth: REPLICATE_TOKEN });
+  const aspect = PRODUCT_ASPECTS[options.productType || "t_shirt"] || "3:4";
+
+  console.log("[flux] Generating:", { promptPreview: options.prompt.slice(0, 100), aspect });
+
+  const output = await replicate.run("black-forest-labs/flux-2-pro", {
+    input: {
+      prompt: options.prompt,
+      aspect_ratio: options.aspectRatio || aspect,
+      output_format: "webp",
+      output_quality: 90,
+      safety_tolerance: 5,
+    },
+  });
+
+  let urls: string[] = [];
+  if (Array.isArray(output)) {
+    urls = output.map((item: unknown) => typeof item === "string" ? item : (item && typeof item === "object" && "url" in item) ? (item as { url: string }).url : String(item)).filter(Boolean);
+  } else if (typeof output === "string") {
+    urls = [output];
+  } else if (output && typeof output === "object" && "url" in output) {
+    urls = [(output as { url: string }).url];
+  }
+
+  if (urls.length === 0) throw new Error("Flux returned no images");
+  return { url: urls[0], urls, provider: "flux" };
+}
+
+// ---------------------------------------------------------------------------
+// Ideogram v3 — best text rendering via Replicate
+// ---------------------------------------------------------------------------
+
 export async function generateWithIdeogram(
   options: IdeogramOptions & { productType?: string }
 ): Promise<IdeogramResult> {
