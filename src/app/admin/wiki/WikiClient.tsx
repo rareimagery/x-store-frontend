@@ -16,7 +16,7 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 
 <strong>Data Flow:</strong> Browser → Next.js API Routes → Drupal JSON:API → PostgreSQL. Browser never calls Drupal directly.
 
-<strong>External Services:</strong> Stripe Connect (payments), Printful (POD fulfillment), X API v2 (identity/content), Grok Imagine (AI image generation), Brevo SMTP (email), Telnyx (SMS), Cloudflare (DNS).
+<strong>External Services:</strong> Stripe Connect (payments), Printful (POD fulfillment), X API v2 (identity/content), Grok AI (chat + image gen), Ideogram v3 via Replicate (text-heavy designs), Flux 2 Pro via Replicate (photorealistic), sharp (server-side compositing), Brevo SMTP (email), Telnyx (SMS), Cloudflare (DNS).
 
 <strong>Repo:</strong> github.com/rareimagery/x-store-frontend (Next.js) + rareimage_back (Drupal)`,
   },
@@ -33,7 +33,8 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 • CRON_SECRET — Cron job auth
 
 <strong>Optional:</strong>
-• XAI_API_KEY / GROK_API_KEY — Grok Imagine
+• XAI_API_KEY / GROK_API_KEY — Grok Imagine + Grok Chat
+• REPLICATE_API_TOKEN — Ideogram v3 + Flux 2 Pro (via Replicate)
 • CLOUDFLARE_API_TOKEN — DNS provisioning
 • SMTP_HOST / SMTP_USER / SMTP_PASS — Brevo email
 • TELNYX_API_KEY — SMS
@@ -85,8 +86,8 @@ const DEFAULT_SECTIONS: WikiSection[] = [
     title: "Console Dashboard Pages",
     content: `<strong>Workspace:</strong>
 • Page Building — Drag-and-drop wireframe editor (Main Content + Right Sidebar)
-• Grok Creator Studio — AI-powered design studio with 4 input modes (see below)
-• Grok Library — Upload/manage Grok Imagine creations (images + videos)
+• Grok Creator Studio — Multi-engine AI design studio with chat, 4 input tools, 5 engines (see below)
+• Grok Library — AI-generated designs organized in folders with save/manage
 • My Favorites — Curate X creators into categorized collections
 • Social Feeds — Connect TikTok, Instagram, YouTube accounts
 • Music — Spotify + Apple Music playlist builder
@@ -94,13 +95,30 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 • X Articles — Import long-form X articles
 
 <strong>Grok Creator Studio (/console/design-studio):</strong>
-Tabbed interface with 4 ways to start a design:
-• <strong>Write a Prompt</strong> — Type a description + "Enhance with Grok AI" button (uses grok-3-mini to rewrite prompt and auto-generate product description)
-• <strong>From X Profile</strong> — Enter any @username, auto-fills prompt from their bio + uses PFP as reference
-• <strong>From X Post</strong> — Paste any X post URL, extracts text as prompt + first image as reference (POST /api/design-studio/import-post)
-• <strong>Upload Image</strong> — Drag-and-drop reference image (JPEG/PNG/WebP, max 4MB)
-Then: select product type (T-Shirt, Hoodie, Ballcap, Digital Drop) → Generate 4 Grok Imagine variants → select favorite → publish to Printful + Drupal Commerce → Share to X
-APIs: /api/design-studio/generate, /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
+Chat-first design interface. Grok chat assistant at top (full context awareness), input tools below, then product + engine selectors.
+
+<strong>Input Tools:</strong>
+• From @profile — Enter any @username, auto-fills prompt + PFP as reference
+• From X Post — Paste X post URL, extracts text + image
+• Upload — Drag-and-drop reference image (JPEG/PNG/WebP, max 4MB)
+• Enhance — Grok 3 Mini rewrites prompt + generates product description
+
+<strong>Products:</strong> T-Shirt, Hoodie, Ballcap, Digital Drop (grid selector with emoji + label)
+
+<strong>5 Engines:</strong>
+• <strong>Auto</strong> — Smart routing: text-heavy prompts → Ideogram, otherwise best available
+• <strong>Exact+Text</strong> — Server-side sharp composite. User's exact uploaded image placed on canvas with Impact text above/below. 4 style variants (Bold, Neon, Streetwear, Vintage). No AI — pixel perfect. Free.
+• <strong>Ideogram</strong> — Ideogram v3 Turbo via Replicate. Best-in-class text rendering. $0.03/img.
+• <strong>Flux</strong> — Flux 2 Pro via Replicate. Photorealistic + artistic. ~$0.04/img.
+• <strong>Grok AI</strong> — Grok Imagine Pro (exact mode, $0.07/img) or Standard (creative, $0.02/img). Reference image support via {url, type: "image_url"} format.
+
+<strong>Iteration:</strong> After generating, user says "make it more vibrant" in chat → selected variant becomes new reference → re-generates in creative mode.
+
+<strong>Generated images appear inline in chat</strong> as clickable 4-grid thumbnails.
+
+<strong>Auto-save:</strong> All variants saved to Grok Library with folder = product type, name = shortened prompt + date.
+
+APIs: /api/design-studio/generate (multi-provider), /api/design-studio/composite (sharp), /api/design-studio/chat (Grok 3 Mini), /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
 
 <strong>Store (dropdown):</strong>
 • Products, Orders, Shipping, Accounting, Printful, Settings
@@ -189,7 +207,7 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
 <strong>Printful:</strong> /api/printful/connect, /api/printful/import, /api/printful/sync-drupal, /api/printful/status, /api/printful/products, /api/printful/catalog, /api/printful/orders, /api/printful/shipping-rates, /api/printful/webhook
 <strong>Social:</strong> /api/social/follow, /api/social/followers, /api/social/picks, /api/social/shoutouts, /api/social/seed-from-x
 <strong>Content:</strong> /api/favorites, /api/favorites/enrich, /api/gallery, /api/gallery/upload, /api/articles, /api/music, /api/communities, /api/social-feeds, /api/blocks, /api/builds
-<strong>Design:</strong> /api/design-studio/generate, /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
+<strong>Design:</strong> /api/design-studio/generate (multi-provider: grok|ideogram|flux|auto), /api/design-studio/composite (sharp image+text), /api/design-studio/chat (Grok 3 Mini), /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
 <strong>Payments:</strong> /api/checkout, /api/webhooks/stripe, /api/subscriptions/*
 <strong>Admin:</strong> /api/invite/admin, /api/guide
 <strong>Other:</strong> /api/health, /api/x-lookup, /api/upload, /api/notifications/preferences`,
