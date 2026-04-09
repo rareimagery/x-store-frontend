@@ -42,10 +42,7 @@ export interface HealthReport {
 // Config
 // ---------------------------------------------------------------------------
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_VERCEL_URL
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-    : `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}`;
+const BASE = process.env.NEXTAUTH_URL || `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}`;
 const ADMIN_EMAIL =
   process.env.CONSOLE_ADMIN_EMAIL || "admin@rareimagery.net";
 const BATCH_SIZE = 5;
@@ -85,7 +82,7 @@ async function checkStorePage(username: string): Promise<{
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
-    const res = await fetch(`${BASE_URL}/stores/${username}`, {
+    const res = await fetch(`${BASE}/stores/${username}`, {
       cache: "no-store",
       redirect: "manual",
       signal: controller.signal,
@@ -118,7 +115,7 @@ async function checkApiRoute(path: string): Promise<ApiRouteCheck> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${BASE}${path}`, {
       cache: "no-store",
       signal: controller.signal,
     });

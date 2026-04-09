@@ -323,14 +323,6 @@ if (fileExists(path.join(ROOT, "src/app/api/cron/site-generate-agent/route.ts"))
 if (fileExists(path.join(ROOT, "src/app/api/cron/drupal-api-path-agent/route.ts"))) {
   pass("Drupal/API path agent", "5-hour intervals");
 }
-if (fileExists(path.join(ROOT, "vercel.json"))) {
-  const vercelJson = readFile(path.join(ROOT, "vercel.json"));
-  if (vercelJson.includes("crons")) {
-    pass("Vercel cron config", "Configured in vercel.json");
-  } else {
-    warn("Vercel cron config", "Not found in vercel.json");
-  }
-}
 
 // ─ 11. Configuration
 console.log("\n[11] Environment & Security");

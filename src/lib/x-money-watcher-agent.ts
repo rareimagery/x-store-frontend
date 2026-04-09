@@ -112,7 +112,7 @@ export async function runXMoneyWatcherAgent(): Promise<XMoneyWatcherReport> {
       `ALERT: X Money API endpoints are LIVE on ${liveProbes.map((p) => p.label).join(", ")} but XMONEY_API_KEY is not configured.`
     );
     issues.push(
-      "ACTION REQUIRED: Add XMONEY_API_KEY to Vercel environment variables and redeploy immediately."
+      "ACTION REQUIRED: Add XMONEY_API_KEY to .env.production on the server and restart immediately."
     );
 
     // Fire urgent email alert
@@ -132,8 +132,8 @@ export async function runXMoneyWatcherAgent(): Promise<XMoneyWatcherReport> {
           <h3>Action Required:</h3>
           <ol>
             <li>Get your X Money API key from <a href="https://developer.x.com/en/portal/dashboard">developer.x.com</a></li>
-            <li>Add <code>XMONEY_API_KEY</code> to Vercel environment variables (Production)</li>
-            <li>Redeploy: <code>npx vercel --prod</code></li>
+            <li>Add <code>XMONEY_API_KEY</code> to .env.production on the server</li>
+            <li>Restart: <code>pm2 restart rareimagery</code></li>
           </ol>
 
           <p>Once <code>XMONEY_API_KEY</code> is set, <code>XMoneyProvider.available</code> returns <code>true</code> and the payment system automatically switches from Stripe to X Money.</p>

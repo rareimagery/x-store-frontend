@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/cron/code-audit
- * Runs every 8 hours via Vercel cron. Validates all connections between
+ * Runs every 8 hours via system cron. Validates all connections between
  * Next.js, Drupal, X API, Grok, Stripe, and environment configuration.
  * Sends alert email on critical failures.
  */

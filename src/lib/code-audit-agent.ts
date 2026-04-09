@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Code Audit Agent — runs every 6 hours via Vercel cron
+// Code Audit Agent — runs every 6 hours via system cron
 // Validates all connections, clears caches, runs Drupal cron,
 // and triggers Printful sync for all connected stores.
 // ---------------------------------------------------------------------------

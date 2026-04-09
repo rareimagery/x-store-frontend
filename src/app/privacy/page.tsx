@@ -81,7 +81,7 @@ export default function PrivacyPage() {
             <p>We do not sell your personal information. We share information only in these circumstances:</p>
             <ul className="ml-4 list-disc space-y-1 text-zinc-400">
               <li><strong className="text-zinc-300">Public Display:</strong> Your store name, X username, profile picture, bio, products, shoutouts, and picks are publicly visible</li>
-              <li><strong className="text-zinc-300">Service Providers:</strong> X (authentication), Stripe (payments), Printful (fulfillment), xAI/Grok (AI), Vercel (hosting)</li>
+              <li><strong className="text-zinc-300">Service Providers:</strong> X (authentication), Stripe (payments), Printful (fulfillment), xAI/Grok (AI), Self-hosted VPS infrastructure (hosting)</li>
               <li><strong className="text-zinc-300">Legal Requirements:</strong> When required by law, court order, or governmental authority</li>
               <li><strong className="text-zinc-300">Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
               <li><strong className="text-zinc-300">With Your Consent:</strong> When you explicitly authorize sharing</li>

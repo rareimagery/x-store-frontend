@@ -27,7 +27,7 @@ export function register() {
     ["X_CLIENT_ID", "X OAuth 2.0 client ID (login with X)"],
     ["X_CLIENT_SECRET", "X OAuth 2.0 client secret"],
     ["X_API_BEARER_TOKEN", "X API app-only bearer token"],
-    ["CRON_SECRET", "Vercel cron job authorization token"],
+    ["CRON_SECRET", "Cron job authorization token"],
     ["GOOGLE_CLIENT_ID", "Google OAuth client ID (Google/YouTube login)"],
     ["GOOGLE_CLIENT_SECRET", "Google OAuth client secret"],
     ["FACEBOOK_CLIENT_ID", "Facebook OAuth app ID (social login)"],

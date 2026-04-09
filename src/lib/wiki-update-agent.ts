@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Wiki Update Agent — runs every 2 hours via Vercel cron
+// Wiki Update Agent — runs every 2 hours via system cron
 // Reads live site state, probes endpoints, checks Drupal, and
 // rebuilds wiki content to reflect the current state of the platform.
 // ---------------------------------------------------------------------------
@@ -180,7 +180,7 @@ async function discoverPlatformState(baseUrl: string) {
     ];
   }
 
-  // 6. Cron agents (hardcoded from vercel.json)
+  // 6. Cron agents (defined in deploy/setup-crons.sh)
   state.cronAgents = [
     { name: "Code Audit", schedule: "Every 6 hours", path: "/api/cron/code-audit" },
     { name: "Wiki Update", schedule: "Every 2 hours", path: "/api/cron/wiki-update" },
@@ -201,7 +201,7 @@ function buildAdminWikiSections(state: Record<string, any>): WikiSection[] {
     {
       id: "architecture",
       title: "Architecture Overview",
-      content: `<strong>Tech Stack:</strong> Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 on Vercel. Drupal 11 (headless) + Commerce 3 + PostgreSQL 16 on Ubuntu 24.04 VPS (72.62.80.155).
+      content: `<strong>Tech Stack:</strong> Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4, self-hosted on VPS (Nginx + PM2 + Node.js). Drupal 11 (headless) + Commerce 3 + PostgreSQL 16 on Ubuntu 24.04 VPS (72.62.80.155).
 
 <strong>Data Flow:</strong> Browser → Next.js API Routes → Drupal JSON:API → PostgreSQL. Browser never calls Drupal directly.
 
@@ -321,9 +321,9 @@ ${(state.cronAgents || []).map((a: any) => `• <strong>${a.name}</strong> — $
     {
       id: "infrastructure",
       title: "Infrastructure",
-      content: `<strong>Frontend:</strong> Vercel auto-deploys on push to main
+      content: `<strong>Frontend:</strong> Self-hosted on VPS (Nginx + PM2 + Node.js), deployed via git pull + pm2 restart
 <strong>Backend:</strong> SSH root@72.62.80.155 → /var/www/html/mysite
-<strong>DNS:</strong> Cloudflare → Vercel. Per-store URLs via proxy.ts middleware rewrite.
+<strong>DNS:</strong> Cloudflare → VPS. Per-store URLs via proxy.ts middleware rewrite.
 <strong>Caches:</strong> s-maxage=60, stale-while-revalidate=300. No-store for auth/store routes.
 <strong>Drupal cache cleared every 6 hours by code-audit agent.`,
     },

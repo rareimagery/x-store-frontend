@@ -12,7 +12,7 @@ const DEFAULT_SECTIONS: WikiSection[] = [
   {
     id: "architecture",
     title: "Architecture Overview",
-    content: `<strong>Tech Stack:</strong> Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 on Vercel. Drupal 11 (headless) + Commerce 3 + PostgreSQL 16 on Ubuntu 24.04 VPS (72.62.80.155).
+    content: `<strong>Tech Stack:</strong> Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 on self-hosted VPS. Drupal 11 (headless) + Commerce 3 + PostgreSQL 16 on Ubuntu 24.04 VPS (72.62.80.155).
 
 <strong>Data Flow:</strong> Browser → Next.js API Routes → Drupal JSON:API → PostgreSQL. Browser never calls Drupal directly.
 
@@ -23,14 +23,14 @@ const DEFAULT_SECTIONS: WikiSection[] = [
   {
     id: "env-vars",
     title: "Environment Variables",
-    content: `<strong>Required (Vercel):</strong>
+    content: `<strong>Required:</strong>
 • DRUPAL_API_URL — http://72.62.80.155
 • DRUPAL_API_USER / DRUPAL_API_PASS — Drupal Basic Auth
 • NEXTAUTH_SECRET / NEXTAUTH_URL — JWT signing
 • X_CLIENT_ID / X_CLIENT_SECRET — X OAuth 2.0
 • X_API_BEARER_TOKEN — X API v2 app-level
 • STRIPE_SECRET_KEY — Stripe payments
-• CRON_SECRET — Vercel cron auth
+• CRON_SECRET — Cron job auth
 
 <strong>Optional:</strong>
 • XAI_API_KEY / GROK_API_KEY — Grok Imagine
@@ -197,7 +197,7 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
   {
     id: "cron-agents",
     title: "Automated Agents",
-    content: `<strong>3 Cron Jobs (Vercel):</strong>
+    content: `<strong>3 Cron Jobs (system cron):</strong>
 
 • <strong>Code Audit</strong> — Every 6 hours (0,6,12,18 UTC)
   30+ health checks: all env vars, Drupal connectivity (JSON:API, stores, products, variations, session auth), all public pages, NextAuth, X API, Grok, Stripe, Drupal cache/cron, Printful sync-all, HTTPS validation, Stripe key type. Email alert on critical.
@@ -229,7 +229,7 @@ frontend-agent, api-agent, drupal-api-path-agent, site-generate-agent`,
   {
     id: "infrastructure",
     title: "Infrastructure & Deployment",
-    content: `<strong>Frontend:</strong> Vercel auto-deploys on push to main. Domain: rareimagery.net + *.rareimagery.net
+    content: `<strong>Frontend:</strong> Self-hosted VPS, deployed via git push to main. Domain: rareimagery.net + *.rareimagery.net
 
 <strong>Backend:</strong> SSH root@72.62.80.155 → su - rare → /var/www/html/mysite
 • Nginx on port 80, PHP 8.3 FPM, PostgreSQL 16 (native, not Docker)
@@ -238,7 +238,7 @@ frontend-agent, api-agent, drupal-api-path-agent, site-generate-agent`,
 
 <strong>Disk:</strong> 96GB total, ~3.2GB used. DB: ~50MB. Drupal files: ~8MB.
 
-<strong>DNS:</strong> Cloudflare manages rareimagery.net. Wildcard to Vercel. Per-store subdomains via proxy.ts middleware rewrite.
+<strong>DNS:</strong> Cloudflare manages rareimagery.net. Wildcard to VPS. Per-store subdomains via proxy.ts middleware rewrite.
 
 <strong>Caches:</strong> Next.js s-maxage=60 stale-while-revalidate=300 for general content. No-store for auth and store routes. Drupal cache cleared by code-audit agent every 6 hours.`,
   },

@@ -298,9 +298,8 @@ export async function POST(req: NextRequest) {
   if (productCount >= FREE_LISTING_LIMIT) {
     // Require listing fee via Stripe checkout
     const stripe = getStripeClient();
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}`;
+    const baseUrl = process.env.NEXTAUTH_URL
+      || `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

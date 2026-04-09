@@ -5,7 +5,7 @@ export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  // Verify CRON_SECRET (Vercel sends Authorization: Bearer <secret> for cron jobs)
+  // Verify CRON_SECRET (cron sends Authorization: Bearer <secret> for cron jobs)
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });

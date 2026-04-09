@@ -22,7 +22,7 @@ export async function GET() {
   if (!DRUPAL_API_USER || !DRUPAL_API_PASS) {
     return NextResponse.json({
       ...results,
-      error: "DRUPAL_API_USER or DRUPAL_API_PASS not set in Vercel env",
+      error: "DRUPAL_API_USER or DRUPAL_API_PASS not set in environment",
     });
   }
 

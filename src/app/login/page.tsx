@@ -54,7 +54,7 @@ function LoginForm() {
               <code className="bg-red-950/50 px-1 rounded">X_CLIENT_ID</code>{" "}
               and{" "}
               <code className="bg-red-950/50 px-1 rounded">X_CLIENT_SECRET</code>{" "}
-              in Vercel with the new values, then redeploy
+              in .env.production with the new values, then restart the server
             </li>
           </ol>
           <p className="mt-2 text-xs text-red-500">
