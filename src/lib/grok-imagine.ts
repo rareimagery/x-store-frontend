@@ -1,26 +1,24 @@
 // ---------------------------------------------------------------------------
 // Grok Imagine — AI image generation + editing via x.ai API
-// /v1/images/generations = text-to-image (no reference support)
-// /v1/images/edits = image editing (actually uses the reference image)
+// /v1/images/generations = text-to-image
+// /v1/images/edits = image editing (uses the uploaded reference)
+// Always uses grok-imagine-image-pro for best quality
 // ---------------------------------------------------------------------------
 
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 
-const XAI_GENERATE_URL = "https://api.x.ai/v1/images/generations";
+const XAI_API_URL = "https://api.x.ai/v1/images/generations";
 const XAI_EDIT_URL = "https://api.x.ai/v1/images/edits";
 const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
-
-export type ReferenceMode = "exact" | "creative";
 
 export interface GrokImageResult {
   url: string;
   urls: string[];
   usedPfp: boolean;
   usedUpload: boolean;
-  pfpUsername?: string;
-  referenceMode: ReferenceMode;
   usedEdits: boolean;
+  pfpUsername?: string;
 }
 
 const PRODUCT_PROMPTS: Record<string, string> = {
@@ -30,13 +28,8 @@ const PRODUCT_PROMPTS: Record<string, string> = {
   digital_drop: "high-resolution digital artwork, clean, vibrant, ready for social media and print",
 };
 
-// Edit endpoint prompts — these actually work because the edit model reads the image
-const EDIT_PROMPTS = {
-  exact: (base: string) =>
-    `Keep the uploaded image 100% identical — do NOT redraw, restyle, or change any detail of the subject. Preserve full visual fidelity. Only add the design layout as described. ${base}`,
-  creative: (base: string) =>
-    `Use the uploaded image as creative reference and adapt it into a design while keeping the core subject recognizable. ${base}`,
-};
+const EXACT_EDIT_PROMPT = (base: string) =>
+  `Keep the uploaded reference image 100% identical — do NOT redraw, restyle, reinterpret, change pose, expression, fur, colors, lighting, or ANY detail of the subject. Preserve pixel-level fidelity. ONLY add the merch design layout as described. ${base}`;
 
 const PFP_PATTERN = /@([A-Za-z0-9_]+)\s*(?:pfp|profile\s*pic|avatar|photo)/i;
 const MY_PFP_PATTERN = /\b(?:my|the)\s+(?:pfp|profile\s*pic|avatar|photo)\b/i;
@@ -72,32 +65,20 @@ async function fetchPfpUrl(username: string): Promise<string | null> {
   }
 }
 
-function cleanPrompt(prompt: string, productType: string): string {
-  const cleaned = prompt
-    .replace(PFP_PATTERN, "")
-    .replace(MY_PFP_PATTERN, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  const suffix = PRODUCT_PROMPTS[productType] || PRODUCT_PROMPTS.t_shirt;
-  return `${cleaned} | ${suffix}`;
-}
-
 export async function generateDesign(
   prompt: string,
   productType: string,
   currentUsername?: string,
   referenceImageDataUrl?: string,
-  variants: number = 4,
-  referenceMode: ReferenceMode = "exact"
+  variants: number = 4
 ): Promise<GrokImageResult> {
-  if (!XAI_API_KEY) {
-    throw new Error("XAI_API_KEY / GROK_API_KEY not configured");
-  }
+  if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
 
   let referenceUrl: string | null = referenceImageDataUrl || null;
   let pfpUsername: string | undefined;
   let usedUpload = !!referenceImageDataUrl;
 
+  // Auto-detect @username PFP if no reference was passed
   if (!referenceUrl) {
     const atMatch = prompt.match(PFP_PATTERN);
     if (atMatch) {
@@ -109,28 +90,16 @@ export async function generateDesign(
     }
   }
 
-  const cleanedPrompt = cleanPrompt(prompt, productType);
+  const suffix = PRODUCT_PROMPTS[productType] || PRODUCT_PROMPTS.t_shirt;
+  const cleanedPrompt = `${prompt.replace(PFP_PATTERN, "").replace(MY_PFP_PATTERN, "").replace(/\s{2,}/g, " ").trim()} | ${suffix}`;
 
-  // Choose endpoint: /edits when we have a reference image, /generations otherwise
+  // With reference → /edits (actually uses the image), without → /generations
   const hasReference = !!referenceUrl;
-  const useEdits = hasReference;
-  const endpoint = useEdits ? XAI_EDIT_URL : XAI_GENERATE_URL;
-
-  // Build prompt
-  let finalPrompt: string;
-  if (useEdits) {
-    finalPrompt = EDIT_PROMPTS[referenceMode](cleanedPrompt);
-  } else {
-    finalPrompt = cleanedPrompt;
-  }
-
-  // Pro model for exact references
-  const model = (hasReference && referenceMode === "exact")
-    ? "grok-imagine-image-pro"
-    : "grok-imagine-image";
+  const endpoint = hasReference ? XAI_EDIT_URL : XAI_API_URL;
+  const finalPrompt = hasReference ? EXACT_EDIT_PROMPT(cleanedPrompt) : cleanedPrompt;
 
   const body: Record<string, unknown> = {
-    model,
+    model: "grok-imagine-image-pro",
     prompt: finalPrompt,
     n: Math.min(Math.max(variants, 1), 4),
     response_format: "url",
@@ -140,45 +109,33 @@ export async function generateDesign(
     body.image = { url: referenceUrl, type: "image_url" };
   }
 
-  console.log("[grok-imagine] Request:", {
-    endpoint: useEdits ? "edits" : "generations",
-    model,
-    referenceMode,
+  console.log("[grok-imagine]", {
+    endpoint: hasReference ? "/edits" : "/generations",
     hasReference,
-    referenceType: referenceUrl?.startsWith("data:") ? "data-url" : referenceUrl?.startsWith("https://") ? "https-url" : "none",
-    promptPreview: finalPrompt.slice(0, 120),
-    usedUpload,
+    promptPreview: finalPrompt.slice(0, 100),
   });
 
   const res = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${XAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${XAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const detail = err?.error?.message || err?.error || JSON.stringify(err).slice(0, 300);
-    throw new Error(`Grok ${useEdits ? "Edit" : "Imagine"} API error ${res.status}: ${detail}`);
+    throw new Error(`Grok ${hasReference ? "Edit" : "Imagine"} error ${res.status}: ${err?.error?.message || JSON.stringify(err).slice(0, 300)}`);
   }
 
   const data = await res.json();
   const allUrls: string[] = (data.data ?? []).map((d: any) => d.url).filter(Boolean);
-
-  if (allUrls.length === 0) {
-    throw new Error("Grok returned no image URLs");
-  }
+  if (allUrls.length === 0) throw new Error("Grok returned no images");
 
   return {
     url: allUrls[0],
     urls: allUrls,
-    usedPfp: !!referenceUrl && !usedUpload,
+    usedPfp: hasReference && !usedUpload,
     usedUpload,
+    usedEdits: hasReference,
     pfpUsername,
-    referenceMode,
-    usedEdits: useEdits,
   };
 }

@@ -161,7 +161,7 @@ export default function DesignStudioPage() {
     try {
       const res = await fetch("/api/design-studio/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: "exact", variants: 4 }),
+        body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined, variants: 4 }),
       });
       let data; try { data = await res.json(); } catch { data = { error: `Server error (${res.status})` }; }
       if (!res.ok) { setError(data.error || "Generation failed"); return; }

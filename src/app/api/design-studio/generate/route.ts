@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const rl = designLimit(userId);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
 
-  const { prompt, product_type, reference_image, reference_mode, variants: reqVariants } = await req.json();
+  const { prompt, product_type, reference_image, variants: reqVariants } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
     return NextResponse.json({ error: "Prompt must be at least 3 characters" }, { status: 400 });
@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
   }
 
   const numVariants = Math.min(Math.max(Number(reqVariants) || 4, 1), 4);
-  const refMode = reference_mode === "creative" ? "creative" : "exact";
 
   try {
     const result = await generateDesign(
@@ -48,8 +47,7 @@ export async function POST(req: NextRequest) {
       productType,
       token.xUsername as string,
       referenceDataUrl,
-      numVariants,
-      refMode
+      numVariants
     );
 
     return NextResponse.json({
@@ -58,9 +56,8 @@ export async function POST(req: NextRequest) {
       image_urls: result.urls,
       used_pfp: result.usedPfp,
       used_upload: result.usedUpload,
-      pfp_username: result.pfpUsername,
-      reference_mode: result.referenceMode,
       used_edits: result.usedEdits,
+      pfp_username: result.pfpUsername,
       product_type: productType,
       original_prompt: prompt.trim(),
     });
