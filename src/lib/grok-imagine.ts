@@ -26,6 +26,8 @@ const PRODUCT_PROMPTS: Record<string, string> = {
   t_shirt: "isolated print-ready graphic on transparent background, high resolution 4500x5400px, centered artwork, vector clean edges, POD optimized, no mockup, no clothing, no model, just the design",
   hoodie: "isolated print-ready graphic on transparent background, high resolution 4500x5400px, centered artwork, bold graphic, POD optimized, no mockup, no hoodie body, no model, just the design",
   ballcap: "isolated print-ready graphic on transparent background, high resolution, centered compact artwork, clean edges, POD optimized, no mockup, no hat body, no model, just the design",
+  pet_bandana: "isolated print-ready graphic on transparent background, high resolution, compact centered artwork suitable for triangular bandana print area, bold simple design, POD optimized, no mockup, no bandana body, just the design",
+  pet_hoodie: "isolated print-ready graphic on transparent background, high resolution, centered compact artwork for small pet garment, bold clean design, POD optimized, no mockup, no clothing body, no model, just the design",
   digital_drop: "high-resolution digital artwork on transparent background, centered, vibrant, clean edges, social media + print ready, no background",
 };
 

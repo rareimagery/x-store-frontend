@@ -10,6 +10,8 @@ const PRODUCT_TYPES = [
   { value: "t_shirt", label: "T-Shirt", emoji: "👕" },
   { value: "hoodie", label: "Hoodie", emoji: "🧥" },
   { value: "ballcap", label: "Ballcap", emoji: "🧢" },
+  { value: "pet_bandana", label: "Pet Bandana", emoji: "🐕" },
+  { value: "pet_hoodie", label: "Pet Hoodie", emoji: "🐾" },
   { value: "digital_drop", label: "Digital Drop", emoji: "⚡" },
 ];
 

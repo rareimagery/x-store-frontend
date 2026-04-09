@@ -32,6 +32,18 @@ const PRINTFUL_PRODUCTS: Record<string, { catalogId: number; variantIds: number[
     label: "Ballcap",
     variationBundle: "ballcap",
   },
+  pet_bandana: {
+    catalogId: 902,
+    variantIds: [23140, 23141, 23142, 23143],
+    label: "Pet Bandana",
+    variationBundle: "pet_bandana",
+  },
+  pet_hoodie: {
+    catalogId: 921,
+    variantIds: [23682, 23684, 23686, 23688, 23690, 23692, 23694],
+    label: "Pet Hoodie",
+    variationBundle: "pet_hoodie",
+  },
 };
 
 type StoreJWT = { storeSlug?: string; xUsername?: string };
@@ -81,7 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Store not found" }, { status: 404 });
   }
 
-  const retailPrice = price || (isDigital ? "4.99" : product_type === "hoodie" ? "44.99" : product_type === "ballcap" ? "29.99" : "24.99");
+  const retailPrice = price || (isDigital ? "4.99" : product_type === "hoodie" ? "44.99" : product_type === "ballcap" ? "29.99" : product_type === "pet_bandana" ? "19.99" : product_type === "pet_hoodie" ? "34.99" : "24.99");
 
   // --- Digital Drop path (no Printful) ---
   if (isDigital) {
