@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
   const rl = designLimit(userId);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
 
-  const { prompt, product_type, reference_image, variants: reqVariants } = await req.json();
+  const { prompt, product_type, reference_image, reference_mode, variants: reqVariants } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
     return NextResponse.json({ error: "Prompt must be at least 3 characters" }, { status: 400 });
   }
 
   const productType = product_type || "t_shirt";
-  const validTypes = ["t_shirt", "hoodie", "ballcap"];
+  const validTypes = ["t_shirt", "hoodie", "ballcap", "digital_drop"];
   if (!validTypes.includes(productType)) {
     return NextResponse.json({ error: `Invalid product type. Use: ${validTypes.join(", ")}` }, { status: 400 });
   }
@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     }
 
     const numVariants = Math.min(Math.max(Number(reqVariants) || 4, 1), 4);
-    const result = await generateDesign(prompt.trim(), productType, currentUsername, referenceDataUrl, numVariants);
+    const refMode = reference_mode === "creative" ? "creative" : "exact";
+    const result = await generateDesign(prompt.trim(), productType, currentUsername, referenceDataUrl, numVariants, refMode);
 
     return NextResponse.json({
       success: true,
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
       used_pfp: result.usedPfp,
       used_upload: result.usedUpload,
       pfp_username: result.pfpUsername,
+      reference_mode: result.referenceMode,
       product_type: productType,
       original_prompt: prompt.trim(),
     });

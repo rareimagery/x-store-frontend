@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // Grok Imagine — AI image generation via x.ai API
-// Supports text-to-image AND image-to-image (PFP/upload reference)
+// Supports text-to-image AND image-to-image (exact or creative reference)
 // ---------------------------------------------------------------------------
 
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
@@ -9,25 +9,44 @@ import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 const XAI_API_URL = "https://api.x.ai/v1/images/generations";
 const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
 
+export type ReferenceMode = "exact" | "creative";
+
 export interface GrokImageResult {
   url: string;
   urls: string[];
   usedPfp: boolean;
   usedUpload: boolean;
   pfpUsername?: string;
+  referenceMode: ReferenceMode;
 }
 
 const PRODUCT_PROMPTS: Record<string, string> = {
   t_shirt: "print-ready t-shirt design, transparent background, high resolution, centered artwork, vector clean edges, POD optimized",
-  hoodie: "print-ready hoodie design, transparent background, high resolution, centered artwork, bold graphic, POD optimized",
+  hoodie: "print-ready hoodie front design, transparent background, high resolution, centered artwork, bold graphic, POD optimized",
   ballcap: "print-ready hat embroidery design, transparent background, high resolution, centered compact artwork, clean edges, POD optimized",
+  digital_drop: "high-resolution digital artwork, clean, vibrant, ready for social media and print",
+};
+
+// Reference mode prompts — "exact" preserves the image, "creative" adapts it
+const REFERENCE_PROMPTS = {
+  exact: {
+    upload: (base: string) =>
+      `EXACTLY replicate the uploaded reference image as the central graphic. Do not redraw, restyle, reinterpret, change pose, expression, colors, or ANY detail of the subject. Preserve 100% visual fidelity to the reference. ${base}`,
+    pfp: (base: string) =>
+      `Use the exact profile picture as the central graphic with 100% fidelity. Do not redraw, restyle, or alter the likeness in any way. Preserve every detail exactly. ${base}`,
+  },
+  creative: {
+    upload: (base: string) =>
+      `Use the uploaded image as creative reference and adapt it into a design while keeping core visual elements recognizable. ${base}`,
+    pfp: (base: string) =>
+      `Use this profile picture as creative reference and adapt it into a design while keeping the original likeness recognizable. ${base}`,
+  },
 };
 
 const PFP_PATTERN = /@([A-Za-z0-9_]+)\s*(?:pfp|profile\s*pic|avatar|photo)/i;
 const MY_PFP_PATTERN = /\b(?:my|the)\s+(?:pfp|profile\s*pic|avatar|photo)\b/i;
 
 async function fetchPfpUrl(username: string): Promise<string | null> {
-  // Try Drupal first (owns the X API data)
   if (DRUPAL_API_URL) {
     try {
       const res = await fetch(
@@ -39,12 +58,9 @@ async function fetchPfpUrl(username: string): Promise<string | null> {
         const url = data.profile_image_url || data.data?.profile_image_url;
         if (url) return upgradeProfileImageUrl(url);
       }
-    } catch {
-      // Fall through to X API
-    }
+    } catch {}
   }
 
-  // Fallback: direct X API call
   const bearer = process.env.X_API_BEARER_TOKEN;
   if (!bearer) return null;
   try {
@@ -76,13 +92,13 @@ export async function generateDesign(
   productType: string,
   currentUsername?: string,
   referenceImageDataUrl?: string,
-  variants: number = 1
+  variants: number = 4,
+  referenceMode: ReferenceMode = "exact"
 ): Promise<GrokImageResult> {
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY / GROK_API_KEY not configured");
   }
 
-  // Priority: uploaded reference > @username PFP > text-only
   let referenceUrl: string | null = referenceImageDataUrl || null;
   let pfpUsername: string | undefined;
   let usedUpload = !!referenceImageDataUrl;
@@ -100,19 +116,22 @@ export async function generateDesign(
 
   const cleanedPrompt = cleanPrompt(prompt, productType);
 
-  // Build the request — grok-imagine-image uses /v1/images/generations
+  // Build prompt based on reference mode
+  let finalPrompt: string;
+  if (referenceUrl) {
+    const refType = usedUpload ? "upload" : "pfp";
+    finalPrompt = REFERENCE_PROMPTS[referenceMode][refType](cleanedPrompt);
+  } else {
+    finalPrompt = cleanedPrompt;
+  }
+
   const body: Record<string, unknown> = {
     model: "grok-imagine-image",
-    prompt: referenceUrl
-      ? (usedUpload
-          ? `Use this uploaded image as a reference to create a design. ${cleanedPrompt}. Transform it while keeping the core visual elements.`
-          : `Use this profile picture as a reference to create a design. ${cleanedPrompt}. Keep the original style and likeness.`)
-      : cleanedPrompt,
+    prompt: finalPrompt,
     n: Math.min(Math.max(variants, 1), 4),
     response_format: "url",
   };
 
-  // If we have a reference image, include it
   if (referenceUrl) {
     body.image = referenceUrl;
   }
@@ -145,5 +164,6 @@ export async function generateDesign(
     usedPfp: !!referenceUrl && !usedUpload,
     usedUpload,
     pfpUsername,
+    referenceMode,
   };
 }
