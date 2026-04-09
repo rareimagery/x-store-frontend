@@ -632,10 +632,41 @@ export async function getCreatorProfile(
       return profile;
     }
 
-    console.error("Drupal API error: all creator profile include variants failed");
+    // Not found by username — try resolving as a store slug
+    const usernameFromSlug = await resolveUsernameFromSlug(username);
+    if (usernameFromSlug && usernameFromSlug !== username) {
+      return getCreatorProfile(usernameFromSlug, options);
+    }
+
     return null;
   } catch (err) {
     console.error("getCreatorProfile failed (network/timeout):", err);
+    return null;
+  }
+}
+
+/**
+ * Resolve a store slug to the owner's X username.
+ * Used when subdomain slug differs from X handle (e.g. slug "rare" → username "rareimagery").
+ */
+export async function resolveUsernameFromSlug(slug: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(slug)}&fields[commerce_store--online]=field_store_slug&include=field_x_user_profile`,
+      { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    // Try to find the linked profile's X username from included data
+    const included = json.included || [];
+    for (const item of included) {
+      if (item.type === "node--x_user_profile") {
+        const username = item.attributes?.field_x_username;
+        if (username) return username.toLowerCase();
+      }
+    }
+    return null;
+  } catch {
     return null;
   }
 }
