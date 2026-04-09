@@ -31,9 +31,9 @@ const PRODUCT_PROMPTS: Record<string, string> = {
 const REFERENCE_PROMPTS = {
   exact: {
     upload: (base: string) =>
-      `EXACTLY replicate the uploaded reference image as the central graphic. Do not redraw, restyle, reinterpret, change pose, expression, colors, or ANY detail of the subject. Preserve 100% visual fidelity to the reference. ${base}`,
+      `EXACTLY replicate the uploaded reference image as the central graphic. Do NOT redraw, restyle, reinterpret, change pose, expression, fur, colors, lighting, or ANY detail. 100% visual fidelity — treat it as a direct print of the reference. ${base}`,
     pfp: (base: string) =>
-      `Use the exact profile picture as the central graphic with 100% fidelity. Do not redraw, restyle, or alter the likeness in any way. Preserve every detail exactly. ${base}`,
+      `Use the exact profile picture as the central graphic with 100% fidelity. Do NOT redraw, restyle, or alter the likeness, pose, expression, colors, or any detail. Preserve it exactly as-is. ${base}`,
   },
   creative: {
     upload: (base: string) =>
@@ -125,8 +125,13 @@ export async function generateDesign(
     finalPrompt = cleanedPrompt;
   }
 
+  // Pro model for exact references (better fidelity), standard for creative/text-only
+  const model = (referenceUrl && referenceMode === "exact")
+    ? "grok-imagine-image-pro"
+    : "grok-imagine-image";
+
   const body: Record<string, unknown> = {
-    model: "grok-imagine-image",
+    model,
     prompt: finalPrompt,
     n: Math.min(Math.max(variants, 1), 4),
     response_format: "url",
