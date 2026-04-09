@@ -22,14 +22,14 @@ export interface GrokImageResult {
 }
 
 const PRODUCT_PROMPTS: Record<string, string> = {
-  t_shirt: "print-ready t-shirt design, transparent background, high resolution, centered artwork, vector clean edges, POD optimized",
-  hoodie: "print-ready hoodie front design, transparent background, high resolution, centered artwork, bold graphic, POD optimized",
-  ballcap: "print-ready hat embroidery design, transparent background, high resolution, centered compact artwork, clean edges, POD optimized",
-  digital_drop: "high-resolution digital artwork, clean, vibrant, ready for social media and print",
+  t_shirt: "flat graphic artwork only, NO product mockup, NO t-shirt shown, transparent or solid background, high resolution, centered, clean edges, print-ready for DTG printing",
+  hoodie: "flat graphic artwork only, NO product mockup, NO hoodie shown, transparent or solid background, high resolution, centered, bold graphic, print-ready for DTG printing",
+  ballcap: "flat compact graphic artwork only, NO product mockup, NO hat shown, transparent or solid background, high resolution, centered, clean edges, embroidery-friendly",
+  digital_drop: "high-resolution digital artwork, clean, vibrant, ready for download and print",
 };
 
 const EXACT_EDIT_PROMPT = (base: string) =>
-  `Keep the uploaded reference image 100% identical — do NOT redraw, restyle, reinterpret, change pose, expression, fur, colors, lighting, or ANY detail of the subject. Preserve pixel-level fidelity. ONLY add the merch design layout as described. ${base}`;
+  `Keep the uploaded reference image 100% identical — do NOT redraw, restyle, reinterpret, or change any detail. Preserve pixel-level fidelity. Output the flat graphic artwork only — do NOT render it on a product, clothing, or mockup. ${base}`;
 
 const PFP_PATTERN = /@([A-Za-z0-9_]+)\s*(?:pfp|profile\s*pic|avatar|photo)/i;
 const MY_PFP_PATTERN = /\b(?:my|the)\s+(?:pfp|profile\s*pic|avatar|photo)\b/i;
