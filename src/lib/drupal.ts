@@ -602,7 +602,7 @@ export async function getCreatorProfile(
 
       const json = await res.json();
       const nodes = json.data;
-      if (!nodes || nodes.length === 0) return null;
+      if (!nodes || nodes.length === 0) break;
 
       const node = nodes[0];
       const profile = mapCreatorProfile(node, json.included ?? []);
