@@ -91,7 +91,7 @@ export default async function CreatorStorePage({
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="store" />
+      <CreatorPageHeader profile={profile} activePage="store" basePath={normalized} />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">

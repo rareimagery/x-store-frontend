@@ -74,7 +74,7 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="articles" />
+      <CreatorPageHeader profile={profile} activePage="articles" basePath={normalized} />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
         <h2 className="text-lg font-semibold mb-6">Articles by @{profile.x_username}</h2>

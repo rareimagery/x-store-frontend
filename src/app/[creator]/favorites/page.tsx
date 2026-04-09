@@ -77,7 +77,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="favorites" />
+      <CreatorPageHeader profile={profile} activePage="favorites" basePath={normalized} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         {favorites.length === 0 ? (

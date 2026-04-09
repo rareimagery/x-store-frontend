@@ -68,7 +68,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="gallery" />
+      <CreatorPageHeader profile={profile} activePage="gallery" basePath={normalized} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">

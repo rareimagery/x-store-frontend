@@ -6,18 +6,20 @@ import { getStoreUrl } from "@/lib/store-url";
 interface CreatorPageHeaderProps {
   profile: CreatorProfile;
   activePage: "profile" | "store" | "favorites" | "gallery" | "articles";
+  basePath?: string;
 }
 
-export default function CreatorPageHeader({ profile, activePage }: CreatorPageHeaderProps) {
+export default function CreatorPageHeader({ profile, activePage, basePath }: CreatorPageHeaderProps) {
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
   const handle = profile.x_username;
+  const base = basePath ? `/${basePath}` : `/${handle}`;
 
   const navItems: Array<{ id: string; label: string; href: string; external?: boolean }> = [
-    { id: "profile", label: "Home", href: `/${handle}` },
-    { id: "store", label: "Store", href: `/${handle}/store` },
-    { id: "favorites", label: "Favorites", href: `/${handle}/favorites` },
-    { id: "gallery", label: "Gallery", href: `/${handle}/gallery` },
-    { id: "articles", label: "Articles", href: `/${handle}/articles` },
+    { id: "profile", label: "Home", href: base },
+    { id: "store", label: "Store", href: `${base}/store` },
+    { id: "favorites", label: "Favorites", href: `${base}/favorites` },
+    { id: "gallery", label: "Gallery", href: `${base}/gallery` },
+    { id: "articles", label: "Articles", href: `${base}/articles` },
   ];
 
   return (
@@ -33,7 +35,7 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
       <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${profile.banner_url ? "-mt-10 relative" : "pt-8"} pb-6`}>
         <div className="flex items-center gap-4">
           {profile.profile_picture_url ? (
-            <Link href={`/${handle}` as Route}>
+            <Link href={base as Route}>
               <img
                 src={profile.profile_picture_url}
                 alt={`@${handle}`}

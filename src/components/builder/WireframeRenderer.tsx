@@ -75,6 +75,8 @@ interface WireframeRendererProps {
   socialFeeds?: SocialFeedAccount[];
   colorScheme?: string;
   pageBackground?: string;
+  /** URL prefix for internal links. On subdomains this is the slug, on main domain it's the username. */
+  basePath?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -207,11 +209,11 @@ function productSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function ProductGrid({ block, products, profile, compact = false }: { block: PlacedBlock; products: Product[]; profile: CreatorProfile; compact?: boolean }) {
+function ProductGrid({ block, products, profile, basePath, compact = false }: { block: PlacedBlock; products: Product[]; profile: CreatorProfile; basePath?: string; compact?: boolean }) {
   const maxItems = Number(block.props.max_items) || 6;
   const cols = Number(block.props.gallery_columns) || 3;
   const storeName = (profile.title || `@${profile.x_username}`).replace(/\s*X\s*Profile\s*/i, "");
-  const storeHref = `/${profile.x_username}/store`;
+  const storeHref = `/${basePath || profile.x_username}/store`;
   const shown = products.slice(0, maxItems);
 
   const gridClass = compact
@@ -826,6 +828,7 @@ function RenderBlock({
   communities,
   grokGallery,
   socialFeeds,
+  basePath,
   compact = false,
 }: {
   block: PlacedBlock;
@@ -837,6 +840,7 @@ function RenderBlock({
   communities: XCommunity[];
   grokGallery: GrokGalleryItem[];
   socialFeeds: SocialFeedAccount[];
+  basePath?: string;
   compact?: boolean;
 }) {
   switch (block.type) {
@@ -845,7 +849,7 @@ function RenderBlock({
     case "cta_section": return <CtaSection block={block} />;
     case "video_embed": return <VideoEmbed block={block} />;
     case "testimonial": return <Testimonial block={block} />;
-    case "product_grid": return <ProductGrid block={block} products={products} profile={profile} compact={compact} />;
+    case "product_grid": return <ProductGrid block={block} products={products} profile={profile} basePath={basePath} compact={compact} />;
     case "social_feed": return <SocialFeed block={block} profile={profile} compact={compact} />;
     case "spacer": return <Spacer block={block} />;
     case "newsletter": return <Newsletter block={block} />;
@@ -877,7 +881,8 @@ function RenderBlock({
 
 import { COLOR_SCHEMES } from "@/lib/color-schemes";
 
-export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme, pageBackground }: WireframeRendererProps) {
+export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme, pageBackground, basePath }: WireframeRendererProps) {
+  const linkBase = basePath ? `/${basePath}` : `/${profile.x_username}`;
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
   const hasLeft = false; // Left sidebar removed — 2-column layout only
   const hasRight = layout.right.length > 0;
@@ -978,11 +983,11 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         {/* ── Navigation menu ── */}
         <nav className="mt-6 flex items-center gap-1 rounded-xl border p-1.5 overflow-x-auto" style={{ borderColor: colors.border, backgroundColor: colors.surface }}>
           {[
-            { href: `/${profile.x_username}`, label: "Home", active: true },
-            { href: `/${profile.x_username}/store`, label: "Store" },
-            { href: `/${profile.x_username}/favorites`, label: "Favorites" },
-            { href: `/${profile.x_username}/gallery`, label: "Gallery" },
-            { href: `/${profile.x_username}/articles`, label: "Articles" },
+            { href: linkBase, label: "Home", active: true },
+            { href: `${linkBase}/store`, label: "Store" },
+            { href: `${linkBase}/favorites`, label: "Favorites" },
+            { href: `${linkBase}/gallery`, label: "Gallery" },
+            { href: `${linkBase}/articles`, label: "Articles" },
           ].map((link) => (
             <a
               key={link.label}
@@ -1052,17 +1057,17 @@ export default function WireframeRenderer({ layout, profile, products, favorites
             <div className={`space-y-4 wf-col-center ${hasRight ? "w-3/4" : "w-full"}`}>
               {/* Render any legacy left-sidebar blocks merged into center */}
               {layout.left.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} basePath={basePath} />
               ))}
               {layout.center.map((block) => (
-                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} />
+                <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} basePath={basePath} />
               ))}
             </div>
 
             {hasRight && (
               <div className="w-1/4 space-y-4 wf-col-right">
                 {layout.right.map((block) => (
-                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} compact />
+                  <RenderBlock key={block.instanceId} block={block} profile={profile} products={products} favorites={favorites} articles={articles} musicTracks={musicTracks} communities={communities} grokGallery={grokGallery} socialFeeds={socialFeeds} basePath={basePath} compact />
                 ))}
               </div>
             )}
