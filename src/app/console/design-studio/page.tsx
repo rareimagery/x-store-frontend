@@ -32,6 +32,7 @@ export default function DesignStudioPage() {
   const [status, setStatus] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean } | null>(null);
@@ -196,9 +197,11 @@ export default function DesignStudioPage() {
 
   const handlePublish = async () => {
     if (!designUrl || !title.trim()) return;
+    const isDigital = productType === "digital_drop";
+    if (!isDigital && !price.trim()) { setError("Set a price before publishing"); return; }
     setPublishing(true); setError(null);
     try {
-      const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), description: description.trim() || undefined }) });
+      const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), price: price.trim() || undefined, description: description.trim() || undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Publish failed"); return; }
       setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id });
@@ -335,8 +338,12 @@ export default function DesignStudioPage() {
           {!published ? (
             <div className="p-3 border-t border-zinc-800 space-y-2">
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Product title..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">$</span>
+                <input type="text" inputMode="decimal" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.00" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+              </div>
               <div className="flex gap-2">
-                <button onClick={handlePublish} disabled={publishing || !title.trim()} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
+                <button onClick={handlePublish} disabled={publishing || !title.trim() || (productType !== "digital_drop" && !price.trim())} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
                 <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
               </div>
             </div>

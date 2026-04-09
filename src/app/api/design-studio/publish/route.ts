@@ -93,7 +93,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Store not found" }, { status: 404 });
   }
 
-  const retailPrice = price || (isDigital ? "4.99" : product_type === "hoodie" ? "44.99" : product_type === "ballcap" ? "29.99" : product_type === "pet_bandana" ? "19.99" : product_type === "pet_hoodie" ? "34.99" : "24.99");
+  if (!price && !isDigital) {
+    return NextResponse.json({ error: "Price is required" }, { status: 400 });
+  }
+  const retailPrice = price || "4.99";
 
   // --- Digital Drop path (no Printful) ---
   if (isDigital) {
