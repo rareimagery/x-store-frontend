@@ -46,6 +46,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log("[design-studio] Generate request:", {
+      hasReferenceImage: !!reference_image,
+      referenceImageType: reference_image ? (typeof reference_image === "string" ? reference_image.slice(0, 30) : typeof reference_image) : "none",
+      resolvedRef: referenceDataUrl ? referenceDataUrl.slice(0, 50) : "none",
+      reference_mode,
+      product_type: productType,
+      promptPreview: prompt.trim().slice(0, 60),
+    });
+
     const numVariants = Math.min(Math.max(Number(reqVariants) || 4, 1), 4);
     const refMode = reference_mode === "creative" ? "creative" : "exact";
     const result = await generateDesign(prompt.trim(), productType, currentUsername, referenceDataUrl, numVariants, refMode);

@@ -141,6 +141,17 @@ export async function generateDesign(
     body.image = referenceUrl;
   }
 
+  console.log("[grok-imagine] Request:", {
+    model,
+    referenceMode,
+    hasReference: !!referenceUrl,
+    referenceType: referenceUrl?.startsWith("data:") ? "data-url" : referenceUrl?.startsWith("https://") ? "https-url" : "none",
+    referenceUrlPreview: referenceUrl?.slice(0, 80),
+    promptPreview: finalPrompt.slice(0, 120),
+    usedUpload,
+    pfpUsername,
+  });
+
   const res = await fetch(XAI_API_URL, {
     method: "POST",
     headers: {
