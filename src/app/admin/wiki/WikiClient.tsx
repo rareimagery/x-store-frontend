@@ -48,7 +48,7 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 <strong>Database:</strong> drupaldb on localhost:5432 (user: drupal), currently ~50MB
 <strong>Drush:</strong> v13.7.2 at vendor/bin/drush
 
-<strong>Custom Modules (5):</strong>
+<strong>Custom Modules (6):</strong>
 • x_profile_auto_importer — On user registration, creates x_user_profile node + Commerce store
 • x_profile_sync — X API profile lookup/sync endpoints
 • rareimagery_cost_dashboard — Cost tracking, Cloudflare analytics, budget monitoring
@@ -153,8 +153,8 @@ Customer pays → Platform Stripe receives → application_fee deducted → tran
     title: "Page Builder (Wireframe System)",
     content: `<strong>Layout:</strong> 2-column — Main Content (3/4 width) + Right Sidebar (1/4 width). Left sidebar removed.
 
-<strong>Block Types (16):</strong>
-Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, X Communities, TikTok/Instagram/YouTube embeds, My Favorites, Top Followers, Hero Banner, Text Block, CTA Section, Video Embed, Testimonial, Newsletter, Spacer, Image Gallery, Donation
+<strong>Block Types (13):</strong>
+Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, X Communities, TikTok, Instagram, YouTube, My Favorites, Top Followers, X Spaces
 
 <strong>Compact Mode:</strong> Right sidebar blocks receive compact=true — people blocks show 2-across, image blocks show 1-across.
 
@@ -197,19 +197,24 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
   {
     id: "cron-agents",
     title: "Automated Agents",
-    content: `<strong>3 Cron Jobs (system cron):</strong>
+    content: `<strong>5 Cron Jobs (system cron via deploy/setup-crons.sh):</strong>
 
 • <strong>Code Audit</strong> — Every 6 hours (0,6,12,18 UTC)
-  30+ health checks: all env vars, Drupal connectivity (JSON:API, stores, products, variations, session auth), all public pages, NextAuth, X API, Grok, Stripe, Drupal cache/cron, Printful sync-all, HTTPS validation, Stripe key type. Email alert on critical.
+  30+ health checks: all env vars, Drupal connectivity (JSON:API, stores, products, variations, session auth), all public pages, NextAuth, X API, Grok, Stripe, Drupal cache/cron, Printful sync-all, HTTPS validation. Email alert on critical.
 
-• <strong>Wiki Sync</strong> — Every 12 hours (3,15 UTC)
-  Scans /howto guide for stale content (old URLs, wrong pricing, outdated feature counts). Auto-fixes while preserving admin edits.
+• <strong>Wiki Update</strong> — Every 4 hours (0,4,8,12,16,20 UTC)
+  Probes ~60 live endpoints, queries Drupal for stats (stores, products, users, invite codes), rebuilds admin wiki sections with fresh data. Preserves admin edits.
 
-• <strong>X Money Watcher</strong> — Every 12 hours (6,18 UTC)
+• <strong>X Money Watcher</strong> — Twice daily (6,18 UTC)
   Probes X Money API endpoints. Alerts when they go live.
 
-<strong>Legacy agents (removed, consolidated into Code Audit):</strong>
-frontend-agent, api-agent, drupal-api-path-agent, site-generate-agent`,
+• <strong>API Agent</strong> — Every 6 hours offset (1,7,13,19 UTC)
+  Token health checks (X API, Grok, Drupal auth). Triggers Drupal batch profile sync for stale profiles.
+
+• <strong>Frontend Agent</strong> — Every 6 hours offset (2,8,14,20 UTC)
+  Store page accessibility checks. Revalidates inaccessible approved store pages.
+
+<strong>Removed (redundant):</strong> drupal-api-path-agent, site-generate-agent, wiki-sync (all consolidated into the 5 above).`,
   },
   {
     id: "drupal-modules",

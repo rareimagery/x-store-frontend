@@ -392,7 +392,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <EditableText tag="p" id="what-p1" editing={editing} overrides={overrides} defaultText="RareImagery is a creator marketplace where you get your own personal storefront — with your own subdomain at yourname.rareimagery.net (or rareimagery.net/yourname) — that you can fill with products, customize with your own style, and share with your audience." />
+            <EditableText tag="p" id="what-p1" editing={editing} overrides={overrides} defaultText="RareImagery is a creator marketplace where you get your own personal storefront — with your own subdomain at yourname.rareimagery.net — that you can fill with products, customize with your own style, and share with your audience." />
             <EditableText tag="p" id="what-p2" editing={editing} overrides={overrides} defaultText="It's built around your X (Twitter) identity. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically — you don't have to start from a blank page." />
             <div className="g-features">
               {[
@@ -493,7 +493,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <p>Fill in the essentials:</p>
             <ul className="g-check">
               <Check><strong>Store name</strong> &mdash; what you want your store to be called</Check>
-              <Check><strong>Store URL</strong> &mdash; this becomes <em>yourname</em>.rareimagery.net (your own subdomain). You can also be found at rareimagery.net/<em>yourname</em>. Choose carefully, this is your permanent URL.</Check>
+              <Check><strong>Store URL</strong> &mdash; this becomes <em>yourname</em>.rareimagery.net (your own subdomain). Choose carefully, this is your permanent URL.</Check>
               <Check><strong>Contact email</strong> &mdash; for order notifications</Check>
               <Check><strong>Currency</strong> &mdash; the currency your products will be priced in</Check>
             </ul>
@@ -604,21 +604,22 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>Your dashboard lives at <strong>rareimagery.net/console</strong>. It&apos;s the control center for everything about your store.</p>
+            <p>Your dashboard lives at <strong>yourname.rareimagery.net/console</strong>. It&apos;s the control center for everything about your store.</p>
             <h3>What&apos;s in the sidebar</h3>
             <table className="g-table">
               <thead><tr><th>Page</th><th>What it does</th></tr></thead>
               <tbody>
+                <tr><td><strong>How To</strong></td><td>This guide &mdash; always accessible from your dashboard</td></tr>
                 <tr><td><strong>Page Building</strong></td><td>Drag-and-drop layout editor for your public storefront</td></tr>
-                <tr><td><strong>Grok Creator Studio</strong></td><td>AI image generation for product designs using Grok Imagine</td></tr>
-                <tr><td><strong>Grok Library</strong></td><td>Upload and manage your Grok Imagine creations (images &amp; videos)</td></tr>
+                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool with Grok chat assistant for merch creation</td></tr>
+                <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
                 <tr><td><strong>My Favorites</strong></td><td>Curate favorite X creators into collections for your public page</td></tr>
                 <tr><td><strong>Social Feeds</strong></td><td>Connect TikTok, Instagram, and YouTube accounts</td></tr>
                 <tr><td><strong>Music</strong></td><td>Add Spotify and Apple Music tracks to your storefront</td></tr>
-                <tr><td><strong>Products</strong></td><td>Add, edit, and remove products. Set prices and upload images.</td></tr>
-                <tr><td><strong>Orders</strong></td><td>View and manage customer orders</td></tr>
-                <tr><td><strong>Printful</strong></td><td>Connect Printful for print-on-demand product fulfillment</td></tr>
-                <tr><td><strong>Settings</strong></td><td>Store configuration and notification preferences</td></tr>
+                <tr><td><strong>X Communities</strong></td><td>Showcase X Communities you belong to</td></tr>
+                <tr><td><strong>X Articles</strong></td><td>Import and display your long-form X articles</td></tr>
+                <tr><td><strong>X Spaces</strong></td><td>View your live and scheduled X Spaces, promote your store</td></tr>
+                <tr><td><strong>Store</strong></td><td>Products, orders, Printful connection, and store settings</td></tr>
               </tbody>
             </table>
             <Callout type="info" icon="&#8505;">
