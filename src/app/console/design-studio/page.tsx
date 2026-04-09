@@ -23,7 +23,7 @@ export default function DesignStudioPage() {
   const [productType, setProductType] = useState("t_shirt");
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const [refDataUrl, setRefDataUrl] = useState<string | null>(null);
-  const [referenceMode, setReferenceMode] = useState<"exact" | "creative">("exact");
+  const [referenceMode, setReferenceMode] = useState<"exact" | "creative" | "composite">("exact");
   const [generating, setGenerating] = useState(false);
   const [designVariants, setDesignVariants] = useState<string[]>([]);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
@@ -211,6 +211,55 @@ export default function DesignStudioPage() {
     setError(null);
     setPublished(null);
     const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label;
+
+    // Composite mode: server-side image + text overlay (pixel-perfect)
+    if (referenceMode === "composite" && (refDataUrl || refPreview)) {
+      addSystemMsg(`Compositing your image with text (${pl})...`);
+      try {
+        // Parse top/bottom text from prompt
+        let topText = "";
+        let bottomText = "";
+        const p = prompt.trim();
+        // Try to detect "X on top and Y below" pattern
+        const topMatch = p.match(/['""]([^'""]+)['""]?\s*(?:on top|above|at the top)/i);
+        const bottomMatch = p.match(/['""]([^'""]+)['""]?\s*(?:below|at the bottom|underneath)/i);
+        if (topMatch) topText = topMatch[1];
+        if (bottomMatch) bottomText = bottomMatch[1];
+        // Fallback: if no pattern matched, use Grok to parse
+        if (!topText && !bottomText) {
+          // Simple heuristic: split on "and" or use whole prompt as bottom text
+          const parts = p.split(/\s+and\s+/i);
+          if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
+          else { bottomText = p.replace(/^add\s+/i, "").replace(/use.*image.*?(?:and|,)\s*/i, "").replace(/['"]/g, ""); }
+        }
+        const res = await fetch("/api/design-studio/composite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: refDataUrl || refPreview,
+            top_text: topText || undefined,
+            bottom_text: bottomText || undefined,
+            font_color: "#FFFFFF",
+            font_size: "large",
+            background: "#000000",
+            product_type: productType,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error || "Composite failed"); addSystemMsg(data.error || "Composite failed"); return; }
+        const url = data.image_url;
+        setDesignVariants([url]);
+        setDesignUrl(url);
+        if (!title) setTitle(`${(topText || bottomText).slice(0, 30)} ${pl || ""}`);
+        addSystemMsg(`Composite ready! Your exact image with text overlay.`, [url]);
+        // Save to gallery
+        const now = new Date();
+        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}`, url, prompt: p, name: `${(topText || bottomText).slice(0, 25)} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+      } catch (err: any) { setError(err.message || "Composite failed"); } finally { setGenerating(false); }
+      return;
+    }
+
+    // AI generation mode (exact or creative)
     addSystemMsg(`Generating ${pl} variants (${referenceMode} mode)...`);
     try {
       const res = await fetch("/api/design-studio/generate", {
@@ -225,7 +274,6 @@ export default function DesignStudioPage() {
       setDesignUrl(urls[0]);
       if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
       addSystemMsg(`${urls.length} variants ready! Pick a favorite. Say "make it more vibrant" to iterate.`, urls);
-      // Auto-save to gallery
       const now = new Date();
       const dateTag = `${now.getMonth() + 1}/${now.getDate()}`;
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
@@ -365,19 +413,31 @@ export default function DesignStudioPage() {
                   <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-full px-2 py-0.5 text-[10px] transition ${productType === pt.value ? "bg-purple-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`} title={pt.label}>{pt.emoji}</button>
                 ))}
               </div>
-              <button onClick={() => setReferenceMode(m => m === "exact" ? "creative" : "exact")} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${referenceMode === "exact" ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" : "border-amber-500/50 text-amber-400 bg-amber-500/10"}`} title={referenceMode === "exact" ? "Exact: preserves reference image exactly" : "Creative: adapts reference freely"}>
-                {referenceMode === "exact" ? "Exact" : "Creative"}
-              </button>
+              {(["composite", "exact", "creative"] as const).map(mode => (
+                <button key={mode} onClick={() => setReferenceMode(mode)} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${
+                  referenceMode === mode
+                    ? mode === "composite" ? "border-blue-500/50 text-blue-400 bg-blue-500/10"
+                      : mode === "exact" ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                      : "border-amber-500/50 text-amber-400 bg-amber-500/10"
+                    : "border-zinc-700 text-zinc-600"
+                }`} title={
+                  mode === "composite" ? "Composite: your exact image + text overlay" :
+                  mode === "exact" ? "Exact: AI preserves reference with high fidelity" :
+                  "Creative: AI adapts reference freely"
+                }>
+                  {mode === "composite" ? "Exact+Text" : mode === "exact" ? "AI Exact" : "AI Creative"}
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
       {/* Generate */}
-      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 disabled:opacity-50 disabled:cursor-not-allowed mb-4">
+      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-4 ${referenceMode === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
         {generating ? (
-          <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Generating...</span>
-        ) : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} Variants`}
+          <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{referenceMode === "composite" ? "Compositing..." : "Generating..."}</span>
+        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} Variants`}
       </button>
 
       {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}
