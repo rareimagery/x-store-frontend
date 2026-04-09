@@ -238,22 +238,32 @@ export default function DesignStudioPage() {
         }),
       }).catch(() => {});
 
-      // Auto-save to gallery
-      fetch("/api/gallery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add",
-          item: {
-            id: `grok_${Date.now()}`,
-            url: data.image_url,
-            prompt: prompt.trim(),
-            type: "image",
-            created_at: new Date().toISOString(),
-            product_type: productType,
-          },
-        }),
-      }).catch(() => {});
+      // Auto-save all variants to gallery
+      const now = new Date();
+      const dateTag = `${now.getMonth() + 1}/${now.getDate()}`;
+      const shortPrompt = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
+      const productLabel = PRODUCT_TYPES.find((t) => t.value === productType)?.label || "";
+      for (let vi = 0; vi < urls.length; vi++) {
+        const variantName = `${shortPrompt}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${dateTag}`;
+        fetch("/api/gallery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add",
+            item: {
+              id: `grok_${Date.now()}_${vi}`,
+              url: urls[vi],
+              prompt: prompt.trim(),
+              name: variantName,
+              type: "image",
+              created_at: now.toISOString(),
+              product_type: productType,
+              folder: productLabel,
+              saved: false,
+            },
+          }),
+        }).catch(() => {});
+      }
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {

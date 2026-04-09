@@ -8,9 +8,12 @@ export interface GrokGalleryItem {
   id: string;
   url: string;
   prompt: string;
+  name: string;
   type: "image" | "video";
   created_at: string;
   product_type?: string;
+  folder?: string;
+  saved?: boolean;
 }
 
 function resolveSlug(token: GalleryJWT): string | null {
