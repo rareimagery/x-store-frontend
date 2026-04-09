@@ -75,7 +75,7 @@ export default function DesignStudioPage() {
     const reader = new FileReader();
     reader.onload = () => setRefDataUrl(reader.result as string);
     reader.readAsDataURL(file);
-    setStatus("Image attached — only Exact+Text uses your actual image. All AI engines generate from text only.");
+    setStatus("Image attached — Exact+Text preserves it perfectly, Grok edits around it, Ideogram/Flux are text-only.");
   };
 
   const handleXProfile = async () => {
@@ -170,8 +170,8 @@ export default function DesignStudioPage() {
       const hasImage = !!(refDataUrl || refPreview);
 
       if (hasImage) {
-        // With image: only Exact+Text composite (no AI engine actually uses uploaded images)
-        setStatus(`Creating 4 style variants with your exact image...`);
+        // With image: Exact+Text composite styles + Grok Edit (which actually uses the image)
+        setStatus(`Creating composites + Grok AI edit...`);
         try {
           let topText = "", bottomText = "";
           const p = prompt.trim();
@@ -184,18 +184,24 @@ export default function DesignStudioPage() {
             if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
             else if (p) { bottomText = p.replace(/^(?:use|add|put)\s+.*?(?:image|photo|picture).*?(?:and|,|to)\s*/i, "").replace(/['"]/g, "") || p; }
           }
-          const styles = ["bold", "neon", "streetwear", "vintage"];
-          const results = await Promise.all(styles.map(style =>
-            fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style, product_type: productType }) }).then(r => r.json()).catch(() => null)
-          ));
-          const urls = results.filter(r => r?.success).map(r => r.image_url);
-          if (urls.length === 0) { setError("Composite failed"); return; }
+          // Run composite (1 style) + Grok Edit (2 variants) in parallel
+          const [compositeRes, grokRes] = await Promise.allSettled([
+            (topText || bottomText)
+              ? fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style: "bold", product_type: productType }) }).then(r => r.json()).then(d => d.success ? [d.image_url] : [])
+              : Promise.resolve([]),
+            fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: p || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview, reference_mode: "exact", provider: "grok", variants: 3 }) }).then(async r => { const d = await r.json().catch(() => ({})); return r.ok ? (d.image_urls || [d.image_url]).filter(Boolean) : []; }),
+          ]);
+          const urls: string[] = [];
+          const resultLabels: string[] = [];
+          if (compositeRes.status === "fulfilled") { for (const u of compositeRes.value) { urls.push(u); resultLabels.push("Exact+Text"); } }
+          if (grokRes.status === "fulfilled") { for (const u of grokRes.value) { urls.push(u); resultLabels.push("Grok Edit"); } }
+          if (urls.length === 0) { setError("Generation failed"); return; }
           setDesignVariants(urls); setDesignUrl(urls[0]);
           if (!title) setTitle(`${(topText || bottomText || p).slice(0, 30)} ${pl || ""}`);
-          setStatus(`${urls.length} styles: Bold, Neon, Streetwear, Vintage`);
+          setStatus(`${urls.length} results: ${resultLabels.join(", ")}`);
           const now = new Date();
           for (let vi = 0; vi < urls.length; vi++) {
-            fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText || p).slice(0, 20)} ${styles[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+            fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText || p).slice(0, 20)} ${resultLabels[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
           }
         } catch (err: any) { setError(err.message || "Generation failed"); } finally { setGenerating(false); }
         return;
@@ -370,11 +376,11 @@ export default function DesignStudioPage() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Engine</p>
           <div className="grid grid-cols-5 gap-2">
             {([
-              { id: "auto", label: "Auto", desc: refPreview ? "Exact+Text styles" : "One from each engine", color: "white", composite: false },
+              { id: "auto", label: "Auto", desc: refPreview ? "Exact+Text + Grok Edit" : "One from each engine", color: "white", composite: false },
               { id: "composite", label: "Exact+Text", desc: refPreview ? "Your exact image + text" : "Upload an image first", color: "blue", composite: true },
               { id: "ideogram", label: "Ideogram", desc: "Best text in images (text-only)", color: "purple", composite: false },
               { id: "flux", label: "Flux", desc: "Photorealistic (text-only)", color: "cyan", composite: false },
-              { id: "grok", label: "Grok", desc: "Creative from prompt (text-only)", color: "emerald", composite: false },
+              { id: "grok", label: "Grok", desc: refPreview ? "Edits your uploaded image" : "Creative/artistic", color: "emerald", composite: false },
             ] as const).map(eng => {
               const isActive = eng.composite ? referenceMode === "composite" : referenceMode !== "composite" && aiProvider === eng.id;
               const bc = isActive ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50" : "border-zinc-700";
