@@ -165,11 +165,56 @@ export default function DesignStudioPage() {
       return;
     }
 
-    // Auto mode: one image from each available engine in parallel
+    // Auto mode: pick engines based on whether an image is attached
     if (aiProvider === "auto") {
+      const hasImage = !!(refDataUrl || refPreview);
+      // With uploaded image: only Exact+Text composite + Grok (the only engines that use it)
+      // Without image: all 3 AI engines
+      const providers = hasImage ? ["grok"] as const : ["grok", "ideogram", "flux"] as const;
+      const labels: Record<string, string> = { grok: "Grok", ideogram: "Ideogram", flux: "Flux" };
+
+      if (hasImage) {
+        // Generate composite + Grok in parallel
+        setStatus(`Generating: Exact+Text composite + Grok AI...`);
+        try {
+          // Parse text for composite
+          let topText = "", bottomText = "";
+          const p = prompt.trim();
+          const topMatch = p.match(/['""']([^'""']+)['""']?\s*(?:on top|above|at the top)/i);
+          const bottomMatch = p.match(/['""']([^'""']+)['""']?\s*(?:below|at the bottom|underneath)/i);
+          if (topMatch) topText = topMatch[1];
+          if (bottomMatch) bottomText = bottomMatch[1];
+
+          const [compositeRes, grokRes] = await Promise.allSettled([
+            // Composite: exact image + text (only if there's text in the prompt)
+            (topText || bottomText)
+              ? fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style: "bold", product_type: productType }) }).then(r => r.json()).then(d => d.success ? d.image_url : null)
+              : Promise.resolve(null),
+            // Grok: AI interpretation with reference
+            fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: p || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview, reference_mode: "exact", provider: "grok", variants: 2 }) }).then(async r => { const d = await r.json().catch(() => ({})); return r.ok ? (d.image_urls || [d.image_url]) : []; }),
+          ]);
+
+          const urls: string[] = [];
+          const resultLabels: string[] = [];
+          if (compositeRes.status === "fulfilled" && compositeRes.value) { urls.push(compositeRes.value); resultLabels.push("Exact+Text"); }
+          if (grokRes.status === "fulfilled" && Array.isArray(grokRes.value)) {
+            for (const u of grokRes.value) { if (u) { urls.push(u); resultLabels.push("Grok"); } }
+          }
+          if (urls.length === 0) { setError("Generation failed"); return; }
+          setDesignVariants(urls); setDesignUrl(urls[0]);
+          if (!title) setTitle(`${p.slice(0, 40)} ${pl || ""}`);
+          setStatus(`${urls.length} results: ${resultLabels.join(", ")}`);
+          const now = new Date();
+          const short = p.slice(0, 25).replace(/\s+/g, " ").trim();
+          for (let vi = 0; vi < urls.length; vi++) {
+            fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${short} ${resultLabels[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+          }
+        } catch (err: any) { setError(err.message || "Generation failed"); } finally { setGenerating(false); }
+        return;
+      }
+
+      // No image: generate one from each AI engine
       setStatus(`Generating from all engines...`);
-      const providers = ["grok", "ideogram", "flux"] as const;
-      const labels = { grok: "Grok", ideogram: "Ideogram", flux: "Flux" };
       try {
         const results = await Promise.allSettled(
           providers.map(p =>
