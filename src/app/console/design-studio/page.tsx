@@ -68,6 +68,12 @@ export default function DesignStudioPage() {
   const [importingPost, setImportingPost] = useState(false);
   const [quickTab, setQuickTab] = useState<"prompt" | "profile" | "post" | "upload">("prompt");
 
+  // Grok chat assistant
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
+
   // Store products
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -350,6 +356,43 @@ export default function DesignStudioPage() {
     }
   };
 
+  const handleChatSend = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatSending) return;
+    const userMsg = { role: "user" as const, content: msg };
+    const updated = [...chatMessages, userMsg];
+    setChatMessages(updated);
+    setChatInput("");
+    setChatSending(true);
+    try {
+      const res = await fetch("/api/design-studio/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: updated.map((m) => ({ role: m.role, content: m.content })),
+          productType,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reply) {
+          setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+        }
+      }
+    } catch {} finally {
+      setChatSending(false);
+    }
+  };
+
+  const applySuggestion = (text: string) => {
+    // Extract bold text as the suggested prompt
+    const boldMatch = text.match(/\*\*(.+?)\*\*/);
+    if (boldMatch) {
+      setPrompt(boldMatch[1]);
+      setQuickTab("prompt");
+    }
+  };
+
   const selectedProduct = PRODUCT_TYPES.find((t) => t.value === productType);
 
   return (
@@ -485,6 +528,119 @@ export default function DesignStudioPage() {
           <div className="px-4 pb-3">
             <p className="text-[10px] text-zinc-600 mb-1">Prompt:</p>
             <p className="text-xs text-zinc-400 line-clamp-2">{prompt}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Grok Chat Assistant — always visible */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
+        <button
+          onClick={() => setChatOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-800/50 transition"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+            <span className="text-xs font-semibold text-white">Grok Design Assistant</span>
+            {chatMessages.length > 0 && (
+              <span className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-medium text-purple-400">
+                {chatMessages.length}
+              </span>
+            )}
+          </div>
+          <svg className={`h-4 w-4 text-zinc-500 transition-transform ${chatOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {chatOpen && (
+          <div className="border-t border-zinc-800">
+            {/* Messages */}
+            <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-3">
+              {chatMessages.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-xs text-zinc-500 mb-2">Ask Grok to help craft your design prompt</p>
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {[
+                      "Help me design merch for my brand",
+                      "Suggest a trending design style",
+                      "Turn my bio into a merch concept",
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => { setChatInput(q); }}
+                        className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-indigo-600/30 text-indigo-100"
+                      : "bg-zinc-800 text-zinc-300"
+                  }`}>
+                    {msg.role === "assistant" ? (
+                      <div>
+                        <p className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.+?)\*\*/g, "→ $1")}</p>
+                        {msg.content.includes("**") && (
+                          <button
+                            onClick={() => applySuggestion(msg.content)}
+                            className="mt-2 flex items-center gap-1 rounded-lg border border-purple-500/40 bg-purple-500/10 px-2.5 py-1 text-[10px] font-medium text-purple-300 hover:bg-purple-500/20 transition"
+                          >
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Use this prompt
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p>{msg.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {chatSending && (
+                <div className="flex justify-start">
+                  <div className="rounded-xl bg-zinc-800 px-3 py-2">
+                    <div className="flex gap-1">
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-zinc-800 px-4 py-2.5 flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleChatSend()}
+                placeholder="Ask Grok for design ideas..."
+                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+              />
+              <button
+                onClick={handleChatSend}
+                disabled={chatSending || !chatInput.trim()}
+                className="rounded-lg bg-purple-600 px-3 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition"
+              >
+                {chatSending ? (
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                ) : (
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>
