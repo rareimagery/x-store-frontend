@@ -215,7 +215,7 @@ export default function DesignStudioPage() {
     setPublished(null);
     addSystemMsg(`🎨 Generating 4 variants for ${PRODUCT_TYPES.find((t) => t.value === productType)?.label}...`);
     try {
-      const res = await fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || undefined }) });
+      const res = await fetch("/api/design-studio/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Generation failed"); addSystemMsg(`❌ ${data.error || "Generation failed"}`); return; }
       const urls: string[] = data.image_urls || [data.image_url];

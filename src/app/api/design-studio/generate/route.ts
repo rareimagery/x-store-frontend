@@ -32,16 +32,18 @@ export async function POST(req: NextRequest) {
   try {
     const currentUsername = token.xUsername as string;
 
-    // Validate reference image if provided (must be data URL, max ~4MB base64)
+    // Validate reference image if provided (data URL or HTTPS image URL)
     let referenceDataUrl: string | undefined;
     if (reference_image && typeof reference_image === "string") {
-      if (!reference_image.startsWith("data:image/")) {
-        return NextResponse.json({ error: "Reference image must be a data URL (data:image/...)" }, { status: 400 });
+      if (reference_image.startsWith("data:image/")) {
+        if (reference_image.length > 6 * 1024 * 1024) {
+          return NextResponse.json({ error: "Reference image too large (max 4MB)" }, { status: 400 });
+        }
+        referenceDataUrl = reference_image;
+      } else if (reference_image.startsWith("https://")) {
+        // Pass HTTPS URLs directly — Grok Imagine accepts them
+        referenceDataUrl = reference_image;
       }
-      if (reference_image.length > 6 * 1024 * 1024) {
-        return NextResponse.json({ error: "Reference image too large (max 4MB)" }, { status: 400 });
-      }
-      referenceDataUrl = reference_image;
     }
 
     const numVariants = Math.min(Math.max(Number(reqVariants) || 4, 1), 4);
