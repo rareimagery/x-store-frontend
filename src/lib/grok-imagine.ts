@@ -138,7 +138,7 @@ export async function generateDesign(
   };
 
   if (referenceUrl) {
-    body.image = referenceUrl;
+    body.image = { url: referenceUrl, type: "image_url" };
   }
 
   console.log("[grok-imagine] Request:", {
