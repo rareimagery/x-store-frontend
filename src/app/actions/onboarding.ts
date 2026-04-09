@@ -15,7 +15,8 @@ type OnboardingProfile = {
 
 export async function createCreatorSite(
   profile: OnboardingProfile,
-  selectedTemplate: TemplateId
+  selectedTemplate: TemplateId,
+  customSlug?: string
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -59,7 +60,7 @@ export async function createCreatorSite(
     },
     body: JSON.stringify({
       storeName: profile.name?.trim() ? `${profile.name.trim()}'s Store` : `${handle}'s Store`,
-      slug: handle,
+      slug: customSlug?.trim().toLowerCase() || handle,
       ownerEmail: session.user?.email || `${handle}@rareimagery.net`,
       currency: 'USD',
       agreedToTerms: true,
@@ -82,8 +83,8 @@ export async function createCreatorSite(
 
   return {
     success: true,
-    url: payload.url || `https://${handle}.rareimagery.net`,
-    slug: payload.slug || handle,
+    url: payload.url || `https://${customSlug || handle}.rareimagery.net`,
+    slug: payload.slug || customSlug || handle,
     partial: payload.partial || false,
     warning: payload.warning || null,
   };

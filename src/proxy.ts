@@ -57,9 +57,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Rewrite to the creator store page
+  // Rewrite to the [creator] route (wireframe-based pages)
   const url = request.nextUrl.clone();
-  url.pathname = `/stores/${subdomain}${url.pathname === "/" ? "" : url.pathname}`;
+  url.pathname = `/${subdomain}${url.pathname === "/" ? "" : url.pathname}`;
 
   return NextResponse.rewrite(url);
 }
