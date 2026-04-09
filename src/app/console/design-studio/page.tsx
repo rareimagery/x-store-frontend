@@ -390,54 +390,85 @@ export default function DesignStudioPage() {
             </button>
           </div>
 
-          {/* Tools row — always visible */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={handleXProfile} disabled={xLooking} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+          {/* Input tools */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={handleXProfile} disabled={xLooking} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               {xLooking ? "Loading..." : "From @profile"}
             </button>
-            <button onClick={handleImportPost} disabled={importingPost} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.686-3.748a4.5 4.5 0 00-6.364-6.364L4.5 6.75" /></svg>
+            <button onClick={handleImportPost} disabled={importingPost} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.686-3.748a4.5 4.5 0 00-6.364-6.364L4.5 6.75" /></svg>
               {importingPost ? "Importing..." : "From X post"}
             </button>
-            <label className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition flex items-center gap-1 cursor-pointer">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+            <label className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
               Upload
               <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
             </label>
-            <button onClick={handleEnhance} disabled={enhancing || !prompt.trim()} className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+            <button onClick={handleEnhance} disabled={enhancing || !prompt.trim()} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
               {enhancing ? "..." : "Enhance"}
             </button>
+          </div>
+        </div>
+      </div>
 
-            {/* Product type + reference mode — right side */}
-            <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {PRODUCT_TYPES.map(pt => (
-                  <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-full px-2 py-0.5 text-[10px] transition ${productType === pt.value ? "bg-purple-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`} title={pt.label}>{pt.emoji}</button>
-                ))}
-              </div>
-              <button onClick={() => setReferenceMode("composite")} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${referenceMode === "composite" ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-zinc-700 text-zinc-600"}`} title="Your exact image + text overlay (no AI)">
-                Exact+Text
+      {/* Product + Engine selectors */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4 space-y-3">
+        {/* What are you making? */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Product</p>
+          <div className="grid grid-cols-4 gap-2">
+            {PRODUCT_TYPES.map(pt => (
+              <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-lg border px-3 py-2 text-center transition ${
+                productType === pt.value
+                  ? "border-purple-500 bg-purple-500/15 text-white"
+                  : "border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              }`}>
+                <span className="text-lg block">{pt.emoji}</span>
+                <span className="text-[11px] font-medium">{pt.label}</span>
               </button>
-              {(["auto", "ideogram", "flux", "grok"] as const).map(p => (
-                <button key={p} onClick={() => { setAiProvider(p); if (referenceMode === "composite") setReferenceMode("exact"); }} className={`rounded-full px-2 py-0.5 text-[10px] border transition ${
-                  referenceMode !== "composite" && aiProvider === p
-                    ? p === "ideogram" ? "border-purple-500/50 text-purple-400 bg-purple-500/10"
-                      : p === "flux" ? "border-cyan-500/50 text-cyan-400 bg-cyan-500/10"
-                      : p === "grok" ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
-                      : "border-white/30 text-white bg-white/10"
-                    : "border-zinc-700 text-zinc-600"
-                }`} title={
-                  p === "auto" ? "Auto-pick best engine" :
-                  p === "ideogram" ? "Ideogram v3: best text rendering" :
-                  p === "flux" ? "Flux 2 Pro: photorealistic + artistic" :
-                  "Grok Imagine: creative generation"
-                }>
-                  {p === "auto" ? "Auto" : p === "ideogram" ? "Ideogram" : p === "flux" ? "Flux" : "Grok"}
+            ))}
+          </div>
+        </div>
+
+        {/* How should we create it? */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Engine</p>
+          <div className="grid grid-cols-5 gap-2">
+            {([
+              { id: "auto" as const, label: "Auto", desc: "Smart pick", color: "white", composite: false },
+              { id: "composite" as const, label: "Exact+Text", desc: "Your image + text", color: "blue", composite: true },
+              { id: "ideogram" as const, label: "Ideogram", desc: "Best text quality", color: "purple", composite: false },
+              { id: "flux" as const, label: "Flux", desc: "Photorealistic", color: "cyan", composite: false },
+              { id: "grok" as const, label: "Grok", desc: "Creative/artistic", color: "emerald", composite: false },
+            ]).map(eng => {
+              const isActive = eng.composite
+                ? referenceMode === "composite"
+                : referenceMode !== "composite" && aiProvider === eng.id;
+              const borderColor = isActive
+                ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50"
+                : "border-zinc-700";
+              const bgColor = isActive
+                ? eng.color === "blue" ? "bg-blue-500/10" : eng.color === "purple" ? "bg-purple-500/10" : eng.color === "cyan" ? "bg-cyan-500/10" : eng.color === "emerald" ? "bg-emerald-500/10" : "bg-white/5"
+                : "";
+              const textColor = isActive
+                ? eng.color === "blue" ? "text-blue-400" : eng.color === "purple" ? "text-purple-400" : eng.color === "cyan" ? "text-cyan-400" : eng.color === "emerald" ? "text-emerald-400" : "text-white"
+                : "text-zinc-400";
+              return (
+                <button
+                  key={eng.id}
+                  onClick={() => {
+                    if (eng.composite) { setReferenceMode("composite"); }
+                    else { setAiProvider(eng.id as "auto" | "ideogram" | "flux" | "grok"); if (referenceMode === "composite") setReferenceMode("exact"); }
+                  }}
+                  className={`rounded-lg border px-2 py-2 text-center transition hover:border-zinc-600 ${borderColor} ${bgColor}`}
+                >
+                  <span className={`text-xs font-semibold block ${textColor}`}>{eng.label}</span>
+                  <span className="text-[9px] text-zinc-600 block mt-0.5">{eng.desc}</span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>
