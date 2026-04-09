@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
 import { getStorePageUrl } from "@/lib/store-url";
 
@@ -12,8 +12,6 @@ const PRODUCT_TYPES = [
   { value: "ballcap", label: "Ballcap", emoji: "🧢" },
   { value: "digital_drop", label: "Digital Drop", emoji: "⚡" },
 ];
-
-type ChatMsg = { role: "user" | "assistant" | "system"; content: string; images?: string[] };
 
 export default function DesignStudioPage() {
   const { storeSlug, hasStore } = useConsole();
@@ -29,6 +27,7 @@ export default function DesignStudioPage() {
   const [designVariants, setDesignVariants] = useState<string[]>([]);
   const [designUrl, setDesignUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   // Publish
   const [title, setTitle] = useState("");
@@ -50,18 +49,14 @@ export default function DesignStudioPage() {
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Chat
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatSending, setChatSending] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   // Action states
   const [xLooking, setXLooking] = useState(false);
+  const [xHandle, setXHandle] = useState("");
   const [importingPost, setImportingPost] = useState(false);
+  const [xPostUrl, setXPostUrl] = useState("");
   const [enhancing, setEnhancing] = useState(false);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, chatSending]);
+  const [showXProfile, setShowXProfile] = useState(false);
+  const [showXPost, setShowXPost] = useState(false);
 
   useEffect(() => {
     if (!hasStore) return;
@@ -71,75 +66,7 @@ export default function DesignStudioPage() {
       .then(r => r.json()).then(d => { const p = d.products ?? d ?? []; setStoreProducts(Array.isArray(p) ? p : []); }).catch(() => {}).finally(() => setLoadingProducts(false));
   }, [hasStore, storeSlug]);
 
-  const buildContext = () => {
-    const parts: string[] = [];
-    parts.push(`Product: ${PRODUCT_TYPES.find(t => t.value === productType)?.label || "T-Shirt"}`);
-    parts.push(`Reference mode: ${referenceMode}`);
-    if (prompt) parts.push(`Current prompt: "${prompt}"`);
-    if (refPreview) parts.push("Reference image attached");
-    if (designVariants.length > 0) parts.push(`${designVariants.length} variants generated`);
-    if (designUrl) parts.push("User has selected a variant");
-    if (published) parts.push("Design published to store");
-    return parts.join(". ");
-  };
-
-  const addSystemMsg = (text: string, images?: string[]) => {
-    setMessages(prev => [...prev, { role: "system", content: text, images }]);
-  };
-
-  // --- Chat ---
-  const handleChatSend = async (overrideMsg?: string) => {
-    const msg = (overrideMsg || chatInput).trim();
-    if (!msg || chatSending) return;
-    if (!overrideMsg) setChatInput("");
-
-    // Check for natural language commands
-    const lowerMsg = msg.toLowerCase();
-    if ((lowerMsg.includes("generate") || lowerMsg.includes("create") || lowerMsg.includes("make")) && (lowerMsg.includes("variant") || lowerMsg.includes("design") || prompt)) {
-      if (!prompt && !refDataUrl && !refPreview) {
-        setPrompt(msg);
-      }
-      addSystemMsg(`${msg}`, undefined);
-      handleGenerate();
-      return;
-    }
-    if (lowerMsg.includes("more vibrant") || lowerMsg.includes("more bold") || lowerMsg.includes("more colorful") || lowerMsg.includes("try again") || lowerMsg.includes("iterate") || lowerMsg.includes("refine")) {
-      // Iteration: append to prompt and re-generate with selected variant as reference
-      const iterationPrompt = `${prompt}. ${msg}`;
-      setPrompt(iterationPrompt);
-      if (designUrl) { setRefPreview(designUrl); setRefDataUrl(null); setReferenceMode("creative"); }
-      addSystemMsg(`Iterating: "${msg}"...`);
-      setTimeout(() => handleGenerate(), 100);
-      return;
-    }
-
-    const userMsg: ChatMsg = { role: "user", content: msg };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
-    setChatSending(true);
-    try {
-      const res = await fetch("/api/design-studio/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: updated.filter(m => m.role !== "system").map(m => ({ role: m.role, content: m.content })),
-          productType,
-          context: buildContext(),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.reply) setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
-      }
-    } catch {} finally { setChatSending(false); }
-  };
-
-  const applySuggestion = (text: string) => {
-    const match = text.match(/\*\*(.+?)\*\*/);
-    if (match) setPrompt(match[1]);
-  };
-
-  // --- Actions (always visible, not tied to chat input) ---
+  // --- Actions ---
   const handleFileSelect = (file: File) => {
     if (file.size > 4 * 1024 * 1024) { setError("Max 4MB"); return; }
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setError("JPEG, PNG, or WebP only"); return; }
@@ -148,35 +75,32 @@ export default function DesignStudioPage() {
     const reader = new FileReader();
     reader.onload = () => setRefDataUrl(reader.result as string);
     reader.readAsDataURL(file);
-    addSystemMsg("Reference image uploaded");
+    setStatus("Reference image attached");
   };
 
   const handleXProfile = async () => {
-    const handle = (chatInput || prompt).trim().replace(/^@/, "");
-    if (!handle) { setError("Type a @username first"); return; }
-    setChatInput("");
-    setXLooking(true);
-    addSystemMsg(`Looking up @${handle}...`);
+    const handle = xHandle.trim().replace(/^@/, "");
+    if (!handle) return;
+    setXLooking(true); setStatus(`Looking up @${handle}...`);
     try {
       const res = await fetch(`/api/x-lookup?username=${encodeURIComponent(handle)}`);
-      if (!res.ok) { addSystemMsg(`@${handle} not found`); return; }
+      if (!res.ok) { setStatus(`@${handle} not found`); return; }
       const profile = await res.json();
       const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label || "T-Shirt";
       const bio = (profile.bio || "").slice(0, 100);
       setPrompt(`Premium ${pl} design inspired by @${handle}. Theme: ${bio}. Print-ready, centered, vibrant, high contrast.`);
       setTitle(`@${handle} ${pl}`);
       if (profile.profile_image_url) { setRefPreview(profile.profile_image_url); setRefDataUrl(null); }
-      addSystemMsg(`Loaded @${handle} — prompt + PFP ready. Hit Generate or refine the prompt.`);
-    } catch { addSystemMsg("X lookup failed"); } finally { setXLooking(false); }
+      setStatus(`Loaded @${handle} — prompt and image set`);
+      setShowXProfile(false); setXHandle("");
+    } catch { setStatus("X lookup failed"); } finally { setXLooking(false); }
   };
 
   const handleImportPost = async () => {
-    const url = (chatInput || "").trim();
+    const url = xPostUrl.trim();
     const match = url.match(/(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)/);
-    if (!match) { setError("Paste an X post URL"); return; }
-    setChatInput("");
-    setImportingPost(true);
-    addSystemMsg("Importing post...");
+    if (!match) { setError("Paste a valid X post URL"); return; }
+    setImportingPost(true); setStatus("Importing post...");
     try {
       const res = await fetch("/api/design-studio/import-post", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ post_url: url }) });
       if (res.ok) {
@@ -184,20 +108,20 @@ export default function DesignStudioPage() {
         if (data.text) setPrompt(data.text);
         if (data.image_url) { setRefPreview(data.image_url); setRefDataUrl(null); }
         if (data.title) setTitle(data.title);
-        addSystemMsg("Post imported — text + image loaded.");
-      } else { addSystemMsg("Failed to import post"); }
-    } catch { addSystemMsg("Import failed"); } finally { setImportingPost(false); }
+        setStatus("Post imported — prompt and image set");
+        setShowXPost(false); setXPostUrl("");
+      } else { setStatus("Failed to import post"); }
+    } catch { setStatus("Import failed"); } finally { setImportingPost(false); }
   };
 
   const handleEnhance = async () => {
     if (!prompt.trim()) return;
-    setEnhancing(true);
-    addSystemMsg("Enhancing prompt...");
+    setEnhancing(true); setStatus("Enhancing...");
     try {
       const res = await fetch("/api/design-studio/enhance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: prompt.trim(), product_type: productType }) });
       if (res.ok) {
         const data = await res.json();
-        if (data.enhanced) { setPrompt(data.enhanced); addSystemMsg("Prompt enhanced."); }
+        if (data.enhanced) { setPrompt(data.enhanced); setStatus("Prompt enhanced"); }
         if (data.description && !description) setDescription(data.description);
       }
     } catch {} finally { setEnhancing(false); }
@@ -206,20 +130,14 @@ export default function DesignStudioPage() {
   // --- Generate ---
   const handleGenerate = async () => {
     if (!prompt.trim() && !refDataUrl && !refPreview) return;
-    setGenerating(true);
-    setDesignUrl(null);
-    setDesignVariants([]);
-    setError(null);
-    setPublished(null);
+    setGenerating(true); setDesignUrl(null); setDesignVariants([]); setError(null); setPublished(null);
     const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label;
 
-    // Composite mode: generate 4 style variants using exact image + text
+    // Composite mode
     if (referenceMode === "composite" && (refDataUrl || refPreview)) {
-      addSystemMsg(`Creating 4 style variants of your image with text (${pl})...`);
+      setStatus(`Compositing ${pl} variants...`);
       try {
-        // Parse top/bottom text from prompt
-        let topText = "";
-        let bottomText = "";
+        let topText = "", bottomText = "";
         const p = prompt.trim();
         const topMatch = p.match(/['""']([^'""']+)['""']?\s*(?:on top|above|at the top)/i);
         const bottomMatch = p.match(/['""']([^'""']+)['""']?\s*(?:below|at the bottom|underneath)/i);
@@ -230,60 +148,40 @@ export default function DesignStudioPage() {
           if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
           else { bottomText = p.replace(/^add\s+/i, "").replace(/use.*image.*?(?:and|,)\s*/i, "").replace(/['"]/g, ""); }
         }
-
-        // Generate 4 different style variants in parallel
-        const styleVariants = ["bold", "neon", "streetwear", "vintage"];
-        const results = await Promise.all(
-          styleVariants.map(style =>
-            fetch("/api/design-studio/composite", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                image: refDataUrl || refPreview,
-                top_text: topText || undefined,
-                bottom_text: bottomText || undefined,
-                style,
-                product_type: productType,
-              }),
-            }).then(r => r.json()).catch(() => null)
-          )
-        );
-
+        const styles = ["bold", "neon", "streetwear", "vintage"];
+        const results = await Promise.all(styles.map(style =>
+          fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style, product_type: productType }) }).then(r => r.json()).catch(() => null)
+        ));
         const urls = results.filter(r => r?.success).map(r => r.image_url);
-        if (urls.length === 0) { setError("Composite failed"); addSystemMsg("All variants failed"); return; }
-        setDesignVariants(urls);
-        setDesignUrl(urls[0]);
+        if (urls.length === 0) { setError("Composite failed"); return; }
+        setDesignVariants(urls); setDesignUrl(urls[0]);
         if (!title) setTitle(`${(topText || bottomText).slice(0, 30)} ${pl || ""}`);
-        addSystemMsg(`${urls.length} style variants ready! Bold, Neon, Streetwear, Vintage.`, urls);
+        setStatus(`${urls.length} style variants ready`);
         const now = new Date();
         for (let vi = 0; vi < urls.length; vi++) {
-          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText).slice(0, 20)} ${styleVariants[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText).slice(0, 20)} ${styles[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
         }
       } catch (err: any) { setError(err.message || "Composite failed"); } finally { setGenerating(false); }
       return;
     }
 
-    // AI generation mode (exact or creative)
-    addSystemMsg(`Generating ${pl} variants (${referenceMode} mode)...`);
+    // AI generation
+    setStatus(`Generating ${pl} via ${aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : aiProvider === "grok" ? "Grok" : "AI"}...`);
     try {
       const res = await fetch("/api/design-studio/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim() || "create a design from this image", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: referenceMode, provider: aiProvider, variants: 4 }),
       });
-      let data;
-      try { data = await res.json(); } catch { data = { error: `Server error (${res.status})` }; }
-      if (!res.ok) { setError(data.error || "Generation failed"); addSystemMsg(data.error || "Generation failed"); return; }
+      let data; try { data = await res.json(); } catch { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) { setError(data.error || "Generation failed"); return; }
       const urls: string[] = data.image_urls || [data.image_url];
-      setDesignVariants(urls);
-      setDesignUrl(urls[0]);
+      setDesignVariants(urls); setDesignUrl(urls[0]);
       if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
-      addSystemMsg(`${urls.length} variants ready! Pick a favorite. Say "make it more vibrant" to iterate.`, urls);
+      setStatus(`${urls.length} variants ready — pick your favorite`);
       const now = new Date();
-      const dateTag = `${now.getMonth() + 1}/${now.getDate()}`;
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
       for (let vi = 0; vi < urls.length; vi++) {
-        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `grok_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${dateTag}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `grok_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
       }
     } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
   };
@@ -297,7 +195,7 @@ export default function DesignStudioPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Publish failed"); return; }
       setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id });
-      addSystemMsg(`"${title}" published!${data.printful_product_id ? " Synced to Printful." : ""}`);
+      setStatus(`"${title}" published!`);
     } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
   };
 
@@ -312,7 +210,7 @@ export default function DesignStudioPage() {
     } catch { setConnectError("Failed"); } finally { setConnecting(false); }
   }, [printfulKey, storeUuid]);
 
-  const resetDesign = () => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); setRefPreview(null); setRefDataUrl(null); setReferenceMode("exact"); };
+  const resetDesign = () => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); setRefPreview(null); setRefDataUrl(null); setStatus(null); };
 
   if (!hasStore || !storeSlug) {
     return <div className="flex items-center justify-center py-20"><div className="text-center"><h2 className="text-xl font-bold text-white mb-2">No Store Found</h2><p className="text-sm text-zinc-500">Create a store first.</p></div></div>;
@@ -321,151 +219,102 @@ export default function DesignStudioPage() {
   const selectedProduct = PRODUCT_TYPES.find(t => t.value === productType);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-1">Grok Creator Studio</h1>
-      <p className="text-sm text-zinc-400 mb-4">Chat with Grok to design merch. Generate. Iterate. Publish.</p>
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <h1 className="text-xl font-bold text-white mb-0.5">Grok Creator Studio</h1>
+      <p className="text-xs text-zinc-500 mb-4">Design merch. Generate. Publish.</p>
 
-      {/* === CHAT === */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
-        <div className="h-80 overflow-y-auto px-4 py-3 space-y-2.5">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <svg className="h-8 w-8 text-purple-500/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-              <p className="text-xs text-zinc-500 mb-3">Describe what you want, or use the tools below</p>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {["Design a hoodie with my brand logo", "Create merch from my X profile", "Suggest trending designs"].map(q => (
-                  <button key={q} onClick={() => handleChatSend(q)} className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white transition">{q}</button>
-                ))}
-              </div>
+      {/* === PROMPT === */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-3">
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="Describe your design... e.g. 'Bold streetwear hoodie with graffiti text RARE'"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none resize-none"
+          rows={3}
+        />
+
+        {/* Reference image + enhance */}
+        <div className="flex items-center gap-3 mt-2">
+          {refPreview && (
+            <div className="flex items-center gap-2">
+              <img src={refPreview} alt="ref" className="h-10 w-10 rounded-lg object-cover border border-zinc-700" />
+              <button onClick={() => { setRefPreview(null); setRefDataUrl(null); setStatus(null); }} className="text-[10px] text-zinc-500 hover:text-red-400">Remove</button>
             </div>
           )}
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
-                msg.role === "user" ? "bg-indigo-600/30 text-indigo-100"
-                : msg.role === "system" ? "bg-zinc-800/50 text-zinc-500 italic"
-                : "bg-zinc-800 text-zinc-300"
-              }`}>
-                {msg.role === "assistant" ? (
-                  <div>
-                    <p className="whitespace-pre-wrap">{msg.content.replace(/\*\*(.+?)\*\*/g, "\u2192 $1")}</p>
-                    {msg.content.includes("**") && (
-                      <button onClick={() => applySuggestion(msg.content)} className="mt-1.5 flex items-center gap-1 rounded-lg border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-300 hover:bg-purple-500/20 transition">Use this prompt</button>
-                    )}
-                  </div>
-                ) : <p>{msg.content}</p>}
-                {/* Inline generated images in chat */}
-                {msg.images && msg.images.length > 0 && (
-                  <div className="grid grid-cols-4 gap-1.5 mt-2">
-                    {msg.images.map((url, j) => (
-                      <button key={j} onClick={() => { setDesignUrl(url); setDesignVariants(msg.images!); }} className={`rounded-lg overflow-hidden border-2 transition ${designUrl === url ? "border-purple-500" : "border-zinc-700 hover:border-zinc-500"}`}>
-                        <img src={url} alt={`v${j + 1}`} className="aspect-square w-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {chatSending && (
-            <div className="flex justify-start"><div className="rounded-xl bg-zinc-800 px-3 py-2"><div className="flex gap-1"><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" /><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} /><div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} /></div></div></div>
-          )}
-          <div ref={chatEndRef} />
+          {status && <p className="text-[10px] text-zinc-500 flex-1">{status}</p>}
+          <button onClick={handleEnhance} disabled={enhancing || !prompt.trim()} className="ml-auto rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+            {enhancing ? "Enhancing..." : "Enhance with AI"}
+          </button>
         </div>
 
-        {/* State bar */}
-        {(prompt || refPreview) && (
-          <div className="border-t border-zinc-800 px-4 py-2 flex items-center gap-3 bg-zinc-900/80">
-            {refPreview && <img src={refPreview} alt="ref" className="h-8 w-8 rounded object-cover" />}
-            {prompt && <p className="text-[10px] text-zinc-500 flex-1 line-clamp-1">{prompt}</p>}
-            <button onClick={() => { setPrompt(""); setRefPreview(null); setRefDataUrl(null); }} className="text-[10px] text-zinc-600 hover:text-red-400">Clear</button>
+        {/* Input tools */}
+        <div className="flex items-center gap-2 mt-3">
+          <button onClick={() => { setShowXProfile(!showXProfile); setShowXPost(false); }} className={`rounded-lg border px-3 py-1.5 text-xs transition flex items-center gap-1.5 ${showXProfile ? "border-purple-500 text-purple-400" : "border-zinc-700 text-zinc-400 hover:border-purple-500 hover:text-white"}`}>
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            From @profile
+          </button>
+          <button onClick={() => { setShowXPost(!showXPost); setShowXProfile(false); }} className={`rounded-lg border px-3 py-1.5 text-xs transition flex items-center gap-1.5 ${showXPost ? "border-purple-500 text-purple-400" : "border-zinc-700 text-zinc-400 hover:border-purple-500 hover:text-white"}`}>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.686-3.748a4.5 4.5 0 00-6.364-6.364L4.5 6.75" /></svg>
+            From X post
+          </button>
+          <label className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+            Upload image
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+          </label>
+        </div>
+
+        {/* Inline X Profile input */}
+        {showXProfile && (
+          <div className="flex gap-2 mt-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+              <input type="text" value={xHandle} onChange={e => setXHandle(e.target.value)} onKeyDown={e => e.key === "Enter" && handleXProfile()} placeholder="username" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
+            </div>
+            <button onClick={handleXProfile} disabled={xLooking || !xHandle.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">{xLooking ? "Loading..." : "Load"}</button>
           </div>
         )}
 
-        {/* Input */}
-        <div className="border-t border-zinc-800 px-3 py-2.5">
-          <div className="flex gap-2 mb-2">
-            <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }} placeholder="Describe your design or give feedback..." className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
-            <button onClick={() => handleChatSend()} disabled={chatSending || !chatInput.trim()} className="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-            </button>
+        {/* Inline X Post input */}
+        {showXPost && (
+          <div className="flex gap-2 mt-2">
+            <input type="text" value={xPostUrl} onChange={e => setXPostUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleImportPost()} placeholder="https://x.com/user/status/123456789" className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
+            <button onClick={handleImportPost} disabled={importingPost || !xPostUrl.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">{importingPost ? "Importing..." : "Import"}</button>
           </div>
-
-          {/* Input tools */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={handleXProfile} disabled={xLooking} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-              {xLooking ? "Loading..." : "From @profile"}
-            </button>
-            <button onClick={handleImportPost} disabled={importingPost} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.686-3.748a4.5 4.5 0 00-6.364-6.364L4.5 6.75" /></svg>
-              {importingPost ? "Importing..." : "From X post"}
-            </button>
-            <label className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-              Upload
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
-            </label>
-            <button onClick={handleEnhance} disabled={enhancing || !prompt.trim()} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-purple-500 hover:text-white disabled:opacity-50 transition flex items-center gap-1.5">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-              {enhancing ? "..." : "Enhance"}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Product + Engine selectors */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4 space-y-3">
-        {/* What are you making? */}
+      {/* === PRODUCT + ENGINE === */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-3 space-y-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Product</p>
           <div className="grid grid-cols-4 gap-2">
             {PRODUCT_TYPES.map(pt => (
-              <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-lg border px-3 py-2 text-center transition ${
-                productType === pt.value
-                  ? "border-purple-500 bg-purple-500/15 text-white"
-                  : "border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
-              }`}>
+              <button key={pt.value} onClick={() => setProductType(pt.value)} className={`rounded-lg border px-3 py-2 text-center transition ${productType === pt.value ? "border-purple-500 bg-purple-500/15 text-white" : "border-zinc-700 text-zinc-400 hover:border-zinc-600"}`}>
                 <span className="text-lg block">{pt.emoji}</span>
                 <span className="text-[11px] font-medium">{pt.label}</span>
               </button>
             ))}
           </div>
         </div>
-
-        {/* How should we create it? */}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Engine</p>
           <div className="grid grid-cols-5 gap-2">
             {([
-              { id: "auto" as const, label: "Auto", desc: "Smart pick", color: "white", composite: false },
-              { id: "composite" as const, label: "Exact+Text", desc: refPreview ? "Uses your exact image" : "Upload an image first", color: "blue", composite: true },
-              { id: "ideogram" as const, label: "Ideogram", desc: "Best text in images", color: "purple", composite: false },
-              { id: "flux" as const, label: "Flux", desc: "Photorealistic", color: "cyan", composite: false },
-              { id: "grok" as const, label: "Grok", desc: refPreview ? "Uses reference image" : "Creative/artistic", color: "emerald", composite: false },
-            ]).map(eng => {
-              const isActive = eng.composite
-                ? referenceMode === "composite"
-                : referenceMode !== "composite" && aiProvider === eng.id;
-              const borderColor = isActive
-                ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50"
-                : "border-zinc-700";
-              const bgColor = isActive
-                ? eng.color === "blue" ? "bg-blue-500/10" : eng.color === "purple" ? "bg-purple-500/10" : eng.color === "cyan" ? "bg-cyan-500/10" : eng.color === "emerald" ? "bg-emerald-500/10" : "bg-white/5"
-                : "";
-              const textColor = isActive
-                ? eng.color === "blue" ? "text-blue-400" : eng.color === "purple" ? "text-purple-400" : eng.color === "cyan" ? "text-cyan-400" : eng.color === "emerald" ? "text-emerald-400" : "text-white"
-                : "text-zinc-400";
+              { id: "auto", label: "Auto", desc: "Smart pick", color: "white", composite: false },
+              { id: "composite", label: "Exact+Text", desc: refPreview ? "Uses your exact image" : "Upload image first", color: "blue", composite: true },
+              { id: "ideogram", label: "Ideogram", desc: "Best text in images", color: "purple", composite: false },
+              { id: "flux", label: "Flux", desc: "Photorealistic", color: "cyan", composite: false },
+              { id: "grok", label: "Grok", desc: refPreview ? "Uses reference image" : "Creative/artistic", color: "emerald", composite: false },
+            ] as const).map(eng => {
+              const isActive = eng.composite ? referenceMode === "composite" : referenceMode !== "composite" && aiProvider === eng.id;
+              const bc = isActive ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50" : "border-zinc-700";
+              const bg = isActive ? eng.color === "blue" ? "bg-blue-500/10" : eng.color === "purple" ? "bg-purple-500/10" : eng.color === "cyan" ? "bg-cyan-500/10" : eng.color === "emerald" ? "bg-emerald-500/10" : "bg-white/5" : "";
+              const tc = isActive ? eng.color === "blue" ? "text-blue-400" : eng.color === "purple" ? "text-purple-400" : eng.color === "cyan" ? "text-cyan-400" : eng.color === "emerald" ? "text-emerald-400" : "text-white" : "text-zinc-400";
               return (
-                <button
-                  key={eng.id}
-                  onClick={() => {
-                    if (eng.composite) { setReferenceMode("composite"); }
-                    else { setAiProvider(eng.id as "auto" | "ideogram" | "flux" | "grok"); if (referenceMode === "composite") setReferenceMode("exact"); }
-                  }}
-                  className={`rounded-lg border px-2 py-2 text-center transition hover:border-zinc-600 ${borderColor} ${bgColor}`}
-                >
-                  <span className={`text-xs font-semibold block ${textColor}`}>{eng.label}</span>
+                <button key={eng.id} onClick={() => { if (eng.composite) setReferenceMode("composite"); else { setAiProvider(eng.id as typeof aiProvider); if (referenceMode === "composite") setReferenceMode("exact"); } }} className={`rounded-lg border px-2 py-2 text-center transition hover:border-zinc-600 ${bc} ${bg}`}>
+                  <span className={`text-xs font-semibold block ${tc}`}>{eng.label}</span>
                   <span className="text-[9px] text-zinc-600 block mt-0.5">{eng.desc}</span>
                 </button>
               );
@@ -474,21 +323,33 @@ export default function DesignStudioPage() {
         </div>
       </div>
 
-      {/* Generate */}
-      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-4 ${referenceMode === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
+      {/* === GENERATE === */}
+      <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-3 ${referenceMode === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
         {generating ? (
-          <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{referenceMode === "composite" ? "Compositing..." : "Generating..."}</span>
-        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label} via ${aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : aiProvider === "grok" ? "Grok" : "AI"}`}
+          <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{status || "Generating..."}</span>
+        ) : referenceMode === "composite" ? `Composite ${selectedProduct?.emoji} Image + Text` : `Generate ${selectedProduct?.emoji} ${selectedProduct?.label}`}
       </button>
 
-      {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}
+      {error && <div className="mb-3 rounded-lg border border-red-500/30 bg-red-950/20 p-3 text-sm text-red-400">{error}</div>}
 
-      {/* === RESULTS (only if not shown inline in chat) === */}
+      {/* === RESULTS === */}
       {designVariants.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-4">
-          <div className="bg-zinc-800"><img src={designUrl!} alt="Design" className="w-full max-h-[400px] object-contain mx-auto" /></div>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-3">
+          {designVariants.length > 1 && (
+            <div className="p-3 border-b border-zinc-800">
+              <div className="grid grid-cols-4 gap-2">
+                {designVariants.map((url, i) => (
+                  <button key={i} onClick={() => setDesignUrl(url)} className={`relative rounded-lg overflow-hidden border-2 transition ${designUrl === url ? "border-purple-500 ring-1 ring-purple-500/30" : "border-zinc-700 hover:border-zinc-500"}`}>
+                    <img src={url} alt={`v${i + 1}`} className="aspect-square w-full object-cover" />
+                    {designUrl === url && <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center"><svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="bg-zinc-800"><img src={designUrl!} alt="Design" className="w-full max-h-[350px] object-contain mx-auto" /></div>
           {!published ? (
-            <div className="p-4 border-t border-zinc-800 space-y-2">
+            <div className="p-3 border-t border-zinc-800 space-y-2">
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Product title..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
               <div className="flex gap-2">
                 <button onClick={handlePublish} disabled={publishing || !title.trim()} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
@@ -496,7 +357,7 @@ export default function DesignStudioPage() {
               </div>
             </div>
           ) : (
-            <div className="p-4 border-t border-zinc-800">
+            <div className="p-3 border-t border-zinc-800">
               <div className="flex items-center gap-2 text-green-400 mb-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="font-semibold text-sm">Published!</span></div>
               <a href={`https://x.com/intent/tweet?${new URLSearchParams({ text: `Just dropped "${title}" on RareImagery!`, url: getStorePageUrl(storeSlug || "", "store") }).toString()}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition">
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>Share to X
@@ -508,7 +369,7 @@ export default function DesignStudioPage() {
       )}
 
       {/* === PRINTFUL === */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 mb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-white">Printful</span>
           {printfulConnected && <span className="text-[10px] text-emerald-400">Connected</span>}
@@ -551,8 +412,8 @@ export default function DesignStudioPage() {
       )}
 
       {storeProducts.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <h2 className="text-xs font-semibold text-white mb-3">Your Products</h2>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+          <h2 className="text-xs font-semibold text-white mb-2">Your Products</h2>
           <div className="grid grid-cols-3 gap-2">
             {storeProducts.map(p => (
               <div key={p.id} className="rounded-lg border border-zinc-800 bg-zinc-800/50 overflow-hidden">
