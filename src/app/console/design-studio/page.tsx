@@ -53,6 +53,21 @@ export default function DesignStudioPage() {
   const [showXProfile, setShowXProfile] = useState(false);
   const [showXPost, setShowXPost] = useState(false);
 
+  // Pre-load from URL params (e.g. from Grok Library "Use in Studio")
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refUrl = params.get("ref");
+    const prePrompt = params.get("prompt");
+    const preProduct = params.get("product");
+    if (refUrl) {
+      setRefPreview(refUrl);
+      setRefDataUrl(refUrl.startsWith("data:") ? refUrl : null);
+      setStatus("Image loaded from Library — ready to generate.");
+    }
+    if (prePrompt) setPrompt(prePrompt);
+    if (preProduct && ["t_shirt", "hoodie", "ballcap", "digital_drop"].includes(preProduct)) setProductType(preProduct);
+  }, []);
+
   useEffect(() => {
     if (!hasStore) return;
     fetch(`/api/printful/status?slug=${encodeURIComponent(storeSlug || "")}`)
