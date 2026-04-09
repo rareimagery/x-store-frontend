@@ -21,23 +21,30 @@ else
   cd "$APP_DIR"
 fi
 
-# 2. Install dependencies
-echo "[2/6] Installing dependencies..."
+# 2. Enable standalone output for VPS
+echo "[2/7] Enabling standalone output..."
+sed -i 's|// output: "standalone"|output: "standalone"|' next.config.ts
+
+# 3. Install dependencies
+echo "[3/7] Installing dependencies..."
 npm ci --production=false
 
-# 3. Build standalone
-echo "[3/6] Building Next.js (standalone)..."
+# 4. Build standalone
+echo "[4/7] Building Next.js (standalone)..."
 npm run build
 
-# 4. Copy standalone + static
-echo "[4/6] Preparing standalone output..."
+# Revert standalone flag so git stays clean
+git checkout -- next.config.ts
+
+# 5. Copy standalone + static
+echo "[5/7] Preparing standalone output..."
 # The standalone output includes server.js + node_modules subset
 # Static assets need to be copied alongside
 cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
 cp -r public .next/standalone/public 2>/dev/null || true
 
-# 5. Restart PM2
-echo "[5/6] Restarting PM2..."
+# 6. Restart PM2
+echo "[6/7] Restarting PM2..."
 if pm2 describe rareimagery > /dev/null 2>&1; then
   pm2 restart rareimagery
 else
@@ -45,8 +52,8 @@ else
 fi
 pm2 save
 
-# 6. Verify
-echo "[6/6] Verifying..."
+# 7. Verify
+echo "[7/7] Verifying..."
 sleep 3
 if curl -sf http://127.0.0.1:3000/api/auth/providers > /dev/null; then
   echo "Deploy successful! Next.js is running on port 3000."
