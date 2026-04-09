@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { getCreatorStoreBySlug } from '@/lib/drupal';
 import { StripeProvider, XMoneyProvider } from '@/lib/payments';
 import { isFreeSubscriptionAllowlisted } from '@/lib/subscription-allowlist';
+import { getStoreUrl } from '@/lib/store-url';
 
 type CreateSubscriptionInput = {
   creatorHandle: string;
@@ -73,8 +74,6 @@ export async function createSubscription({
     xUsername?: string | null;
   };
 
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://rareimagery.net';
-
   // Helpers/testers can receive free subscription access without payment checkout.
   // This only affects subscription gating, not merch/product purchase charges.
   if (
@@ -85,7 +84,7 @@ export async function createSubscription({
   ) {
     return {
       success: true,
-      link: `${baseUrl}/stores/${handle}?subscribed=true&provider=free-helper`,
+      link: `${getStoreUrl(handle)}?subscribed=true&provider=free-helper`,
       provider,
     };
   }
@@ -100,8 +99,8 @@ export async function createSubscription({
       storeId: store.id,
       buyerXId: sessionMeta.xId || null,
       sellerXId: linkedProfile?.attributes?.field_x_user_id ?? null,
-      successUrl: `${baseUrl}/stores/${handle}?subscribed=true`,
-      cancelUrl: `${baseUrl}/stores/${handle}`,
+      successUrl: `${getStoreUrl(handle)}?subscribed=true`,
+      cancelUrl: getStoreUrl(handle),
     });
 
     if (!intent.checkoutUrl) {

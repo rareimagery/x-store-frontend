@@ -81,7 +81,7 @@ function buildCurrentGuideData(): Record<string, string> {
     "hero-desc": "RareImagery is an invite-only marketplace for creators. This guide walks you through everything \u2014 from signing up to making your first sale.",
 
     // What is RareImagery
-    "what-p1": "RareImagery is a creator marketplace where you get your own personal storefront \u2014 a page at rareimagery.net/yourname \u2014 that you can fill with products, customize with your own style, and share with your audience.",
+    "what-p1": "RareImagery is a creator marketplace where you get your own personal storefront \u2014 a subdomain at yourname.rareimagery.net \u2014 that you can fill with products, customize with your own style, and share with your audience.",
     "what-p2": "It\u2019s built around your X (Twitter) identity. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically \u2014 you don\u2019t have to start from a blank page.",
 
     // Pricing (keep in sync with actual fee structure)
@@ -133,7 +133,7 @@ export async function runWikiSyncAgent(): Promise<WikiSyncReport> {
 
     // Check for stale content that references old patterns
     const stalePatterns = [
-      { pattern: /yourname\.rareimagery\.net/g, fix: "rareimagery.net/yourname", label: "subdomain URL format" },
+      { pattern: /rareimagery\.net\/yourname/g, fix: "yourname.rareimagery.net", label: "path-based URL format" },
       { pattern: /\$6\/month/g, fix: "$2/month (only charged when you make sales)", label: "monthly fee amount" },
       { pattern: /\$11 total/g, fix: "$4/month X sub + $2/month maintenance (sales months only)", label: "launch fee" },
       { pattern: /6 visual themes/g, fix: "10 color schemes", label: "theme count" },

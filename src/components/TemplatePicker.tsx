@@ -160,7 +160,7 @@ export default function TemplatePicker({
 
       <div className="overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl lg:w-2/3">
         <div className="flex items-center gap-3 border-b border-zinc-700 bg-black p-4">
-          <div className="flex-1 text-center text-sm text-zinc-400">LIVE PREVIEW - rareimagery.net/shop/@{sellerHandle}</div>
+          <div className="flex-1 text-center text-sm text-zinc-400">LIVE PREVIEW - {sellerHandle}.rareimagery.net</div>
           <div className="rounded-full bg-[#1DA1F2] px-4 py-1 text-xs text-white">X Verified</div>
         </div>
         <div className="h-[520px] overflow-auto bg-white/5 p-8">

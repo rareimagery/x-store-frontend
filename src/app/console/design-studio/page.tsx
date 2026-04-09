@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
+import { getStoreUrl, getStorePageUrl } from "@/lib/store-url";
 
 interface StoreProduct {
   id: string;
@@ -819,7 +820,7 @@ export default function DesignStudioPage() {
               <a
                 href={`https://x.com/intent/tweet?${new URLSearchParams({
                   text: `Just dropped "${title}" on RareImagery! Check it out`,
-                  url: `https://www.rareimagery.net/${storeSlug}/store`,
+                  url: getStorePageUrl(storeSlug || "", "store"),
                 }).toString()}`}
                 target="_blank"
                 rel="noopener noreferrer"

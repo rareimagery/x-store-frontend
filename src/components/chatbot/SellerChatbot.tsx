@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import ChatInput from "@/components/chatbot/ChatInput";
 import ChatMessage, { type ChatMsg } from "@/components/chatbot/ChatMessage";
 import { useConsole } from "@/components/ConsoleContext";
+import { getStoreUrl } from "@/lib/store-url";
 
 // -------------------------------------------------------------------
 // Subculture presets (Sprint 2)
@@ -191,7 +192,7 @@ export default function SellerChatbot() {
 
   // Sprint 2 — Post to X
   const handlePostToX = useCallback(() => {
-    const url = `https://rareimagery.net/stores/${storeSlug ?? xUsername ?? ""}`;
+    const url = getStoreUrl(storeSlug ?? xUsername ?? "");
     const text = `Check out my new storefront! ${url}`;
     const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(intentUrl, "_blank", "noopener,noreferrer,width=550,height=420");

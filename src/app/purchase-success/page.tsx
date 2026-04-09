@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { getStoreUrl } from "@/lib/store-url";
 
 function SuccessContent() {
   const params = useSearchParams();
@@ -14,7 +15,7 @@ function SuccessContent() {
     ? `Just bought ${productName} from @${seller} on RareImagery! Check out their store`
     : `Just made a purchase on RareImagery!`;
   const shareUrl = seller
-    ? `https://www.rareimagery.net/${seller}`
+    ? getStoreUrl(seller)
     : "https://www.rareimagery.net";
 
   return (

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useConsole } from "./ConsoleContext";
 import ConsoleUserMenu from "./ConsoleUserMenu";
 import SupporterBadge from "./SupporterBadge";
+import { getStoreUrl } from "@/lib/store-url";
 
 const storeLinks: Array<{ href: Route; label: string; icon: string }> = [
   { href: "/console/page-building" as Route, label: "Page Building", icon: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" },
@@ -238,7 +239,7 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
       {hasStore && storeSlug && (
         <div className="border-t border-zinc-800 px-3 py-3">
           <a
-            href={`https://www.rareimagery.net/${storeSlug}`}
+            href={getStoreUrl(storeSlug)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={onNavigate}

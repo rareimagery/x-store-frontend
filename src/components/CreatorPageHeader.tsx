@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import type { CreatorProfile } from "@/lib/drupal";
+import { getStoreUrl } from "@/lib/store-url";
 
 interface CreatorPageHeaderProps {
   profile: CreatorProfile;
@@ -101,7 +102,7 @@ export default function CreatorPageHeader({ profile, activePage }: CreatorPageHe
           <a
             href={`https://x.com/intent/tweet?${new URLSearchParams({
               text: `Check out @${handle}'s page on RareImagery`,
-              url: `https://www.rareimagery.net/${handle}`,
+              url: getStoreUrl(handle),
             }).toString()}`}
             target="_blank"
             rel="noopener noreferrer"

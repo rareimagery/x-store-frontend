@@ -13,6 +13,7 @@ import CreatorPageHeader from "@/components/CreatorPageHeader";
 import ProductTabs from "@/components/ProductTabs";
 import PayWithXMoneyButton from "@/components/PayWithXMoneyButton";
 import ProductDetailClient from "@/components/ProductDetailClient";
+import { getStoreUrl } from "@/lib/store-url";
 
 export const revalidate = 60;
 
@@ -317,7 +318,7 @@ function StructuredData({ product }: { product: ProductDetail }) {
               "@type": "ListItem",
               position: 2,
               name: product.store_name,
-              item: `https://rareimagery.net/stores/${product.store_slug}`,
+              item: getStoreUrl(product.store_slug),
             },
           ]
         : []),

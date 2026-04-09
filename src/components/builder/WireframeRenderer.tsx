@@ -4,6 +4,7 @@ import DonationCampaignCard from "@/components/DonationCampaign";
 import type { DonationCampaign } from "@/app/api/donations/route";
 import StorePlayer from "@/components/StorePlayer";
 import MobileColumnLayout from "./MobileColumnLayout";
+import { getStoreUrl } from "@/lib/store-url";
 
 export interface FavoriteCreator {
   username: string;
@@ -1008,7 +1009,7 @@ export default function WireframeRenderer({ layout, profile, products, favorites
           <a
             href={`https://x.com/intent/tweet?${new URLSearchParams({
               text: `Check out @${profile.x_username}'s page on RareImagery`,
-              url: `https://www.rareimagery.net/${profile.x_username}`,
+              url: getStoreUrl(profile.x_username || ""),
             }).toString()}`}
             target="_blank"
             rel="noopener noreferrer"

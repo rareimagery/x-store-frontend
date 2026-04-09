@@ -7,6 +7,7 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 
 
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
+import { getStoreUrl } from "@/lib/store-url";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 
@@ -35,7 +36,7 @@ function drupalOutageFallback(slug: string, reason: string) {
     storeDrupalId: null,
     profileNodeId: null,
     slug,
-    url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
+    url: getStoreUrl(slug),
   });
 }
 
@@ -262,7 +263,8 @@ function isWritePermissionError(message: string): boolean {
 
 const storeCreateLimit = createRateLimiter({ limit: 3, windowMs: 60 * 60 * 1000 }); // 3/hour
 
-// DNS provisioning removed — using path-based routing (/username) instead of subdomains
+// DNS provisioning: subdomains are the canonical URL format (username.rareimagery.net)
+// Cloudflare DNS records are created automatically when CLOUDFLARE_MANAGE_DNS=true
 
 export async function POST(req: NextRequest) {
   if (!DRUPAL_API) {
@@ -433,7 +435,7 @@ export async function POST(req: NextRequest) {
           ),
           profileNodeId: null,
           slug,
-          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
+          url: getStoreUrl(slug),
         });
       }
 
@@ -453,7 +455,7 @@ export async function POST(req: NextRequest) {
         ),
         profileNodeId: profileData.data.id,
         slug,
-        url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
+        url: getStoreUrl(slug),
       });
     } catch (storeErr: any) {
       const storeErrorMessage = String(storeErr?.message || "Store creation failed");
@@ -477,7 +479,7 @@ export async function POST(req: NextRequest) {
           storeDrupalId: null,
           profileNodeId: profileData.data.id,
           slug,
-          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
+          url: getStoreUrl(slug),
         });
       } catch (profileErr: any) {
         const profileErrorMessage = String(
@@ -498,7 +500,7 @@ export async function POST(req: NextRequest) {
           storeDrupalId: null,
           profileNodeId: null,
           slug,
-          url: `https://${process.env.NEXT_PUBLIC_BASE_DOMAIN || "rareimagery.net"}/${slug}`,
+          url: getStoreUrl(slug),
         });
       }
     }

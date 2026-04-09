@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import type { CheckoutItem } from "@/lib/payments";
 import { createPaymentIntent } from "@/app/actions/payment";
 import { drupalAuthHeaders } from "@/lib/drupal";
+import { getStoreUrl } from "@/lib/store-url";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 
@@ -78,8 +79,8 @@ export async function POST(req: NextRequest) {
           ? await getSellerStripeAccountId(handle)
           : null;
 
-        const baseUrl = process.env.NEXTAUTH_URL ?? "https://www.rareimagery.net";
         const firstItemName = items[0]?.title || "merch";
+        const slug = handle ?? storeId;
         const successParams = new URLSearchParams({
           seller: handle || "",
           product: firstItemName,
@@ -92,8 +93,8 @@ export async function POST(req: NextRequest) {
           sellerXId: sellerXId ?? null,
           sellerStripeAccountId: sellerStripeAccountId ?? undefined,
           metadata: checkoutMetadata,
-          successUrl: `${baseUrl}/purchase-success?${successParams.toString()}`,
-          cancelUrl: `${baseUrl}/${handle ?? storeId}/store`,
+          successUrl: `${getStoreUrl(slug)}/purchase-success?${successParams.toString()}`,
+          cancelUrl: `${getStoreUrl(slug)}/store`,
         });
 
         return NextResponse.json({

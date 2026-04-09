@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BlockComponentDef } from "@/app/api/blocks/route";
 import { COLOR_SCHEME_OPTIONS, PAGE_BACKGROUNDS } from "@/lib/color-schemes";
+import { getStoreUrl } from "@/lib/store-url";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -608,7 +609,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
             {saving ? "Saving..." : saved ? "Saved!" : "Save & Publish"}
           </button>
           <a
-            href={`https://www.rareimagery.net/${storeSlug}`}
+            href={getStoreUrl(storeSlug)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"

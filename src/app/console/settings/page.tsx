@@ -4,6 +4,7 @@ import { useConsole } from "@/components/ConsoleContext";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { resolveTemplateId } from "@/templates/catalog";
 import { getTemplateDefinition } from "@/templates/registry";
+import { getStoreDisplayUrl } from "@/lib/store-url";
 
 export default function SettingsPage() {
   const {
@@ -43,7 +44,7 @@ export default function SettingsPage() {
               Subdomain
             </label>
             <p className="mt-1 text-sm text-white">
-              rareimagery.net/{storeSlug}
+              {getStoreDisplayUrl(storeSlug || "")}
             </p>
           </div>
           <div>

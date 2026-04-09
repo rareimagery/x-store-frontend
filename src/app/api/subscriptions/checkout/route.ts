@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { getPaymentProvider } from "@/lib/payments";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { getStoreUrl } from "@/lib/store-url";
 
 const subCheckoutLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 }); // 10/hour
 
@@ -27,7 +28,6 @@ export async function POST(req: NextRequest) {
     }
 
     const provider = getPaymentProvider();
-    const baseUrl = process.env.NEXTAUTH_URL || "https://rareimagery.net";
 
     const intent = await provider.createSubscription({
       tierId,
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
       storeId,
       buyerXId: (token.xId as string) || null,
       sellerXId: sellerXId || null,
-      successUrl: `${baseUrl}/stores/${storeSlug || storeId}?subscribed=true`,
-      cancelUrl: `${baseUrl}/stores/${storeSlug || storeId}`,
+      successUrl: `${getStoreUrl(storeSlug || storeId)}?subscribed=true`,
+      cancelUrl: getStoreUrl(storeSlug || storeId),
     });
 
     return NextResponse.json({

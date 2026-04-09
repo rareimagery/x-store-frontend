@@ -4,6 +4,7 @@ import Link from "next/link";
 import { authOptions } from "@/lib/auth";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import SubscriberTierControl from "@/components/SubscriberTierControl";
+import { getStoreUrl } from "@/lib/store-url";
 
 interface ProfileRow {
   id: string;
@@ -207,7 +208,7 @@ export default async function AdminSubscribersPage() {
                     <td className="px-4 py-3">
                       {p.storeSlug ? (
                         <a
-                          href={`https://www.rareimagery.net/${p.storeSlug}`}
+                          href={getStoreUrl(p.storeSlug)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-indigo-400 hover:underline"

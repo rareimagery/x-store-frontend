@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Send, X, MessageCircle } from 'lucide-react';
+import { getStoreUrl, getStoreDisplayUrl } from '@/lib/store-url';
 
 function BuilderContent() {
   const searchParams = useSearchParams();
@@ -60,8 +61,8 @@ function BuilderContent() {
           <button
             onClick={() => {
               // Your existing Drupal save logic here — already 70% done
-              console.log('✅ Saving config to Drupal → publishing store at rareimagery.net/' + handle);
-              alert(`🎉 Store live at rareimagery.net/${handle} — products + X Money donations connected!`);
+              console.log('✅ Saving config to Drupal → publishing store at ' + getStoreDisplayUrl(handle));
+              alert(`🎉 Store live at ${getStoreDisplayUrl(handle)} — products + X Money donations connected!`);
             }}
             className="bg-emerald-500 hover:bg-emerald-600 px-8 py-2 rounded-3xl font-semibold"
           >

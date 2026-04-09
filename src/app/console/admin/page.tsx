@@ -4,6 +4,7 @@ import Link from "next/link";
 import StoreApprovalButton from "@/components/StoreApprovalButton";
 import { authOptions } from "@/lib/auth";
 import { getAllStoresForAdmin } from "@/lib/drupal";
+import { getStoreUrl } from "@/lib/store-url";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -74,7 +75,7 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-4 py-3">
                       <a
-                        href={`https://www.rareimagery.net/${slug}`}
+                        href={getStoreUrl(slug)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-400 hover:text-indigo-300"

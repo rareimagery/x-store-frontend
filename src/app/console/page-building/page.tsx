@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
 import WireframeBuilder from "@/components/builder/WireframeBuilder";
+import { getStoreUrl } from "@/lib/store-url";
 
 interface StoreOption {
   id: string;
@@ -89,7 +90,7 @@ export default function ConsolePageBuildingPage() {
           </select>
           {switching && <span className="text-xs text-zinc-500">Switching...</span>}
           <a
-            href={`https://www.rareimagery.net/${currentSlug}`}
+            href={getStoreUrl(currentSlug)}
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto text-xs text-indigo-400 hover:text-indigo-300"

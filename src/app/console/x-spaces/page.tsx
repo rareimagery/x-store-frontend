@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
+import { getStoreUrl } from "@/lib/store-url";
 
 interface XSpace {
   id: string;
@@ -160,7 +161,7 @@ function SpaceCard({ space, storeSlug }: { space: XSpace; storeSlug: string | nu
             <a
               href={`https://x.com/intent/tweet?${new URLSearchParams({
                 text: `Join my Space and check out my store!`,
-                url: `https://www.rareimagery.net/${storeSlug}`,
+                url: getStoreUrl(storeSlug || ""),
               }).toString()}`}
               target="_blank"
               rel="noopener noreferrer"

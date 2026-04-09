@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { getStoreUrl } from "@/lib/store-url";
 
 const XAI_API_URL = "https://api.x.ai/v1/chat/completions";
 
@@ -146,7 +147,7 @@ function getSystemPrompt(theme: string, ctx?: CreatorContext): string {
     `\n\n--- Creator Context ---`,
     `Creator: @${ctx.username}`,
   ];
-  if (ctx.storeSlug) lines.push(`Store URL: https://rareimagery.net/stores/${ctx.storeSlug}`);
+  if (ctx.storeSlug) lines.push(`Store URL: ${getStoreUrl(ctx.storeSlug)}`);
   if (ctx.bio) lines.push(`Bio: ${ctx.bio}`);
   if (ctx.followerCount) lines.push(`Audience: ${ctx.followerCount.toLocaleString()} followers`);
   if (ctx.products?.length) {

@@ -9,6 +9,7 @@ import {
 import { triggerDrupalSync } from "@/lib/drupal-sync";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { ensureStoreSubdomainDns } from "@/lib/cloudflare";
+import { getStoreUrl } from "@/lib/store-url";
 import { randomUUID } from "crypto";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
       success: true,
       profileId: existingId,
       alreadyExisted: true,
-      url: `https://www.rareimagery.net/${xUsername}`,
+      url: getStoreUrl(xUsername),
     });
   }
 
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
       success: true,
       profileId: profile.id,
       alreadyExisted: false,
-      url: `https://www.rareimagery.net/${xUsername}`,
+      url: getStoreUrl(xUsername),
     });
   } catch (err: any) {
     if (snapshotUuid) {
