@@ -27,19 +27,19 @@ const PRODUCT_PROMPTS: Record<string, string> = {
   digital_drop: "high-resolution digital artwork, clean, vibrant, ready for social media and print",
 };
 
-// Reference mode prompts — "exact" preserves the image, "creative" adapts it
+// Reference mode prompts — kept short so Grok doesn't render instructions as text
 const REFERENCE_PROMPTS = {
   exact: {
     upload: (base: string) =>
-      `EXACTLY replicate the uploaded reference image as the central graphic. Do NOT redraw, restyle, reinterpret, change pose, expression, fur, colors, lighting, or ANY detail. 100% visual fidelity — treat it as a direct print of the reference. ${base}`,
+      `${base}. Use the reference image exactly as provided, preserve all details.`,
     pfp: (base: string) =>
-      `Use the exact profile picture as the central graphic with 100% fidelity. Do NOT redraw, restyle, or alter the likeness, pose, expression, colors, or any detail. Preserve it exactly as-is. ${base}`,
+      `${base}. Use the profile picture exactly, preserve the likeness.`,
   },
   creative: {
     upload: (base: string) =>
-      `Use the uploaded image as creative reference and adapt it into a design while keeping core visual elements recognizable. ${base}`,
+      `${base}. Inspired by the reference image, adapt creatively.`,
     pfp: (base: string) =>
-      `Use this profile picture as creative reference and adapt it into a design while keeping the original likeness recognizable. ${base}`,
+      `${base}. Inspired by this profile picture, adapt creatively.`,
   },
 };
 

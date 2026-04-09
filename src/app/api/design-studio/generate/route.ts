@@ -76,8 +76,13 @@ export async function POST(req: NextRequest) {
 
   try {
     if (provider === "flux") {
+      // Flux doesn't support reference images — mention it in prompt if user uploaded one
+      let fluxPrompt = prompt.trim();
+      if (referenceDataUrl) {
+        fluxPrompt += " (Note: reference image was uploaded but this engine generates from text only)";
+      }
       const result = await generateWithFlux({
-        prompt: prompt.trim(),
+        prompt: fluxPrompt,
         productType,
       });
 
@@ -86,6 +91,7 @@ export async function POST(req: NextRequest) {
         image_url: result.url,
         image_urls: result.urls,
         provider: "flux",
+        has_reference: !!referenceDataUrl,
         product_type: productType,
         original_prompt: prompt.trim(),
       });
@@ -96,6 +102,7 @@ export async function POST(req: NextRequest) {
         prompt: prompt.trim(),
         numImages: numVariants,
         productType,
+        // Ideogram only accepts HTTPS URLs as style references, not data URLs
         styleRef: referenceDataUrl?.startsWith("https://") ? referenceDataUrl : undefined,
       });
 

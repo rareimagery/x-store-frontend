@@ -439,10 +439,10 @@ export default function DesignStudioPage() {
           <div className="grid grid-cols-5 gap-2">
             {([
               { id: "auto" as const, label: "Auto", desc: "Smart pick", color: "white", composite: false },
-              { id: "composite" as const, label: "Exact+Text", desc: "Your image + text", color: "blue", composite: true },
-              { id: "ideogram" as const, label: "Ideogram", desc: "Best text quality", color: "purple", composite: false },
+              { id: "composite" as const, label: "Exact+Text", desc: refPreview ? "Uses your exact image" : "Upload an image first", color: "blue", composite: true },
+              { id: "ideogram" as const, label: "Ideogram", desc: "Best text in images", color: "purple", composite: false },
               { id: "flux" as const, label: "Flux", desc: "Photorealistic", color: "cyan", composite: false },
-              { id: "grok" as const, label: "Grok", desc: "Creative/artistic", color: "emerald", composite: false },
+              { id: "grok" as const, label: "Grok", desc: refPreview ? "Uses reference image" : "Creative/artistic", color: "emerald", composite: false },
             ]).map(eng => {
               const isActive = eng.composite
                 ? referenceMode === "composite"
