@@ -75,7 +75,7 @@ export default function DesignStudioPage() {
     const reader = new FileReader();
     reader.onload = () => setRefDataUrl(reader.result as string);
     reader.readAsDataURL(file);
-    setStatus("Reference image attached");
+    setStatus("Image attached — Exact+Text uses it perfectly, Grok uses it as reference, Ideogram/Flux generate from text only");
   };
 
   const handleXProfile = async () => {
@@ -165,8 +165,41 @@ export default function DesignStudioPage() {
       return;
     }
 
-    // AI generation
-    setStatus(`Generating ${pl} via ${aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : aiProvider === "grok" ? "Grok" : "AI"}...`);
+    // Auto mode: one image from each available engine in parallel
+    if (aiProvider === "auto") {
+      setStatus(`Generating from all engines...`);
+      const providers = ["grok", "ideogram", "flux"] as const;
+      const labels = { grok: "Grok", ideogram: "Ideogram", flux: "Flux" };
+      try {
+        const results = await Promise.allSettled(
+          providers.map(p =>
+            fetch("/api/design-studio/generate", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ prompt: prompt.trim() || "create a design", product_type: productType, reference_image: refDataUrl || refPreview || undefined, reference_mode: referenceMode, provider: p, variants: 1 }),
+            }).then(async r => { const d = await r.json().catch(() => ({})); return r.ok ? { url: d.image_url || d.image_urls?.[0], provider: p } : null; })
+          )
+        );
+        const urls: string[] = [];
+        const providerLabels: string[] = [];
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value?.url) { urls.push(r.value.url); providerLabels.push(labels[r.value.provider]); }
+        }
+        if (urls.length === 0) { setError("All engines failed"); return; }
+        setDesignVariants(urls); setDesignUrl(urls[0]);
+        if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
+        setStatus(`${urls.length} results: ${providerLabels.join(", ")}`);
+        const now = new Date();
+        const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
+        for (let vi = 0; vi < urls.length; vi++) {
+          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `auto_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short} ${providerLabels[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+        }
+      } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
+      return;
+    }
+
+    // Single engine generation
+    const providerLabel = aiProvider === "ideogram" ? "Ideogram" : aiProvider === "flux" ? "Flux" : "Grok";
+    setStatus(`Generating ${pl} via ${providerLabel}...`);
     try {
       const res = await fetch("/api/design-studio/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -181,7 +214,7 @@ export default function DesignStudioPage() {
       const now = new Date();
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
       for (let vi = 0; vi < urls.length; vi++) {
-        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `grok_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `gen_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
       }
     } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
   };
@@ -302,11 +335,11 @@ export default function DesignStudioPage() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2">Engine</p>
           <div className="grid grid-cols-5 gap-2">
             {([
-              { id: "auto", label: "Auto", desc: "Smart pick", color: "white", composite: false },
-              { id: "composite", label: "Exact+Text", desc: refPreview ? "Uses your exact image" : "Upload image first", color: "blue", composite: true },
-              { id: "ideogram", label: "Ideogram", desc: "Best text in images", color: "purple", composite: false },
-              { id: "flux", label: "Flux", desc: "Photorealistic", color: "cyan", composite: false },
-              { id: "grok", label: "Grok", desc: refPreview ? "Uses reference image" : "Creative/artistic", color: "emerald", composite: false },
+              { id: "auto", label: "Auto", desc: "One from each engine", color: "white", composite: false },
+              { id: "composite", label: "Exact+Text", desc: refPreview ? "Your exact image + text" : "Upload an image first", color: "blue", composite: true },
+              { id: "ideogram", label: "Ideogram", desc: refPreview ? "Text-focused (ignores upload)" : "Best text in images", color: "purple", composite: false },
+              { id: "flux", label: "Flux", desc: refPreview ? "Photorealistic (ignores upload)" : "Photorealistic", color: "cyan", composite: false },
+              { id: "grok", label: "Grok", desc: refPreview ? "Sees upload (not exact)" : "Creative/artistic", color: "emerald", composite: false },
             ] as const).map(eng => {
               const isActive = eng.composite ? referenceMode === "composite" : referenceMode !== "composite" && aiProvider === eng.id;
               const bc = isActive ? eng.color === "blue" ? "border-blue-500" : eng.color === "purple" ? "border-purple-500" : eng.color === "cyan" ? "border-cyan-500" : eng.color === "emerald" ? "border-emerald-500" : "border-white/50" : "border-zinc-700";
