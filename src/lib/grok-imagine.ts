@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Grok Imagine — AI image generation + editing via x.ai API
-// /v1/images/generations = text-to-image
-// /v1/images/edits = image editing (uses the uploaded reference)
-// Always uses grok-imagine-image-pro for best quality
+// /v1/images/generations = text-to-image (no reference)
+// /v1/images/edits = image editing (preserves uploaded reference)
+// Always uses grok-imagine-image-pro
 // ---------------------------------------------------------------------------
 
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
@@ -21,15 +21,17 @@ export interface GrokImageResult {
   pfpUsername?: string;
 }
 
+// Printful-ready prompts — isolated flat artwork, no mockups
 const PRODUCT_PROMPTS: Record<string, string> = {
-  t_shirt: "flat graphic artwork only, NO product mockup, NO t-shirt shown, transparent or solid background, high resolution, centered, clean edges, print-ready for DTG printing",
-  hoodie: "flat graphic artwork only, NO product mockup, NO hoodie shown, transparent or solid background, high resolution, centered, bold graphic, print-ready for DTG printing",
-  ballcap: "flat compact graphic artwork only, NO product mockup, NO hat shown, transparent or solid background, high resolution, centered, clean edges, embroidery-friendly",
-  digital_drop: "high-resolution digital artwork, clean, vibrant, ready for download and print",
+  t_shirt: "isolated print-ready graphic on transparent background, high resolution 4500x5400px, centered artwork, vector clean edges, POD optimized, no mockup, no clothing, no model, just the design",
+  hoodie: "isolated print-ready graphic on transparent background, high resolution 4500x5400px, centered artwork, bold graphic, POD optimized, no mockup, no hoodie body, no model, just the design",
+  ballcap: "isolated print-ready graphic on transparent background, high resolution, centered compact artwork, clean edges, POD optimized, no mockup, no hat body, no model, just the design",
+  digital_drop: "high-resolution digital artwork on transparent background, centered, vibrant, clean edges, social media + print ready, no background",
 };
 
+// Edit endpoint prompt — preserves uploaded image exactly, outputs flat artwork
 const EXACT_EDIT_PROMPT = (base: string) =>
-  `Keep the uploaded reference image 100% identical — do NOT redraw, restyle, reinterpret, or change any detail. Preserve pixel-level fidelity. Output the flat graphic artwork only — do NOT render it on a product, clothing, or mockup. ${base}`;
+  `Keep the uploaded reference image 100% identical in the exact center — do NOT redraw, restyle, reinterpret, change pose, expression, fur, colors, lighting, or ANY detail. Preserve pixel-level fidelity. Output ONLY the isolated graphic on a transparent background. Do not show any hoodie, t-shirt, hat, model, background, or mockup. ONLY add the merch text overlay exactly as described. ${base}`;
 
 const PFP_PATTERN = /@([A-Za-z0-9_]+)\s*(?:pfp|profile\s*pic|avatar|photo)/i;
 const MY_PFP_PATTERN = /\b(?:my|the)\s+(?:pfp|profile\s*pic|avatar|photo)\b/i;
@@ -93,7 +95,6 @@ export async function generateDesign(
   const suffix = PRODUCT_PROMPTS[productType] || PRODUCT_PROMPTS.t_shirt;
   const cleanedPrompt = `${prompt.replace(PFP_PATTERN, "").replace(MY_PFP_PATTERN, "").replace(/\s{2,}/g, " ").trim()} | ${suffix}`;
 
-  // With reference → /edits (actually uses the image), without → /generations
   const hasReference = !!referenceUrl;
   const endpoint = hasReference ? XAI_EDIT_URL : XAI_API_URL;
   const finalPrompt = hasReference ? EXACT_EDIT_PROMPT(cleanedPrompt) : cleanedPrompt;
@@ -105,6 +106,7 @@ export async function generateDesign(
     response_format: "url",
   };
 
+  // /edits requires image as {url, type} object — plain string gets 422
   if (hasReference) {
     body.image = { url: referenceUrl, type: "image_url" };
   }
