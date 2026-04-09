@@ -212,49 +212,52 @@ export default function DesignStudioPage() {
     setPublished(null);
     const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label;
 
-    // Composite mode: server-side image + text overlay (pixel-perfect)
+    // Composite mode: generate 4 style variants using exact image + text
     if (referenceMode === "composite" && (refDataUrl || refPreview)) {
-      addSystemMsg(`Compositing your image with text (${pl})...`);
+      addSystemMsg(`Creating 4 style variants of your image with text (${pl})...`);
       try {
         // Parse top/bottom text from prompt
         let topText = "";
         let bottomText = "";
         const p = prompt.trim();
-        // Try to detect "X on top and Y below" pattern
-        const topMatch = p.match(/['""]([^'""]+)['""]?\s*(?:on top|above|at the top)/i);
-        const bottomMatch = p.match(/['""]([^'""]+)['""]?\s*(?:below|at the bottom|underneath)/i);
+        const topMatch = p.match(/['""']([^'""']+)['""']?\s*(?:on top|above|at the top)/i);
+        const bottomMatch = p.match(/['""']([^'""']+)['""']?\s*(?:below|at the bottom|underneath)/i);
         if (topMatch) topText = topMatch[1];
         if (bottomMatch) bottomText = bottomMatch[1];
-        // Fallback: if no pattern matched, use Grok to parse
         if (!topText && !bottomText) {
-          // Simple heuristic: split on "and" or use whole prompt as bottom text
           const parts = p.split(/\s+and\s+/i);
           if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
           else { bottomText = p.replace(/^add\s+/i, "").replace(/use.*image.*?(?:and|,)\s*/i, "").replace(/['"]/g, ""); }
         }
-        const res = await fetch("/api/design-studio/composite", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            image: refDataUrl || refPreview,
-            top_text: topText || undefined,
-            bottom_text: bottomText || undefined,
-            font_color: "#FFFFFF",
-            font_size: "large",
-            background: "#000000",
-            product_type: productType,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) { setError(data.error || "Composite failed"); addSystemMsg(data.error || "Composite failed"); return; }
-        const url = data.image_url;
-        setDesignVariants([url]);
-        setDesignUrl(url);
+
+        // Generate 4 different style variants in parallel
+        const styleVariants = ["bold", "neon", "streetwear", "vintage"];
+        const results = await Promise.all(
+          styleVariants.map(style =>
+            fetch("/api/design-studio/composite", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                image: refDataUrl || refPreview,
+                top_text: topText || undefined,
+                bottom_text: bottomText || undefined,
+                style,
+                product_type: productType,
+              }),
+            }).then(r => r.json()).catch(() => null)
+          )
+        );
+
+        const urls = results.filter(r => r?.success).map(r => r.image_url);
+        if (urls.length === 0) { setError("Composite failed"); addSystemMsg("All variants failed"); return; }
+        setDesignVariants(urls);
+        setDesignUrl(urls[0]);
         if (!title) setTitle(`${(topText || bottomText).slice(0, 30)} ${pl || ""}`);
-        addSystemMsg(`Composite ready! Your exact image with text overlay.`, [url]);
-        // Save to gallery
+        addSystemMsg(`${urls.length} style variants ready! Bold, Neon, Streetwear, Vintage.`, urls);
         const now = new Date();
-        fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}`, url, prompt: p, name: `${(topText || bottomText).slice(0, 25)} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+        for (let vi = 0; vi < urls.length; vi++) {
+          fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText).slice(0, 20)} ${styleVariants[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+        }
       } catch (err: any) { setError(err.message || "Composite failed"); } finally { setGenerating(false); }
       return;
     }
