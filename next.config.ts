@@ -30,7 +30,7 @@ if (drupalApiUrl) {
 }
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone", // Enable when migrating to VPS (breaks Vercel)
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
