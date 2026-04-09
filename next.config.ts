@@ -30,6 +30,7 @@ if (drupalApiUrl) {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
