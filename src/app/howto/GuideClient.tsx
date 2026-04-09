@@ -392,11 +392,11 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <EditableText tag="p" id="what-p1" editing={editing} overrides={overrides} defaultText="RareImagery is a creator marketplace where you get your own personal storefront — a page at rareimagery.net/yourname — that you can fill with products, customize with your own style, and share with your audience." />
+            <EditableText tag="p" id="what-p1" editing={editing} overrides={overrides} defaultText="RareImagery is a creator marketplace where you get your own personal storefront — with your own subdomain at yourname.rareimagery.net (or rareimagery.net/yourname) — that you can fill with products, customize with your own style, and share with your audience." />
             <EditableText tag="p" id="what-p2" editing={editing} overrides={overrides} defaultText="It's built around your X (Twitter) identity. When you sign in, we pull in your profile, your bio, your posts, and your follower count. An AI then uses that to help you set up your store automatically — you don't have to start from a blank page." />
             <div className="g-features">
               {[
-                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "Your own page at rareimagery.net/yourname, styled however you want." },
+                { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "Your own subdomain at yourname.rareimagery.net, styled however you want." },
                 { icon: "\uD83E\uDD16", title: "AI-assisted setup", desc: "Your X profile auto-fills your store info, bio, and product ideas." },
                 { icon: "\uD83C\uDFA8", title: "10 color schemes", desc: "Customize your look with color schemes, backgrounds, and drag-and-drop layout." },
                 { icon: "\uD83D\uDCB8", title: "Automatic payouts", desc: "When someone buys from you, money goes directly to your account." },
@@ -493,7 +493,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <p>Fill in the essentials:</p>
             <ul className="g-check">
               <Check><strong>Store name</strong> &mdash; what you want your store to be called</Check>
-              <Check><strong>Store URL</strong> &mdash; this becomes rareimagery.net/<em>yourname</em>. Choose carefully, this is your permanent URL.</Check>
+              <Check><strong>Store URL</strong> &mdash; this becomes <em>yourname</em>.rareimagery.net (your own subdomain). You can also be found at rareimagery.net/<em>yourname</em>. Choose carefully, this is your permanent URL.</Check>
               <Check><strong>Contact email</strong> &mdash; for order notifications</Check>
               <Check><strong>Currency</strong> &mdash; the currency your products will be priced in</Check>
             </ul>
@@ -733,7 +733,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
           <div className="g-body">
             {[
               { q: "How long does store approval take?", a: "Usually 24\u201348 hours. The team reviews every store manually. You'll get an email the moment it's approved." },
-              { q: "Can I change my store's subdomain after I create it?", a: "Not currently. Your subdomain is permanent once created. Choose something close to your X handle." },
+              { q: "Can I change my store's subdomain after I create it?", a: "Not currently. Your subdomain (yourname.rareimagery.net) is permanent once created. Choose something close to your X handle." },
               { q: "What happens if I miss a monthly payment?", a: "Your store will be temporarily unpublished. Update your payment method in Settings \u2192 Billing to restore it." },
               { q: "Do I need to handle my own shipping?", a: "Only for Physical Custom products. Print-on-demand (Printful) and digital products are handled automatically." },
               { q: "Can I sell products unrelated to my X content?", a: "Yes! Your store is yours. The AI suggestions are based on your X profile, but you're not limited to them." },
