@@ -1069,34 +1069,35 @@ export async function getAllProductSlugs(): Promise<{ slug: string; type: string
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-  // Convert slug back to approximate title for CONTAINS filter
-  // "rare-hoodie" -> "rare hoodie" -> filter[title][operator]=CONTAINS
-  const titleSearch = slug.replace(/-/g, " ");
+  // Try multiple search strategies: space-replaced and original slug
+  // "rare-t-shirt" → ["rare t shirt", "rare-t-shirt"] to handle hyphenated titles like "Rare t-shirt"
+  const searchTerms = [slug.replace(/-/g, " "), slug];
 
   for (const type of PRODUCT_TYPES) {
-    try {
-      const includes = PRODUCT_INCLUDES[type] || PRODUCT_INCLUDES.default;
-      const params = new URLSearchParams({
-        include: includes,
-        "filter[title-search][condition][path]": "title",
-        "filter[title-search][condition][operator]": "CONTAINS",
-        "filter[title-search][condition][value]": titleSearch,
-        "page[limit]": "10",
-      });
-      const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
-      const res = await fetch(url, { next: { revalidate: 60 }, headers: authHeaders() });
-      if (!res.ok) continue;
-      const json = await res.json();
-      const included = json.included ?? [];
+    for (const titleSearch of searchTerms) {
+      try {
+        const includes = PRODUCT_INCLUDES[type] || PRODUCT_INCLUDES.default;
+        const params = new URLSearchParams({
+          include: includes,
+          "filter[title-search][condition][path]": "title",
+          "filter[title-search][condition][operator]": "CONTAINS",
+          "filter[title-search][condition][value]": titleSearch,
+          "page[limit]": "10",
+        });
+        const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
+        const res = await fetch(url, { next: { revalidate: 60 }, headers: authHeaders() });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const included = json.included ?? [];
 
-      // Exact slug match from the narrowed results
-      for (const p of json.data ?? []) {
-        if (slugify(p.attributes.title) === slug) {
-          return mapProductDetail(p, included, type);
+        for (const p of json.data ?? []) {
+          if (slugify(p.attributes.title) === slug) {
+            return mapProductDetail(p, included, type);
+          }
         }
+      } catch {
+        continue;
       }
-    } catch {
-      continue;
     }
   }
 
