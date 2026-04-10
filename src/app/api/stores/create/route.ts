@@ -8,6 +8,7 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { getStoreUrl } from "@/lib/store-url";
+import { fetchXProfile } from "@/lib/x-api/user";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 
@@ -107,13 +108,88 @@ async function isSlugTaken(slug: string): Promise<boolean> {
   }
 }
 
+/**
+ * Create a Drupal user account for the creator with x_creator role.
+ * Returns { uuid, uid } or null if creation fails.
+ */
+async function createDrupalCreatorUser(
+  username: string,
+  email: string
+): Promise<{ uuid: string; uid: number } | null> {
+  try {
+    const writeHeaders = await drupalWriteHeaders();
+    const password = `ri_${username}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const res = await fetch(`${DRUPAL_API}/jsonapi/user/user`, {
+      method: "POST",
+      headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+      body: JSON.stringify({
+        data: {
+          type: "user--user",
+          attributes: {
+            name: username.toLowerCase(),
+            mail: email,
+            pass: password,
+            status: true,
+          },
+        },
+      }),
+    });
+    if (!res.ok) {
+      console.warn(`[stores/create] Drupal user creation failed (${res.status}):`, await res.text().catch(() => ""));
+      return null;
+    }
+    const json = await res.json();
+    const uuid = json.data?.id;
+    const uid = json.data?.attributes?.drupal_internal__uid;
+
+    // Assign x_creator role via Drush-style PATCH (roles are managed via relationship)
+    if (uuid) {
+      try {
+        await fetch(`${DRUPAL_API}/jsonapi/user/user/${uuid}/relationships/roles`, {
+          method: "POST",
+          headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+          body: JSON.stringify({
+            data: [{ type: "user_role--user_role", id: "x_creator" }],
+          }),
+        });
+      } catch {
+        console.warn("[stores/create] Failed to assign x_creator role");
+      }
+    }
+
+    console.log(`[stores/create] Drupal user created: ${username} (uid=${uid}, uuid=${uuid})`);
+    return uuid ? { uuid, uid } : null;
+  } catch (err) {
+    console.warn("[stores/create] Drupal user creation error:", err);
+    return null;
+  }
+}
+
 async function createDrupalStore(
   slug: string,
   storeName: string,
   ownerEmail: string,
-  currency: string
+  currency: string,
+  ownerUserUuid?: string | null
 ) {
   const writeHeaders = await drupalWriteHeaders();
+
+  const relationships: Record<string, unknown> = {
+    default_currency: {
+      data: {
+        type: "commerce_currency--commerce_currency",
+        id: "1f1f906f-b263-4049-946d-914e73c0d102",
+      },
+    },
+  };
+
+  // Set owner to the creator's Drupal user (not the API service user)
+  if (ownerUserUuid) {
+    relationships.uid = {
+      data: { type: "user--user", id: ownerUserUuid },
+    };
+  }
+
   const res = await fetch(`${DRUPAL_API}/jsonapi/commerce_store/online`, {
     method: "POST",
     headers: {
@@ -137,14 +213,7 @@ async function createDrupalStore(
           },
           field_store_status: "approved",
         },
-        relationships: {
-          default_currency: {
-            data: {
-              type: "commerce_currency--commerce_currency",
-              id: "1f1f906f-b263-4049-946d-914e73c0d102",
-            },
-          },
-        },
+        relationships,
       },
     }),
   });
@@ -158,10 +227,20 @@ async function createDrupalStore(
 
 interface XProfileFields {
   xUsername: string;
+  xUserId?: string;
+  displayName?: string;
   bioDescription?: string;
   followerCount?: number | null;
-  profilePictureUrl?: string;
-  backgroundBannerUrl?: string;
+  followingCount?: number | null;
+  postCount?: number | null;
+  verified?: boolean;
+  verifiedType?: string;
+  avatarUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  joinedDate?: string;
+  website?: string;
+  rawJson?: string;
   topPosts?: string;
   topFollowers?: string;
   metrics?: string;
@@ -171,44 +250,54 @@ interface XProfileFields {
   myspaceMusicUrl?: string;
 }
 
-async function createXProfile(storeId: string | null, fields: XProfileFields) {
+async function createXProfile(
+  storeId: string | null,
+  fields: XProfileFields,
+  drupalUserUuid?: string | null
+) {
   const attributes: Record<string, unknown> = {
     title: `${fields.xUsername} X Profile`,
     field_x_username: fields.xUsername,
   };
 
-  // Optional fields — use actual Drupal field names
-  if (fields.bioDescription) {
-    attributes.field_x_bio = {
-      value: fields.bioDescription,
-      format: "basic_html",
+  // Core X fields
+  if (fields.xUserId) attributes.field_x_user_id = Number(fields.xUserId);
+  if (fields.displayName) attributes.field_x_display_name = fields.displayName;
+  if (fields.bioDescription) attributes.field_x_bio = { value: fields.bioDescription, format: "basic_html" };
+  if (fields.followerCount != null) attributes.field_x_followers = fields.followerCount;
+  if (fields.followingCount != null) attributes.field_x_following = fields.followingCount;
+  if (fields.postCount != null) attributes.field_x_post_count = fields.postCount;
+  if (fields.verified != null) attributes.field_x_verified = fields.verified;
+  if (fields.verifiedType) attributes.field_x_verified_type = fields.verifiedType;
+  if (fields.avatarUrl) attributes.field_x_avatar_url = fields.avatarUrl;
+  if (fields.bannerUrl) attributes.field_x_banner_url = fields.bannerUrl;
+  if (fields.location) attributes.field_x_location = fields.location;
+  if (fields.joinedDate) attributes.field_x_joined_date = fields.joinedDate;
+  if (fields.website) attributes.field_x_website = { uri: fields.website };
+  if (fields.rawJson) attributes.field_x_raw_json = fields.rawJson;
+
+  // Existing rich data fields
+  if (fields.topPosts) attributes.field_top_posts = fields.topPosts;
+  if (fields.topFollowers) attributes.field_top_followers = fields.topFollowers;
+  if (fields.metrics) attributes.field_metrics = fields.metrics;
+
+  // MySpace theme fields
+  if (fields.myspaceAccentColor) attributes.field_myspace_accent_color = fields.myspaceAccentColor;
+  if (fields.myspaceGlitterColor) attributes.field_myspace_glitter_color = fields.myspaceGlitterColor;
+  if (fields.myspaceBackgroundUrl) attributes.field_myspace_background = fields.myspaceBackgroundUrl;
+  if (fields.myspaceMusicUrl) attributes.field_myspace_music_url = fields.myspaceMusicUrl;
+
+  // Build relationships
+  const relationships: Record<string, unknown> = {};
+  if (storeId) {
+    relationships.field_linked_store = {
+      data: { type: "commerce_store--online", id: storeId },
     };
   }
-  if (fields.followerCount != null) {
-    attributes.field_x_followers = fields.followerCount;
-  }
-  if (fields.topPosts) {
-    attributes.field_top_posts = fields.topPosts;
-  }
-  if (fields.topFollowers) {
-    attributes.field_top_followers = fields.topFollowers;
-  }
-  if (fields.metrics) {
-    attributes.field_metrics = fields.metrics;
-  }
-
-  // MySpace fields
-  if (fields.myspaceAccentColor) {
-    attributes.field_myspace_accent_color = fields.myspaceAccentColor;
-  }
-  if (fields.myspaceGlitterColor) {
-    attributes.field_myspace_glitter_color = fields.myspaceGlitterColor;
-  }
-  if (fields.myspaceBackgroundUrl) {
-    attributes.field_myspace_background = fields.myspaceBackgroundUrl;
-  }
-  if (fields.myspaceMusicUrl) {
-    attributes.field_myspace_music_url = fields.myspaceMusicUrl;
+  if (drupalUserUuid) {
+    relationships.field_x_linked_user = {
+      data: { type: "user--user", id: drupalUserUuid },
+    };
   }
 
   const profileWriteHeaders = await drupalWriteHeaders();
@@ -222,15 +311,7 @@ async function createXProfile(storeId: string | null, fields: XProfileFields) {
       data: {
         type: "node--x_user_profile",
         attributes,
-        ...(storeId
-          ? {
-              relationships: {
-                field_linked_store: {
-                  data: { type: "commerce_store--online", id: storeId },
-                },
-              },
-            }
-          : {}),
+        ...(Object.keys(relationships).length > 0 ? { relationships } : {}),
       },
     }),
   });
@@ -391,10 +472,32 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Step 1: Fetch full X profile data from X API v2
+    let xFullProfile: any = null;
+    try {
+      const xProfileRes = await fetchXProfile(xUsername);
+      xFullProfile = xProfileRes.data;
+    } catch (err) {
+      console.warn("[stores/create] X API profile fetch failed (continuing with session data):", err);
+    }
+
+    const xMetrics = xFullProfile?.public_metrics;
     const xProfileFields: XProfileFields = {
       xUsername,
-      bioDescription,
-      followerCount,
+      xUserId: xFullProfile?.id || undefined,
+      displayName: xFullProfile?.name || storeName.replace("'s Store", ""),
+      bioDescription: xFullProfile?.description || bioDescription,
+      followerCount: xMetrics?.followers_count ?? followerCount,
+      followingCount: xMetrics?.following_count ?? null,
+      postCount: xMetrics?.tweet_count ?? null,
+      verified: xFullProfile?.verified_type ? xFullProfile.verified_type !== "none" : undefined,
+      verifiedType: xFullProfile?.verified_type || undefined,
+      avatarUrl: xFullProfile?.profile_image_url?.replace("_normal", "_400x400") || undefined,
+      bannerUrl: xFullProfile?.profile_banner_url || undefined,
+      location: xFullProfile?.location || undefined,
+      joinedDate: xFullProfile?.created_at ? xFullProfile.created_at.split("T")[0] : undefined,
+      website: xFullProfile?.url || (xFullProfile?.entities?.url?.urls?.[0]?.expanded_url) || undefined,
+      rawJson: xFullProfile ? JSON.stringify(xFullProfile) : undefined,
       topPosts,
       topFollowers,
       metrics,
@@ -404,16 +507,26 @@ export async function POST(req: NextRequest) {
       myspaceMusicUrl,
     };
 
+    // Step 2: Create Drupal user account for the creator
+    const drupalUser = await createDrupalCreatorUser(
+      xUsername,
+      ownerEmail
+    );
+
     try {
+      // Step 3: Create Commerce Store (owned by the new Drupal user)
       const storeData = await createDrupalStore(
         slug,
         storeName,
         ownerEmail,
-        currency
+        currency,
+        drupalUser?.uuid || null
       );
+
+      // Step 4: Create X Profile node linked to store + Drupal user
       let profileData: any = null;
       try {
-        profileData = await createXProfile(storeData.data.id, xProfileFields);
+        profileData = await createXProfile(storeData.data.id, xProfileFields, drupalUser?.uuid || null);
       } catch (profileErr: any) {
         const profileErrorMessage = String(
           profileErr?.message || "X profile creation failed"
@@ -467,7 +580,7 @@ export async function POST(req: NextRequest) {
       // Permission-gated fallback: create profile without linked commerce store,
       // so onboarding and theme setup can continue while Drupal perms are fixed.
       try {
-        const profileData = await createXProfile(null, xProfileFields);
+        const profileData = await createXProfile(null, xProfileFields, drupalUser?.uuid || null);
 
         return NextResponse.json({
           success: true,

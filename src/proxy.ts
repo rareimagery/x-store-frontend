@@ -86,7 +86,16 @@ export async function proxy(request: NextRequest) {
 
   // ── Subdomain detected (e.g. rare.rareimagery.net) ──
 
-  // System paths on subdomains → redirect to www
+  // Console on subdomains → rewrite to /console (same Next.js route) with slug header
+  if (pathname.startsWith("/console")) {
+    const url = request.nextUrl.clone();
+    // Keep /console path as-is (don't add slug prefix)
+    const response = NextResponse.rewrite(url);
+    response.headers.set("X-Store-Slug", subdomain);
+    return response;
+  }
+
+  // Other system paths on subdomains → redirect to www
   if (isSystemPath(pathname)) {
     return NextResponse.redirect(
       new URL(`https://${MAIN_HOST}${pathname}${request.nextUrl.search}`),

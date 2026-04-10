@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { getConsoleProfiles, getConsoleProfilesByEmail } from "@/lib/drupal";
 import {
@@ -39,13 +39,25 @@ export default async function ConsoleLayout({
     stores = await getConsoleProfilesByEmail(consoleSession.user.email);
   }
 
+  // Detect subdomain — if on rare.rareimagery.net/console, force that store
+  const headersList = await headers();
+  const subdomainSlug = headersList.get("x-store-slug");
+
   const cookieStore = await cookies();
   const preferredStoreId = cookieStore.get(ACTIVE_STORE_COOKIE)?.value || null;
-  const storeData =
-    stores.find((store) => store.storeId && store.storeId === preferredStoreId) ||
-    stores.find((store) => !!store.storeId) ||
-    stores[0] ||
-    null;
+
+  let storeData = null;
+  if (subdomainSlug) {
+    // Subdomain console — force the matching store
+    storeData = stores.find((store) => store.storeSlug === subdomainSlug) || null;
+  }
+  if (!storeData) {
+    storeData =
+      stores.find((store) => store.storeId && store.storeId === preferredStoreId) ||
+      stores.find((store) => !!store.storeId) ||
+      stores[0] ||
+      null;
+  }
 
   const contextValue: ConsoleContextValue = {
     stores,
