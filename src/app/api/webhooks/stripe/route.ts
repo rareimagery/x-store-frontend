@@ -205,7 +205,120 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Only handle store setup checkouts (not product purchases)
+      // Handle product purchases — create Drupal order + submit to Printful
+      if (sessionType === "product_purchase") {
+        try {
+          const customerEmail = session.customer_details?.email || session.metadata?.customer_email || "";
+          const storeSlug = session.metadata?.store_slug || "";
+          const itemsJson = session.metadata?.items || "[]";
+          const items = JSON.parse(itemsJson);
+          const shippingDetails = (session as any).shipping_details || session.customer_details;
+
+          // 1. Find the store UUID
+          const storeRes = await fetch(
+            `${DRUPAL_API}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(storeSlug)}&fields[commerce_store--online]=field_printful_api_key`,
+            { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+          );
+          const storeJson = storeRes.ok ? await storeRes.json() : null;
+          const storeUuid = storeJson?.data?.[0]?.id;
+          const printfulKey = storeJson?.data?.[0]?.attributes?.field_printful_api_key;
+
+          if (!storeUuid) {
+            console.error("[webhook] Store not found for product purchase:", storeSlug);
+            break;
+          }
+
+          // 2. Create Drupal Commerce order
+          const writeHeaders = await drupalWriteHeaders();
+          const orderRes = await fetch(`${DRUPAL_API}/jsonapi/commerce_order/default`, {
+            method: "POST",
+            headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+            body: JSON.stringify({
+              data: {
+                type: "commerce_order--default",
+                attributes: {
+                  state: "completed",
+                  mail: customerEmail,
+                  total_price: {
+                    number: session.amount_total ? (session.amount_total / 100).toFixed(2) : "0.00",
+                    currency_code: "USD",
+                  },
+                  field_printful_status: "pending",
+                  field_stripe_session_id: session.id,
+                },
+                relationships: {
+                  store_id: { data: { type: "commerce_store--online", id: storeUuid } },
+                },
+              },
+            }),
+          });
+
+          let drupalOrderId: string | null = null;
+          if (orderRes.ok) {
+            const orderData = await orderRes.json();
+            drupalOrderId = orderData.data?.attributes?.drupal_internal__order_id || orderData.data?.id;
+            console.log("[webhook] Drupal order created:", drupalOrderId);
+          } else {
+            console.error("[webhook] Drupal order creation failed:", await orderRes.text().catch(() => ""));
+          }
+
+          // 3. Submit to Printful for fulfillment (if store has Printful key)
+          if (printfulKey && items.length > 0 && shippingDetails) {
+            try {
+              const recipient = {
+                name: shippingDetails.name || customerEmail,
+                address1: shippingDetails.address?.line1 || "",
+                address2: shippingDetails.address?.line2 || "",
+                city: shippingDetails.address?.city || "",
+                state_code: shippingDetails.address?.state || "",
+                country_code: shippingDetails.address?.country || "US",
+                zip: shippingDetails.address?.postal_code || "",
+                email: customerEmail,
+              };
+
+              const printfulItems = items.map((item: any) => ({
+                sync_variant_id: item.printfulVariantId ? Number(item.printfulVariantId) : undefined,
+                variant_id: item.printfulVariantId ? Number(item.printfulVariantId) : undefined,
+                quantity: item.quantity || 1,
+                retail_price: item.price || "0.00",
+                name: item.title || "Product",
+              })).filter((i: any) => i.sync_variant_id || i.variant_id);
+
+              if (printfulItems.length > 0) {
+                const pfRes = await fetch("https://api.printful.com/orders", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${printfulKey}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    external_id: drupalOrderId ? `ri_ord_${drupalOrderId}` : `ri_sess_${session.id}`,
+                    recipient,
+                    items: printfulItems,
+                  }),
+                });
+
+                if (pfRes.ok) {
+                  const pfData = await pfRes.json();
+                  console.log("[webhook] Printful order created:", pfData.result?.id);
+                } else {
+                  const pfErr = await pfRes.text().catch(() => "");
+                  console.error("[webhook] Printful order failed:", pfErr.slice(0, 300));
+                }
+              }
+            } catch (pfErr) {
+              console.error("[webhook] Printful submission error:", pfErr);
+            }
+          }
+
+          console.log(`[webhook] Product purchase completed: order=${drupalOrderId}, store=${storeSlug}, items=${items.length}`);
+        } catch (err: any) {
+          console.error("[webhook] Product purchase handler error:", err.message);
+        }
+        break;
+      }
+
+      // Only handle store setup checkouts
       if (sessionType !== "store_setup") break;
 
       const storeSlug = session.metadata?.storeSlug;

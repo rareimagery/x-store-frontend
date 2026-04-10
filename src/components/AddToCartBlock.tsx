@@ -32,9 +32,39 @@ export default function AddToCartBlock({
     }
   }
 
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const [adding, setAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (adding) return;
+    setAdding(true);
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          item: {
+            productId: product.id,
+            variationId: currentVariation?.id || product.id,
+            printfulVariantId: (currentVariation as any)?.printful_variant_id || null,
+            title: product.title,
+            price: currentVariation?.price || product.price,
+            imageUrl: product.images?.[0] || null,
+            quantity,
+            size: currentVariation?.attributes?.size || null,
+            color: currentVariation?.attributes?.color || null,
+            storeSlug: product.store_slug || "",
+            sellerUsername: product.store_slug || "",
+          },
+        }),
+      });
+      if (res.ok) {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      }
+    } catch {} finally {
+      setAdding(false);
+    }
   };
 
   const attrLabels: Record<string, string> = {
