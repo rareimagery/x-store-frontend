@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import TemplatePicker from '@/components/TemplatePicker';
 import { createCreatorSite } from '@/app/actions/onboarding';
 import { DEFAULT_TEMPLATE_ID, type TemplateId } from '@/templates/catalog';
@@ -14,7 +14,15 @@ type WizardProfile = {
 };
 
 export default function OnboardingWizard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      signIn("twitter", { callbackUrl: "/onboarding" });
+    }
+  }, [status]);
+
   const [step, setStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>(DEFAULT_TEMPLATE_ID);
   const [profile, setProfile] = useState<WizardProfile>({
@@ -98,6 +106,14 @@ export default function OnboardingWizard() {
     'w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-4 text-base text-white placeholder-zinc-500 outline-none transition focus:border-[#1DA1F2]';
 
   const canContinue = effectiveProfile.handle && subdomain.length >= 3 && slugStatus === 'available';
+
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
+        <p className="text-zinc-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-8 text-white">

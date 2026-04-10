@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
+import { createRateLimiter, getClientIP, rateLimitResponse } from "@/lib/rate-limit";
+
+const inviteLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
 
 /**
- * POST /api/invite — Validate an invite code (public)
+ * POST /api/invite — Validate an invite code (public, rate-limited)
  * Body: { code: string }
  */
 export async function POST(req: NextRequest) {
+  const ip = getClientIP(req);
+  const rl = inviteLimit(ip);
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
+
   const { code } = await req.json();
   if (!code) {
     return NextResponse.json({ valid: false, error: "Code required" }, { status: 400 });
