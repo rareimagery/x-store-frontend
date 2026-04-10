@@ -611,9 +611,10 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               <tbody>
                 <tr><td><strong>How To</strong></td><td>This guide &mdash; always accessible from your dashboard</td></tr>
                 <tr><td><strong>Page Building</strong></td><td>Drag-and-drop layout editor for your public storefront</td></tr>
-                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs from text, edit uploaded images, or composite your exact image with text overlay. Publishes directly to Printful.</td></tr>
+                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit or use Exact+Text composite. Set your own price and publish directly to Printful.</td></tr>
                 <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
-                <tr><td><strong>My Favorites</strong></td><td>Curate favorite X creators into collections for your public page</td></tr>
+                <tr><td><strong>My Subscribers</strong></td><td>View your X Creator Subscribers who have signed in to RareImagery. See stats, manage tiers, and track growth.</td></tr>
+                <tr><td><strong>Creator Collections</strong></td><td>Curate favorite X creators into drag-and-drop category columns for your public page</td></tr>
                 <tr><td><strong>Social Feeds</strong></td><td>Connect TikTok, Instagram, and YouTube accounts</td></tr>
                 <tr><td><strong>Music</strong></td><td>Add Spotify and Apple Music tracks to your storefront</td></tr>
                 <tr><td><strong>X Communities</strong></td><td>Showcase X Communities you belong to</td></tr>

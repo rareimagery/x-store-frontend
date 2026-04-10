@@ -59,7 +59,8 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 <strong>Content Model:</strong>
 • Node: x_user_profile (15 fields: username, bio, pfp, followers, verified, etc.)
 • Commerce Store: online — field_x_user_profile, field_printful_api_key, field_store_slug
-• Commerce Products: clothing (with t_shirt/hoodie/ballcap variation types)
+• Commerce Products: clothing (t_shirt/hoodie/ballcap) + pet products (pet_bandana/pet_hoodie) + digital_drop
+• Printful Catalog IDs: t_shirt=71, hoodie=146, ballcap=439, pet_bandana=902, pet_hoodie=921
 • Attributes: color (17 values), size (10 values)`,
   },
   {
@@ -85,13 +86,15 @@ const DEFAULT_SECTIONS: WikiSection[] = [
     title: "Console Dashboard Pages",
     content: `<strong>Workspace:</strong>
 • Page Building — Drag-and-drop wireframe editor (Main Content + Right Sidebar)
-• Grok Creator Studio — Multi-engine AI design studio with chat, 4 input tools, 5 engines (see below)
-• Grok Library — AI-generated designs organized in folders with save/manage
-• My Favorites — Curate X creators into categorized collections
+• Grok Creator Studio — AI design studio with Grok + Exact+Text engines, 6 product types (see below)
+• Grok Library — AI-generated designs with folders, drag-drop upload, "Use in Studio" button (closed-loop back to Creator Studio with image + prompt pre-loaded)
+• My Subscribers — X Creator Subscriber dashboard: stats, search, tier management. Captures subscribers when they sign in via X OAuth.
+• Creator Collections — Drag-and-drop creator curation with @dnd-kit. Drag creators between category columns, auto-saves to Drupal.
 • Social Feeds — Connect TikTok, Instagram, YouTube accounts
 • Music — Spotify + Apple Music playlist builder
 • X Communities — Showcase X Communities
 • X Articles — Import long-form X articles
+• X Spaces — Live and scheduled X Spaces
 
 <strong>Grok Creator Studio (/console/design-studio):</strong>
 Chat-first design interface. Grok chat assistant at top (full context awareness), input tools below, then product + engine selectors.
@@ -102,7 +105,9 @@ Chat-first design interface. Grok chat assistant at top (full context awareness)
 • Upload — Drag-and-drop reference image (JPEG/PNG/WebP, max 4MB)
 • Enhance — Grok 3 Mini rewrites prompt + generates product description
 
-<strong>Products:</strong> T-Shirt, Hoodie, Ballcap, Digital Drop (grid selector with emoji + label)
+<strong>Products (6):</strong> T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop (grid selector with emoji + label)
+
+<strong>Pricing:</strong> Creator sets their own price for each product at publish time. No auto-pricing. Digital Drops default to $4.99.
 
 <strong>2 Engines:</strong>
 • <strong>Grok AI</strong> — Text-to-image via /v1/images/generations. When image uploaded, switches to /v1/images/edits endpoint which actually uses the reference image. Pro model ($0.07/img) for exact mode. 4 variants per generation.
@@ -149,7 +154,7 @@ Customer pays → Platform Stripe receives → application_fee deducted → tran
 
 <strong>Auto-Sync on Connect:</strong> When a creator saves their Printful key via /api/printful/connect, it fires a POST to Drupal's /api/printful-sync/{uuid} which runs server-side (no serverless timeouts).
 
-<strong>Product Types:</strong> t_shirt, hoodie, ballcap — determined by product name keywords.
+<strong>Product Types (6):</strong> t_shirt (catalog 71), hoodie (146), ballcap (439), pet_bandana (902), pet_hoodie (921), digital_drop (no Printful).
 
 <strong>Sync Logic (Drupal module):</strong>
 1. Fetches all products from creator's Printful store
@@ -181,15 +186,26 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
   {
     id: "public-pages",
     title: "Public Pages",
-    content: `<strong>Creator Homepage:</strong> /[creator] — Wireframe layout with profile header, nav menu, content blocks
-<strong>Store:</strong> /[creator]/store — Product catalog grid
-<strong>Favorites:</strong> /[creator]/favorites — 6-across grid with X API enrichment (pinned + 2 recent posts)
-<strong>Gallery:</strong> /[creator]/gallery — "Grok Library" 6-across grid with hover overlays
-<strong>Articles:</strong> /[creator]/articles — Long-form X articles with engagement stats
+    content: `<strong>Domain Architecture:</strong>
+• www.rareimagery.net — Main site, console, login, API, auth (never rewritten)
+• {slug}.rareimagery.net — Public creator storefronts (proxy.ts rewrites to /[creator] route)
+• System paths on subdomains (/console, /login, /signup, etc.) redirect to www automatically
 
-<strong>Nav Bar:</strong> Home | Store | Favorites | Gallery | Articles | [Open Your Store → /login] | [Here's How → /howto] | [X Share]
+<strong>Subdomain Routing:</strong> proxy.ts extracts subdomain, rewrites to /[slug] path. Store slugs can differ from X usernames (e.g. slug "rare" → X username "rareimagery"). getCreatorProfile() resolves slugs via resolveUsernameFromSlug() fallback. All internal nav links use basePath prop for subdomain-safe URLs.
+
+<strong>StoreNav:</strong> Fixed top bar on all creator pages (RareImagery | @creator | Subscribe on X | Sign In). Sign In and Console links use absolute www.rareimagery.net URLs for cross-subdomain auth.
+
+<strong>Creator Pages:</strong>
+• /[creator] — Wireframe layout with profile header, nav menu (Home | Store | Favorites | Gallery | Articles | Share), content blocks
+• /[creator]/store — Product catalog grid with "{StoreName}'s Store" heading linking to store
+• /[creator]/favorites — 6-across grid with X API enrichment
+• /[creator]/gallery — Grok Library grid with hover overlays
+• /[creator]/articles — Long-form X articles with engagement stats
+• /[creator]/donate — Donation campaign page
 
 <strong>Product Detail:</strong> /products/[slug] — Color-matched image gallery, size/color selection, add to cart
+
+<strong>Onboarding:</strong> /onboarding — 2-step wizard: (1) Verify X info + choose subdomain (real-time availability check via /api/stores/check-slug), (2) Pick store template.
 
 <strong>How-To Guide:</strong> /howto — Creator onboarding wiki with admin inline editing
 <strong>Admin Wiki:</strong> /admin/wiki — Platform documentation (admin-only access)`,
@@ -205,7 +221,9 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
 <strong>Content:</strong> /api/favorites, /api/favorites/enrich, /api/gallery, /api/gallery/upload, /api/articles, /api/music, /api/communities, /api/social-feeds, /api/blocks, /api/builds
 <strong>Design:</strong> /api/design-studio/generate (Grok), /api/design-studio/composite (sharp), /api/design-studio/publish, /api/design-studio/enhance, /api/design-studio/import-post
 <strong>Payments:</strong> /api/checkout, /api/webhooks/stripe, /api/subscriptions/*
-<strong>Admin:</strong> /api/invite/admin, /api/guide
+<strong>Subscribers:</strong> /api/subscribers (GET subscriber list), /api/x-subscription (GET/POST tier management)
+<strong>Stores:</strong> /api/stores/create, /api/stores/check-slug (availability check), /api/stores/products
+<strong>Admin:</strong> /api/invite/admin, /api/guide, /api/admin/wiki
 <strong>Other:</strong> /api/health, /api/x-lookup, /api/upload, /api/notifications/preferences`,
   },
   {
@@ -248,18 +266,23 @@ Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, 
   {
     id: "infrastructure",
     title: "Infrastructure & Deployment",
-    content: `<strong>Frontend:</strong> Self-hosted VPS, deployed via git push to main. Domain: rareimagery.net + *.rareimagery.net
+    content: `<strong>Frontend:</strong> Self-hosted VPS at /var/www/rareimagery, PM2 process manager (fork mode, port 3000). Deployed via GitHub webhook → deploy.sh (auto-deploy on push to main).
 
 <strong>Backend:</strong> SSH root@72.62.80.155 → su - rare → /var/www/html/mysite
-• Nginx on port 80, PHP 8.3 FPM, PostgreSQL 16 (native, not Docker)
+• Nginx reverse proxy on port 80 → localhost:3000 (Next.js) + PHP 8.3 FPM (Drupal)
+• PostgreSQL 16 (native, not Docker)
 • Drush: vendor/bin/drush cr / vendor/bin/drush cron
 • Deploy modules: scp to /var/www/html/mysite/web/modules/custom/ → drush en module_name → drush cr
 
 <strong>Disk:</strong> 96GB total, ~3.2GB used. DB: ~50MB. Drupal files: ~8MB.
 
-<strong>DNS:</strong> Cloudflare manages rareimagery.net. Wildcard to VPS. Per-store subdomains via proxy.ts middleware rewrite.
+<strong>DNS:</strong> Cloudflare manages rareimagery.net. Wildcard A record (*.rareimagery.net → 72.62.80.155). SSL: Cloudflare Flexible mode.
 
-<strong>Caches:</strong> Next.js s-maxage=60 stale-while-revalidate=300 for general content. No-store for auth and store routes. Drupal cache cleared by code-audit agent every 6 hours.`,
+<strong>Subdomain Routing:</strong> proxy.ts (Next.js 16 Proxy/Middleware) extracts subdomain from Host header, rewrites to /[creator] route. System paths (/console, /login, /api) excluded from rewrite. System paths on subdomains redirect to www.
+
+<strong>Auth:</strong> NEXTAUTH_URL=https://www.rareimagery.net. X OAuth callback: www.rareimagery.net/api/auth/callback/twitter. All auth flows stay on www domain.
+
+<strong>Caches:</strong> Next.js revalidate=60 for public content. No-store for auth and console routes. Drupal cache cleared by code-audit agent every 6 hours.`,
   },
 ];
 
