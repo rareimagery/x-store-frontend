@@ -55,6 +55,10 @@ export default function DesignStudioPage() {
   const [enhancing, setEnhancing] = useState(false);
   const [showXProfile, setShowXProfile] = useState(false);
   const [showXPost, setShowXPost] = useState(false);
+  const [importedPost, setImportedPost] = useState<{
+    text: string; username: string; image_url: string | null; image_urls: string[];
+    likes: number; retweets: number; replies: number; views: number; created_at: string | null;
+  } | null>(null);
 
   // Pre-load from URL params (e.g. from Grok Library "Use in Studio")
   useEffect(() => {
@@ -113,13 +117,30 @@ export default function DesignStudioPage() {
     setImportingPost(true); setStatus("Importing post...");
     try {
       const res = await fetch("/api/design-studio/import-post", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ post_url: url }) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.text) setPrompt(data.text);
-        if (data.image_url) { setRefPreview(data.image_url); setRefDataUrl(null); }
-        if (data.title) setTitle(data.title);
-        setStatus("Post imported"); setShowXPost(false); setXPostUrl("");
-      } else { setStatus("Failed to import"); }
+      if (!res.ok) { setStatus("Failed to import"); return; }
+      const data = await res.json();
+      // Save post data for preview card
+      setImportedPost({
+        text: data.text || "", username: data.username || "", image_url: data.image_url || null,
+        image_urls: data.image_urls || [], likes: data.likes || 0, retweets: data.retweets || 0,
+        replies: data.replies || 0, views: data.views || 0, created_at: data.created_at || null,
+      });
+      if (data.text) setPrompt(data.text);
+      if (data.image_url) { setRefPreview(data.image_url); setRefDataUrl(null); }
+      if (data.title) setTitle(data.title);
+      setShowXPost(false); setXPostUrl("");
+      setStatus("Post imported — enhancing prompt...");
+      // Auto-enhance the imported text into a merch-ready prompt
+      if (data.text) {
+        try {
+          const enhRes = await fetch("/api/design-studio/enhance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: data.text, product_type: productType }) });
+          if (enhRes.ok) {
+            const enhData = await enhRes.json();
+            if (enhData.enhanced) { setPrompt(enhData.enhanced); setStatus("Post imported + prompt enhanced"); }
+            if (enhData.description && !description) setDescription(enhData.description);
+          } else { setStatus("Post imported"); }
+        } catch { setStatus("Post imported"); }
+      } else { setStatus("Post imported"); }
     } catch { setStatus("Import failed"); } finally { setImportingPost(false); }
   };
 
@@ -278,6 +299,35 @@ export default function DesignStudioPage() {
           <div className="flex gap-2 mt-2">
             <input type="text" value={xPostUrl} onChange={e => setXPostUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleImportPost()} placeholder="https://x.com/user/status/123456789" className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
             <button onClick={handleImportPost} disabled={importingPost || !xPostUrl.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition">{importingPost ? "Importing..." : "Import"}</button>
+          </div>
+        )}
+
+        {/* Imported post preview card */}
+        {importedPost && (
+          <div className="mt-3 rounded-xl border border-purple-500/30 bg-purple-950/10 p-3">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-white">@{importedPost.username}</span>
+                  {importedPost.created_at && (
+                    <span className="text-[10px] text-zinc-600">{new Date(importedPost.created_at).toLocaleDateString()}</span>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-400 line-clamp-2">{importedPost.text}</p>
+                <div className="flex items-center gap-4 mt-2">
+                  {importedPost.views > 0 && <span className="text-[10px] text-zinc-500">{importedPost.views >= 1000 ? `${(importedPost.views / 1000).toFixed(1)}K` : importedPost.views} views</span>}
+                  <span className="text-[10px] text-zinc-500">{importedPost.likes} likes</span>
+                  <span className="text-[10px] text-zinc-500">{importedPost.retweets} RTs</span>
+                  <span className="text-[10px] text-zinc-500">{importedPost.replies} replies</span>
+                </div>
+              </div>
+              {importedPost.image_url && (
+                <img src={importedPost.image_url} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />
+              )}
+              <button onClick={() => setImportedPost(null)} className="shrink-0 text-zinc-600 hover:text-zinc-400 transition">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
           </div>
         )}
       </div>

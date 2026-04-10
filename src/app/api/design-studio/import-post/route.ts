@@ -4,7 +4,7 @@ import { fetchWithRetry } from "@/lib/x-api/fetch-with-retry";
 
 /**
  * POST /api/design-studio/import-post
- * Fetches an X post by URL and extracts the text + first image for use as a design prompt.
+ * Fetches an X post by URL and extracts text, images, and engagement metrics.
  * Body: { post_url: string }
  */
 export async function POST(req: NextRequest) {
@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
   const { post_url } = await req.json();
   if (!post_url) return NextResponse.json({ error: "post_url required" }, { status: 400 });
 
-  // Extract post ID from URL
   const match = post_url.match(/(?:x\.com|twitter\.com)\/(\w+)\/status\/(\d+)/);
   if (!match) {
     return NextResponse.json({ error: "Invalid X post URL" }, { status: 400 });
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const params = new URLSearchParams({
-      "tweet.fields": "text,attachments,entities,created_at",
+      "tweet.fields": "text,attachments,entities,created_at,public_metrics",
       expansions: "attachments.media_keys",
       "media.fields": "url,preview_image_url,type",
     });
@@ -48,27 +47,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Extract first image
-    let imageUrl: string | null = null;
+    // Extract all images
     const media = data.includes?.media || [];
-    if (media.length > 0) {
-      const firstMedia = media[0];
-      imageUrl = firstMedia.url || firstMedia.preview_image_url || null;
-    }
+    const imageUrls: string[] = media
+      .map((m: any) => m.url || m.preview_image_url)
+      .filter(Boolean);
 
     // Clean up tweet text (remove t.co URLs)
     let text = tweet.text || "";
     text = text.replace(/https:\/\/t\.co\/\S+/g, "").trim();
 
-    // Generate a title suggestion
     const title = `@${username} — ${text.slice(0, 40)}${text.length > 40 ? "..." : ""}`;
+
+    // Engagement metrics
+    const metrics = tweet.public_metrics || {};
 
     return NextResponse.json({
       text: text || `Design inspired by @${username}'s post`,
-      image_url: imageUrl,
+      image_url: imageUrls[0] || null,
+      image_urls: imageUrls,
       title,
       username,
       post_id: postId,
+      created_at: tweet.created_at || null,
+      likes: metrics.like_count || 0,
+      retweets: metrics.retweet_count || 0,
+      replies: metrics.reply_count || 0,
+      views: metrics.impression_count || 0,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to fetch post" }, { status: 502 });
