@@ -606,7 +606,7 @@ export async function getProfileMediaFieldState(
 ): Promise<ProfileMediaFieldState | null> {
   try {
     const params = new URLSearchParams({
-      include: "field_profile_picture,field_background_banner",
+      include: "field_x_pfp,field_x_background",
     });
 
     const res = await fetch(
@@ -620,8 +620,8 @@ export async function getProfileMediaFieldState(
     const relationships = json?.data?.relationships || {};
 
     return {
-      profilePictureFileId: relationships?.field_profile_picture?.data?.id ?? null,
-      backgroundBannerFileId: relationships?.field_background_banner?.data?.id ?? null,
+      profilePictureFileId: relationships?.field_x_pfp?.data?.id ?? null,
+      backgroundBannerFileId: relationships?.field_x_background?.data?.id ?? null,
     };
   } catch {
     return null;
@@ -694,7 +694,7 @@ export async function syncXDataToDrupal(
       await uploadImageToDrupal(
         enhanced.profileImageUrl,
         profile.uuid,
-        "field_profile_picture",
+        "field_x_pfp",
         `${xUsername}-pfp`
       );
     }
@@ -702,7 +702,7 @@ export async function syncXDataToDrupal(
       await uploadImageToDrupal(
         enhanced.bannerUrl,
         profile.uuid,
-        "field_background_banner",
+        "field_x_background",
         `${xUsername}-banner`
       );
     }
