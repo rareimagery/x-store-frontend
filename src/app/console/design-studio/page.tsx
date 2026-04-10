@@ -35,7 +35,9 @@ export default function DesignStudioPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean; publish_count?: number; free_remaining?: number; fee_applies?: boolean } | null>(null);
+  const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean; publish_count?: number; publish_fee?: string } | null>(null);
+  const [genCount, setGenCount] = useState<number | null>(null);
+  const [genRemaining, setGenRemaining] = useState<number | null>(null);
 
   const [printfulKey, setPrintfulKey] = useState("");
   const [printfulConnected, setPrintfulConnected] = useState<string | null>(null);
@@ -207,6 +209,7 @@ export default function DesignStudioPage() {
       const urls: string[] = data.image_urls || [data.image_url];
       setDesignVariants(urls); setDesignUrl(urls[0]);
       if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
+      if (data.generation_count != null) { setGenCount(data.generation_count); setGenRemaining(data.generations_remaining ?? null); }
       setStatus(`${urls.length} variants ready${data.used_edits ? " (edited your image)" : ""}`);
       const now = new Date();
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
@@ -225,7 +228,7 @@ export default function DesignStudioPage() {
       const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), price: price.trim() || undefined, description: description.trim() || undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Publish failed"); return; }
-      setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id, publish_count: data.publish_count, free_remaining: data.free_remaining, fee_applies: data.fee_applies });
+      setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id, publish_count: data.publish_count, publish_fee: data.publish_fee });
       setStatus(`"${title}" published!`);
     } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
   };
@@ -360,7 +363,20 @@ export default function DesignStudioPage() {
         </div>
       </div>
 
-      {/* GENERATE */}
+      {/* Usage + GENERATE */}
+      {genCount != null && (
+        <div className="flex items-center justify-between mb-2 px-1">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-24 rounded-full bg-zinc-800 overflow-hidden">
+              <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${Math.min((genCount / 100) * 100, 100)}%` }} />
+            </div>
+            <span className={`text-[10px] ${genRemaining != null && genRemaining <= 10 ? "text-amber-400" : "text-zinc-600"}`}>
+              {genCount} / 100 generations
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-600">$1 per publish · $0.25 after 100 gens</span>
+        </div>
+      )}
       <button onClick={handleGenerate} disabled={generating || (!prompt.trim() && !refDataUrl && !refPreview)} className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed mb-3 ${engine === "composite" ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700" : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700"}`}>
         {generating ? (
           <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{status || "Generating..."}</span>
@@ -400,12 +416,10 @@ export default function DesignStudioPage() {
           ) : (
             <div className="p-3 border-t border-zinc-800">
               <div className="flex items-center gap-2 text-green-400 mb-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="font-semibold text-sm">Published!</span></div>
-              {published.publish_count != null && (
-                <div className={`mb-2 rounded-lg px-3 py-2 text-xs ${published.fee_applies ? "bg-amber-900/30 border border-amber-700/50 text-amber-400" : "bg-zinc-800 text-zinc-500"}`}>
-                  {published.free_remaining != null && published.free_remaining > 0
-                    ? `${published.free_remaining} free publishes remaining this month`
-                    : `Free limit reached (10/month). $0.01 per additional publish.`}
-                  <span className="text-zinc-600 ml-2">({published.publish_count} this month)</span>
+              {published.publish_fee && (
+                <div className="mb-2 rounded-lg px-3 py-2 text-xs bg-zinc-800 text-zinc-400">
+                  Publish fee: {published.publish_fee} per product
+                  {published.publish_count != null && <span className="text-zinc-600 ml-2">({published.publish_count} published this month)</span>}
                 </div>
               )}
               <a href={`https://x.com/intent/tweet?${new URLSearchParams({ text: `Just dropped "${title}" on RareImagery!`, url: getStorePageUrl(storeSlug || "", "store") }).toString()}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition">
