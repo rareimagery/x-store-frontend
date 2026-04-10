@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No store found" }, { status: 404 });
   }
 
-  const { image_url, product_type, title, price, description } = await req.json();
+  const { image_url, back_image_url, product_type, placement, title, price, description } = await req.json();
 
   if (!image_url || !product_type || !title) {
     return NextResponse.json({ error: "image_url, product_type, and title required" }, { status: 400 });
@@ -201,17 +201,40 @@ export async function POST(req: NextRequest) {
   let printfulProductId: string | null = null;
   let mockupUrl: string | null = null;
   let designFileUrl = image_url;
+  let backFileUrl: string | null = null;
 
   const apiKey = await getStorePrintfulKey(storeUuid);
   if (apiKey && productConfig) {
     try {
-      const file = await uploadFile(apiKey, image_url, `${slug}-${product_type}-${Date.now()}.png`);
+      // Upload front design
+      const file = await uploadFile(apiKey, image_url, `${slug}-${product_type}-front-${Date.now()}.png`);
       designFileUrl = file.preview_url || image_url;
+
+      // Upload back design if provided
+      if (back_image_url && (placement === "back" || placement === "both")) {
+        try {
+          const backFile = await uploadFile(apiKey, back_image_url, `${slug}-${product_type}-back-${Date.now()}.png`);
+          backFileUrl = backFile.preview_url || back_image_url;
+        } catch (err) {
+          console.warn("[design-studio] Back design upload failed:", err);
+        }
+      }
+
+      // Build file placements for each variant
+      const variantFiles: Array<{ type: string; url: string }> = [];
+      if (placement === "back" && backFileUrl) {
+        variantFiles.push({ type: "back", url: backFileUrl });
+      } else if (placement === "both") {
+        variantFiles.push({ type: "front", url: designFileUrl });
+        if (backFileUrl) variantFiles.push({ type: "back", url: backFileUrl });
+      } else {
+        variantFiles.push({ type: "default", url: designFileUrl });
+      }
 
       const syncVariants = productConfig.variantIds.map((variantId) => ({
         variant_id: variantId,
         retail_price: retailPrice,
-        files: [{ type: "default", url: designFileUrl }],
+        files: variantFiles,
       }));
 
       const product = await createSyncProduct(apiKey, {
@@ -220,11 +243,18 @@ export async function POST(req: NextRequest) {
       });
       printfulProductId = String(product.sync_product?.id ?? "");
 
-      // Generate mockup (non-blocking)
+      // Generate mockups (non-blocking)
       try {
-        const mockupTask = await createMockupTask(apiKey, productConfig.catalogId, [
-          { placement: "front", image_url: designFileUrl },
-        ]);
+        const mockupPlacements: Array<{ placement: string; image_url: string }> = [];
+        if (placement === "back" && backFileUrl) {
+          mockupPlacements.push({ placement: "back", image_url: backFileUrl });
+        } else if (placement === "both") {
+          mockupPlacements.push({ placement: "front", image_url: designFileUrl });
+          if (backFileUrl) mockupPlacements.push({ placement: "back", image_url: backFileUrl });
+        } else {
+          mockupPlacements.push({ placement: "front", image_url: designFileUrl });
+        }
+        const mockupTask = await createMockupTask(apiKey, productConfig.catalogId, mockupPlacements);
         if (mockupTask.task_key) {
           await new Promise((resolve) => setTimeout(resolve, 5000));
           const mockupResult = await getMockupTaskResult(apiKey, mockupTask.task_key);
@@ -280,6 +310,10 @@ export async function POST(req: NextRequest) {
     }
     if (printfulProductId) {
       productAttrs.field_printful_product_id = printfulProductId;
+    }
+    productAttrs.field_product_image_url = designFileUrl;
+    if (backFileUrl) {
+      productAttrs.field_design_back_url = backFileUrl;
     }
 
     const productRes = await fetch(

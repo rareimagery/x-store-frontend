@@ -34,6 +34,9 @@ export default function DesignStudioPage() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [placement, setPlacement] = useState<"front" | "back" | "both">("front");
+  const [backDesignUrl, setBackDesignUrl] = useState<string | null>(null);
+  const [backPreview, setBackPreview] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean; publish_count?: number; publish_fee?: string } | null>(null);
   const [genCount, setGenCount] = useState<number | null>(null);
@@ -225,7 +228,7 @@ export default function DesignStudioPage() {
     if (!isDigital && !price.trim()) { setError("Set a price before publishing"); return; }
     setPublishing(true); setError(null);
     try {
-      const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), price: price.trim() || undefined, description: description.trim() || undefined }) });
+      const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, back_image_url: placement === "both" ? backDesignUrl : placement === "back" ? designUrl : undefined, product_type: productType, placement, title: title.trim(), price: price.trim() || undefined, description: description.trim() || undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Publish failed"); return; }
       setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id, publish_count: data.publish_count, publish_fee: data.publish_fee });
@@ -408,6 +411,43 @@ export default function DesignStudioPage() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">$</span>
                 <input type="text" inputMode="decimal" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.00" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
               </div>
+              {/* Placement selector — only for clothing (not ballcap/pet/digital) */}
+              {!["ballcap", "pet_bandana", "pet_hoodie", "digital_drop"].includes(productType) && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-1.5">Design Placement</p>
+                  <div className="flex gap-2">
+                    {(["front", "back", "both"] as const).map((p) => (
+                      <button key={p} onClick={() => setPlacement(p)} className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${placement === p ? "border-purple-500 bg-purple-500/10 text-purple-400" : "border-zinc-700 text-zinc-400 hover:border-zinc-500"}`}>
+                        {p === "both" ? "Front + Back" : p.charAt(0).toUpperCase() + p.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  {placement === "both" && (
+                    <div className="mt-2">
+                      {backPreview ? (
+                        <div className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 p-2">
+                          <img src={backPreview} alt="Back design" className="h-12 w-12 rounded object-cover" />
+                          <span className="text-xs text-zinc-400 flex-1">Back design attached</span>
+                          <button onClick={() => { setBackPreview(null); setBackDesignUrl(null); }} className="text-xs text-zinc-500 hover:text-red-400">Remove</button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 px-3 py-2.5 text-xs text-zinc-500 hover:border-purple-500 hover:text-purple-400 cursor-pointer transition">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                          Upload back design
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBackPreview(URL.createObjectURL(file));
+                            const reader = new FileReader();
+                            reader.onload = () => setBackDesignUrl(reader.result as string);
+                            reader.readAsDataURL(file);
+                          }} />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2">
                 <button onClick={handlePublish} disabled={publishing || !title.trim() || (productType !== "digital_drop" && !price.trim())} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
                 <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
