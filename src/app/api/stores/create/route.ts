@@ -75,9 +75,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
   }
 
-  const { storeName, slug, ownerEmail, agreedToTerms, xUsername } = body;
+  const { storeName, slug: bodySlug, ownerEmail, agreedToTerms } = body;
 
-  if (!xUsername || String(xUsername).toLowerCase() !== String(sessionMeta.xUsername).toLowerCase()) {
+  // xUsername: accept from body or derive from session
+  const xUsername = body.xUsername
+    ? String(body.xUsername)
+    : String(sessionMeta.xUsername);
+
+  if (body.xUsername && String(body.xUsername).toLowerCase() !== String(sessionMeta.xUsername).toLowerCase()) {
     return NextResponse.json(
       { error: "xUsername must match your authenticated X account." },
       { status: 403 }
@@ -90,6 +95,9 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Slug: use provided or default to lowercase username
+  const slug = bodySlug || xUsername.replace(/^@+/, "").trim().toLowerCase();
 
   if (!isValidSlug(slug)) {
     return NextResponse.json(

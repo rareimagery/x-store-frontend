@@ -20,7 +20,7 @@ export default function ProvisionButton() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/stores/provision", {
+      const res = await fetch("/api/stores/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agreedToTerms: true }),
@@ -28,24 +28,15 @@ export default function ProvisionButton() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        // Auto-import X data (best-effort — don't block success)
-        if (!data.alreadyExisted) {
-          try {
-            await fetch("/api/stores/import-x-data", { method: "POST" });
-          } catch {
-            // Non-critical — page will show without X data until next import
-          }
-        }
-
+      if (res.ok && data.success) {
         setStatus("success");
         setPageUrl(data.url);
         setMessage(
-          data.alreadyExisted
+          data.storeLimitReached
             ? "Your page is already live!"
             : "Your page is live!"
         );
-      } else if (data.requiresSubscription) {
+      } else if (data.requiresSubscription || data.requiresPaidSubscription) {
         setStatus("subscribe");
         setMessage(data.error);
       } else {
