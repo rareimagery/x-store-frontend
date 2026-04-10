@@ -86,6 +86,11 @@ export async function proxy(request: NextRequest) {
 
   // ── Subdomain detected (e.g. rare.rareimagery.net) ──
 
+  // Global routes that exist at the root level — pass through without rewriting
+  if (pathname.startsWith("/products")) {
+    return NextResponse.next();
+  }
+
   // Console on subdomains → rewrite to /console (same Next.js route) with slug header
   if (pathname.startsWith("/console")) {
     const url = request.nextUrl.clone();
