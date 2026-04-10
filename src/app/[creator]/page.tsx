@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
+import { resolveBasePath } from "@/lib/subdomain";
 import {
   getCreatorProfile,
   getAllCreatorProfiles,
@@ -74,6 +75,9 @@ export default async function CreatorLandingPage({
     notFound();
   }
 
+  // On subdomains, basePath="" (links are /store). On main domain, basePath="rare" (links are /rare/store).
+  const basePath = await resolveBasePath(normalized);
+
   const [profile, products, publishedBuilds, storeData] = await Promise.all([
     getCreatorProfile(normalized, { noStore: true }),
     getProductsByStoreSlug(normalized),
@@ -140,7 +144,7 @@ export default async function CreatorLandingPage({
           socialFeeds={storeData.socialFeeds}
           colorScheme={wireframeBuild?.colorScheme}
           pageBackground={wireframeBuild?.pageBackground}
-          basePath={normalized}
+          basePath={basePath}
         />
         <BuilderGate storeSlug={normalized} />
         </div>
@@ -215,12 +219,12 @@ export default async function CreatorLandingPage({
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row gap-3 w-full max-w-sm">
             {hasStore && (
-              <Link href={`/${normalized}/store` as Route}
+              <Link href={`${basePath ? `/${basePath}` : ""}/store` as Route}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">
                 Shop Now
               </Link>
             )}
-            <Link href={`/${normalized}/donate` as Route}
+            <Link href={`${basePath ? `/${basePath}` : ""}/donate` as Route}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-6 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-900">
               Support
             </Link>
@@ -259,13 +263,13 @@ export default async function CreatorLandingPage({
           <div className="mt-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-zinc-300">Shop</h2>
-              <Link href={`/${normalized}/store` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
+              <Link href={`${basePath ? `/${basePath}` : ""}/store` as Route} className="text-sm text-indigo-400 hover:text-indigo-300">
                 View all &rarr;
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {products.slice(0, 3).map((product) => (
-                <Link key={product.id} href={`/${normalized}/store` as Route}
+                <Link key={product.id} href={`${basePath ? `/${basePath}` : ""}/store` as Route}
                   className="group rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden transition hover:border-zinc-700">
                   <div className="aspect-square bg-zinc-800 overflow-hidden">
                     {product.image_url ? (

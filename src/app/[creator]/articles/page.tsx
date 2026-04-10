@@ -4,6 +4,7 @@ import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
 import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
+import { resolveBasePath } from "@/lib/subdomain";
 import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
@@ -68,13 +69,14 @@ export default async function ArticlesPage({ params }: { params: Promise<{ creat
   ]);
 
   if (!profile) notFound();
+  const basePath = await resolveBasePath(normalized);
 
   return (
     <>
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="articles" basePath={normalized} />
+      <CreatorPageHeader profile={profile} activePage="articles" basePath={basePath} />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
         <h2 className="text-lg font-semibold mb-6">Articles by @{profile.x_username}</h2>

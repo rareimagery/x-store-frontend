@@ -11,6 +11,7 @@ import BuilderGate from "@/components/builder/BuilderGate";
 import CreatorPageHeader from "@/components/CreatorPageHeader";
 import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
+import { resolveBasePath } from "@/lib/subdomain";
 import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
@@ -70,6 +71,8 @@ export default async function CreatorStorePage({
     notFound();
   }
 
+  const basePath = await resolveBasePath(normalized);
+
   if (profile.store_status !== "approved") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
@@ -91,7 +94,7 @@ export default async function CreatorStorePage({
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="store" basePath={normalized} />
+      <CreatorPageHeader profile={profile} activePage="store" basePath={basePath} />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">

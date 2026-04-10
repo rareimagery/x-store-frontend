@@ -4,6 +4,7 @@ import { getCreatorProfile, DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drup
 import CreatorPageHeader from "@/components/CreatorPageHeader";
 import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
+import { resolveBasePath } from "@/lib/subdomain";
 import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
@@ -59,6 +60,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
   ]);
 
   if (!profile) notFound();
+  const basePath = await resolveBasePath(normalized);
 
   const images = gallery.filter((g) => g.type === "image");
   const videos = gallery.filter((g) => g.type === "video");
@@ -68,7 +70,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ creato
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="gallery" basePath={normalized} />
+      <CreatorPageHeader profile={profile} activePage="gallery" basePath={basePath} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">

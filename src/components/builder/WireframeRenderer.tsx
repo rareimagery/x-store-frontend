@@ -213,7 +213,7 @@ function ProductGrid({ block, products, profile, basePath, compact = false }: { 
   const maxItems = Number(block.props.max_items) || 6;
   const cols = Number(block.props.gallery_columns) || 3;
   const storeName = (profile.title || `@${profile.x_username}`).replace(/\s*X\s*Profile\s*/i, "");
-  const storeHref = `/${basePath || profile.x_username}/store`;
+  const storeHref = basePath != null ? (basePath ? `/${basePath}/store` : "/store") : `/${profile.x_username}/store`;
   const shown = products.slice(0, maxItems);
 
   const gridClass = compact
@@ -882,7 +882,10 @@ function RenderBlock({
 import { COLOR_SCHEMES } from "@/lib/color-schemes";
 
 export default function WireframeRenderer({ layout, profile, products, favorites = [], articles = [], musicTracks = [], communities = [], grokGallery = [], socialFeeds = [], colorScheme, pageBackground, basePath }: WireframeRendererProps) {
-  const linkBase = basePath ? `/${basePath}` : `/${profile.x_username}`;
+  // basePath="" means subdomain (links are root-relative like /store)
+  // basePath="rare" means main domain (links are /rare/store)
+  // basePath=undefined means legacy (fall back to username)
+  const linkBase = basePath != null ? (basePath ? `/${basePath}` : "") : `/${profile.x_username}`;
   const colors = COLOR_SCHEMES[colorScheme || "midnight"] || COLOR_SCHEMES.midnight;
   const hasLeft = false; // Left sidebar removed — 2-column layout only
   const hasRight = layout.right.length > 0;
@@ -983,9 +986,9 @@ export default function WireframeRenderer({ layout, profile, products, favorites
         {/* ── Navigation menu ── */}
         <nav className="mt-6 flex items-center gap-1 rounded-xl border p-1.5 overflow-x-auto" style={{ borderColor: colors.border, backgroundColor: colors.surface }}>
           {[
-            { href: linkBase, label: "Home", active: true },
+            { href: linkBase || "/", label: "Home", active: true },
             { href: `${linkBase}/store`, label: "Store" },
-            { href: `${linkBase}/favorites`, label: "Favorites" },
+            { href: `${linkBase}/favorites`, label: "My Favorites" },
             { href: `${linkBase}/gallery`, label: "Gallery" },
             { href: `${linkBase}/articles`, label: "Articles" },
           ].map((link) => (

@@ -5,6 +5,7 @@ import CreatorPageHeader from "@/components/CreatorPageHeader";
 import FavoritesGrid from "@/components/FavoritesGrid";
 import StoreNav from "@/components/StoreNav";
 import ThemedPage from "@/components/ThemedPage";
+import { resolveBasePath } from "@/lib/subdomain";
 import { getStoreTheme } from "@/lib/storeTheme";
 
 const RESERVED = new Set([
@@ -63,6 +64,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
   ]);
 
   if (!profile) notFound();
+  const basePath = await resolveBasePath(normalized);
 
   // Collect all unique tags
   const allTags: string[] = [];
@@ -77,7 +79,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ crea
     <StoreNav creator={normalized} />
     <ThemedPage colorScheme={theme.colorScheme} pageBackground={theme.pageBackground}>
       <div className="pt-14" />
-      <CreatorPageHeader profile={profile} activePage="favorites" basePath={normalized} />
+      <CreatorPageHeader profile={profile} activePage="favorites" basePath={basePath} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         {favorites.length === 0 ? (

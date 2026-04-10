@@ -12,12 +12,12 @@ interface CreatorPageHeaderProps {
 export default function CreatorPageHeader({ profile, activePage, basePath }: CreatorPageHeaderProps) {
   const bio = profile.bio?.replace(/<[^>]*>/g, "") || "";
   const handle = profile.x_username;
-  const base = basePath ? `/${basePath}` : `/${handle}`;
+  const base = basePath != null ? (basePath ? `/${basePath}` : "") : `/${handle}`;
 
   const navItems: Array<{ id: string; label: string; href: string; external?: boolean }> = [
-    { id: "profile", label: "Home", href: base },
+    { id: "profile", label: "Home", href: base || "/" },
     { id: "store", label: "Store", href: `${base}/store` },
-    { id: "favorites", label: "Favorites", href: `${base}/favorites` },
+    { id: "favorites", label: "My Favorites", href: `${base}/favorites` },
     { id: "gallery", label: "Gallery", href: `${base}/gallery` },
     { id: "articles", label: "Articles", href: `${base}/articles` },
   ];
