@@ -82,7 +82,7 @@ export default function XArticlesPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">X Articles</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Import your long-form X posts. They&apos;ll display in the Articles wireframe block.
+            Import your X Articles (long-form posts). They&apos;ll display on your public Articles page and in the wireframe block.
           </p>
         </div>
         {message && (
@@ -94,9 +94,9 @@ export default function XArticlesPage() {
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-300">Import from X</p>
+            <p className="text-sm font-medium text-zinc-300">Import X Articles</p>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Fetches your long-form posts and articles via Drupal
+              Pulls your long-form posts (&gt;280 chars) directly from X API
             </p>
           </div>
           <button
