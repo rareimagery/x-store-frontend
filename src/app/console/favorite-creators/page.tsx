@@ -529,7 +529,7 @@ export default function FavoriteCreatorsPage() {
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Creator Collections
+            My Favorites
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
             Drag creators between categories to organize your public favorites

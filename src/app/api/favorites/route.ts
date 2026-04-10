@@ -2,21 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 
-type FavJWT = { storeSlug?: string; xUsername?: string };
+type FavJWT = { storeSlug?: string; xUsername?: string | null };
 
 function resolveSlug(token: FavJWT): string | null {
   const raw = token.storeSlug || token.xUsername;
   return raw ? raw.replace(/^@+/, "").trim().toLowerCase() : null;
 }
 
-async function resolveStoreUuid(slug: string): Promise<string | null> {
+async function resolveStoreUuid(slug: string, xUsername?: string): Promise<string | null> {
+  // Try by store slug first
   const res = await fetch(
     `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(slug)}&fields[commerce_store--online]=field_my_favorites`,
     { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
   );
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.data?.[0]?.id ?? null;
+  if (res.ok) {
+    const json = await res.json();
+    const uuid = json.data?.[0]?.id;
+    if (uuid) return uuid;
+  }
+
+  // Fallback: if slug is actually an X username (slug changed), find store via profile
+  if (xUsername && xUsername !== slug) {
+    const profileRes = await fetch(
+      `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store&fields[commerce_store--online]=field_my_favorites`,
+      { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+    );
+    if (profileRes.ok) {
+      const pJson = await profileRes.json();
+      const storeRef = pJson.data?.[0]?.relationships?.field_linked_store?.data;
+      if (storeRef?.id) return storeRef.id;
+    }
+  }
+
+  return null;
 }
 
 async function getFavorites(uuid: string): Promise<any[]> {
@@ -37,7 +55,8 @@ export async function GET(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ error: "No store" }, { status: 404 });
-  const uuid = await resolveStoreUuid(slug);
+  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim().toLowerCase() : undefined;
+  const uuid = await resolveStoreUuid(slug, xUsername);
   if (!uuid) return NextResponse.json({ favorites: [] });
   return NextResponse.json({ favorites: await getFavorites(uuid) }, {
     headers: { "Cache-Control": "no-store" },
@@ -50,7 +69,8 @@ export async function POST(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ error: "No store" }, { status: 404 });
-  const uuid = await resolveStoreUuid(slug);
+  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim().toLowerCase() : undefined;
+  const uuid = await resolveStoreUuid(slug, xUsername);
   if (!uuid) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
   const { favorites } = await req.json();
