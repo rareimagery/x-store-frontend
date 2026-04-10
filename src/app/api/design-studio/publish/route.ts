@@ -12,6 +12,34 @@ import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/dru
 
 export const maxDuration = 120;
 
+// Monthly publish tracking — 10 free per month, $0.01 per additional
+const FREE_MONTHLY_LIMIT = 10;
+const OVERAGE_FEE_CENTS = 1; // $0.01
+const monthlyPublishCounts = new Map<string, { count: number; month: string }>();
+
+function getMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getPublishCount(userId: string): number {
+  const entry = monthlyPublishCounts.get(userId);
+  const currentMonth = getMonthKey();
+  if (!entry || entry.month !== currentMonth) return 0;
+  return entry.count;
+}
+
+function incrementPublishCount(userId: string): number {
+  const currentMonth = getMonthKey();
+  const entry = monthlyPublishCounts.get(userId);
+  if (!entry || entry.month !== currentMonth) {
+    monthlyPublishCounts.set(userId, { count: 1, month: currentMonth });
+    return 1;
+  }
+  entry.count++;
+  return entry.count;
+}
+
 // Printful catalog IDs for supported product types
 const PRINTFUL_PRODUCTS: Record<string, { catalogId: number; variantIds: number[]; label: string; variationBundle: string }> = {
   t_shirt: {
@@ -71,6 +99,17 @@ export async function POST(req: NextRequest) {
   }
 
   const isDigital = product_type === "digital_drop";
+
+  // Monthly publish limit — 10 free, $0.01 per additional (Printful products only)
+  if (!isDigital) {
+    const publishCount = getPublishCount(slug);
+    if (publishCount >= FREE_MONTHLY_LIMIT) {
+      const overageNum = publishCount - FREE_MONTHLY_LIMIT + 1;
+      const feeDollars = (OVERAGE_FEE_CENTS * overageNum / 100).toFixed(2);
+      // For now: allow but include fee info in response. Block when Stripe checkout is wired.
+      console.log(`[publish] ${slug} at ${publishCount + 1} publishes this month (${overageNum} over free limit, fee: $${feeDollars})`);
+    }
+  }
   const productConfig = isDigital ? null : PRINTFUL_PRODUCTS[product_type];
   if (!isDigital && !productConfig) {
     return NextResponse.json({ error: "Unsupported product type" }, { status: 400 });
@@ -320,6 +359,9 @@ export async function POST(req: NextRequest) {
     revalidatePath(`/${slug}`);
     revalidatePath(`/stores/${slug}`);
 
+    const newCount = incrementPublishCount(slug);
+    const remaining = Math.max(FREE_MONTHLY_LIMIT - newCount, 0);
+
     return NextResponse.json({
       success: true,
       drupal_product_id: drupalProductId,
@@ -331,6 +373,9 @@ export async function POST(req: NextRequest) {
       sku,
       mockup_url: mockupUrl,
       design_url: designFileUrl,
+      publish_count: newCount,
+      free_remaining: remaining,
+      fee_applies: newCount > FREE_MONTHLY_LIMIT,
     });
   } catch (err: any) {
     console.error("[design-studio] Product creation failed:", err);

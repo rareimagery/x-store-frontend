@@ -35,7 +35,7 @@ export default function DesignStudioPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean } | null>(null);
+  const [published, setPublished] = useState<{ product_type: string; mockup_url: string | null; retail_price: string; printful_synced: boolean; publish_count?: number; free_remaining?: number; fee_applies?: boolean } | null>(null);
 
   const [printfulKey, setPrintfulKey] = useState("");
   const [printfulConnected, setPrintfulConnected] = useState<string | null>(null);
@@ -225,7 +225,7 @@ export default function DesignStudioPage() {
       const res = await fetch("/api/design-studio/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: designUrl, product_type: productType, title: title.trim(), price: price.trim() || undefined, description: description.trim() || undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Publish failed"); return; }
-      setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id });
+      setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id, publish_count: data.publish_count, free_remaining: data.free_remaining, fee_applies: data.fee_applies });
       setStatus(`"${title}" published!`);
     } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
   };
@@ -400,6 +400,14 @@ export default function DesignStudioPage() {
           ) : (
             <div className="p-3 border-t border-zinc-800">
               <div className="flex items-center gap-2 text-green-400 mb-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="font-semibold text-sm">Published!</span></div>
+              {published.publish_count != null && (
+                <div className={`mb-2 rounded-lg px-3 py-2 text-xs ${published.fee_applies ? "bg-amber-900/30 border border-amber-700/50 text-amber-400" : "bg-zinc-800 text-zinc-500"}`}>
+                  {published.free_remaining != null && published.free_remaining > 0
+                    ? `${published.free_remaining} free publishes remaining this month`
+                    : `Free limit reached (10/month). $0.01 per additional publish.`}
+                  <span className="text-zinc-600 ml-2">({published.publish_count} this month)</span>
+                </div>
+              )}
               <a href={`https://x.com/intent/tweet?${new URLSearchParams({ text: `Just dropped "${title}" on RareImagery!`, url: getStorePageUrl(storeSlug || "", "store") }).toString()}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition">
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>Share to X
               </a>
