@@ -1069,35 +1069,36 @@ export async function getAllProductSlugs(): Promise<{ slug: string; type: string
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-  // Try multiple search strategies: space-replaced and original slug
-  // "rare-t-shirt" → ["rare t shirt", "rare-t-shirt"] to handle hyphenated titles like "Rare t-shirt"
-  const searchTerms = [slug.replace(/-/g, " "), slug];
+  // Use the longest word from the slug as the CONTAINS search term.
+  // This handles hyphenated titles like "Rare t-shirt" where the slug
+  // "rare-t-shirt" won't match as a full substring.
+  const words = slug.split("-").filter(Boolean);
+  const searchTerm = words.reduce((a, b) => (a.length >= b.length ? a : b), words[0] || slug);
 
   for (const type of PRODUCT_TYPES) {
-    for (const titleSearch of searchTerms) {
-      try {
-        const includes = PRODUCT_INCLUDES[type] || PRODUCT_INCLUDES.default;
-        const params = new URLSearchParams({
-          include: includes,
-          "filter[title-search][condition][path]": "title",
-          "filter[title-search][condition][operator]": "CONTAINS",
-          "filter[title-search][condition][value]": titleSearch,
-          "page[limit]": "10",
-        });
-        const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
-        const res = await fetch(url, { next: { revalidate: 60 }, headers: authHeaders() });
-        if (!res.ok) continue;
-        const json = await res.json();
-        const included = json.included ?? [];
+    try {
+      const includes = PRODUCT_INCLUDES[type] || PRODUCT_INCLUDES.default;
+      const params = new URLSearchParams({
+        include: includes,
+        "filter[title-search][condition][path]": "title",
+        "filter[title-search][condition][operator]": "CONTAINS",
+        "filter[title-search][condition][value]": searchTerm,
+        "page[limit]": "10",
+      });
+      const url = `${DRUPAL_API_URL}/jsonapi/commerce_product/${type}?${params.toString()}`;
+      const res = await fetch(url, { next: { revalidate: 60 }, headers: authHeaders() });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const included = json.included ?? [];
 
-        for (const p of json.data ?? []) {
-          if (slugify(p.attributes.title) === slug) {
-            return mapProductDetail(p, included, type);
-          }
+      // Exact slug match from the narrowed results
+      for (const p of json.data ?? []) {
+        if (slugify(p.attributes.title) === slug) {
+          return mapProductDetail(p, included, type);
         }
-      } catch {
-        continue;
       }
+    } catch {
+      continue;
     }
   }
 
