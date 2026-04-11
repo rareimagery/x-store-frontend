@@ -517,29 +517,47 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <div className="g-sec-icon">{"\uD83D\uDCE6"}</div>
             <div className="g-sec-meta">
               <div className="g-sec-label">Adding products</div>
-              <div className="g-sec-sub">Physical merch, custom items, and digital downloads</div>
+              <div className="g-sec-sub">Design with Grok AI, print with Printful, or upload your own</div>
             </div>
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>RareImagery supports three types of products. You can sell all three from the same store.</p>
-            <div className="g-products">
-              <div className="g-pt"><div className="g-pt-icon">{"\uD83D\uDC55"}</div><div className="g-pt-name">Print-on-demand</div><div className="g-pt-desc">T-shirts, mugs, posters. Printed and shipped automatically via Printful.</div></div>
-              <div className="g-pt"><div className="g-pt-icon">{"\uD83D\uDCE6"}</div><div className="g-pt-name">Physical custom</div><div className="g-pt-desc">Handmade goods, signed items, anything you ship yourself.</div></div>
-              <div className="g-pt"><div className="g-pt-icon">{"\uD83D\uDCC1"}</div><div className="g-pt-name">Digital download</div><div className="g-pt-desc">Presets, PDFs, digital art. Delivered instantly after purchase.</div></div>
-            </div>
-            <h3>Managing your products</h3>
+            <p>RareImagery gives you multiple ways to create and sell products. You can design merch with AI, import from Printful, or upload products you&apos;ve created elsewhere &mdash; all from the same store.</p>
+
+            <h3>Creating products with Grok Creator Studio</h3>
+            <p>The fastest way to go from idea to product. Grok Creator Studio uses AI to generate print-ready designs that are automatically published to Printful and imported into your store.</p>
             <div className="g-steps">
-              <Step n={1} title="Go to Dashboard \u2192 Products" desc="You'll see your current product list, or a prompt to add your first one." />
-              <Step n={2} title='Click "Add product" and choose your product type' desc="Choose from print-on-demand, physical custom, or digital download." />
-              <Step n={3} title="Fill in name, description, images, and price" desc="For print-on-demand, connect your Printful account and import designs. For digital, upload the file here." />
-              <Step n={4} title="Save \u2014 your product is live immediately" desc="No approval needed for individual products once your store is approved." />
+              <Step n={1} title="Open Grok Creator Studio" desc="Go to your Dashboard and click Grok Creator Studio in the sidebar. Choose your product type: T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, or Digital Drop." />
+              <Step n={2} title="Describe your design" desc="Type a prompt describing what you want. For example: 'retro sunset with palm trees' or 'bold geometric wolf'. You can also upload a reference image or use your X profile picture as a starting point." />
+              <Step n={3} title="Generate and pick your favorite" desc="Grok generates up to 4 design variants. Choose the one you like best. You get 100 free generations per month." />
+              <Step n={4} title="Set your price and publish" desc="Enter the retail price you want to charge. Hit Publish and your design is sent to Printful, where the product is created with all size and color variants. It's automatically imported into your store." />
             </div>
             <Callout type="tip" icon="&#10022;">
-              <strong>Print-on-demand tip</strong> Connect your Printful account in Dashboard &rarr; Printful, then import your existing Printful products directly. No need to re-enter product details manually.
+              <strong>How it works behind the scenes</strong> When you publish, Grok sends your design to Printful as a print-ready file. Printful creates the product with all available sizes and colors. The product then appears in your store&apos;s Products tab, ready for customers to buy. When someone orders, Printful prints it, packs it, and ships it directly to the customer. You never touch inventory.
             </Callout>
-            <h3>Product limits</h3>
-            <p>Your first <strong>50 products are free</strong> to list. After that, there&apos;s a small listing fee of $0.05 per product.</p>
+
+            <h3>Importing from Printful</h3>
+            <p>If you already have products on Printful, you can connect your account and import them directly.</p>
+            <div className="g-steps">
+              <Step n={1} title="Connect Printful" desc="Go to Dashboard &rarr; Store &rarr; Printful and enter your Printful API key. You can find this in your Printful dashboard under Settings &rarr; API." />
+              <Step n={2} title="View your Printful products" desc="Once connected, go to Dashboard &rarr; Products and click the Printful tab. You'll see all your synced products with pricing and variant counts." />
+              <Step n={3} title="Products appear in your store automatically" desc="Synced Printful products show up on your public storefront alongside any other products you've added." />
+            </div>
+
+            <h3>Uploading your own products</h3>
+            <p>Sell anything &mdash; handmade goods, digital downloads, or products you&apos;ve created outside of RareImagery.</p>
+            <div className="g-steps">
+              <Step n={1} title="Go to Dashboard &rarr; Products" desc="Click the 'My Uploads' tab to see your custom products, or 'All Products' to see everything." />
+              <Step n={2} title='Click "Add Product"' desc="Choose your product type: General (physical goods you ship yourself), Digital (files delivered instantly), or Physical (handmade/custom items)." />
+              <Step n={3} title="Add details and images" desc="Enter a name, description, price, and upload a product image. You can also paste an image URL." />
+              <Step n={4} title="Save and it's live" desc="Your product appears in your store immediately. No approval needed for individual products once your store is approved." />
+            </div>
+
+            <h3>Pricing</h3>
+            <p><strong>Grok generations:</strong> 100 free per month. After that, $0.25 per generation.</p>
+            <p><strong>Publishing to Printful:</strong> $1.00 flat fee per product published.</p>
+            <p><strong>Product listings:</strong> Your first 50 products are free. After that, $0.05 per listing.</p>
+            <p><strong>Print-on-demand:</strong> You set the retail price. Printful charges a base cost per item (shown in your Products tab). The difference is your profit.</p>
           </div>
         </details>
 
@@ -611,16 +629,14 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               <tbody>
                 <tr><td><strong>How To</strong></td><td>This guide &mdash; always accessible from your dashboard</td></tr>
                 <tr><td><strong>Page Building</strong></td><td>Drag-and-drop layout editor for your public storefront</td></tr>
-                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit or use Exact+Text composite. Set your own price and publish directly to Printful.</td></tr>
+                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit. Set your own price and publish directly to Printful.</td></tr>
+                <tr><td><strong>Products</strong></td><td>View and manage all your products in one place. Three tabs: All Products (everything), Printful (synced from Printful with pricing and profit), My Uploads (products you&apos;ve added manually).</td></tr>
                 <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
                 <tr><td><strong>My Subscribers</strong></td><td>View your X Creator Subscribers who have signed in to RareImagery. See stats, manage tiers, and track growth.</td></tr>
-                <tr><td><strong>Creator Collections</strong></td><td>Curate favorite X creators into drag-and-drop category columns for your public page</td></tr>
+                <tr><td><strong>My Favorites</strong></td><td>Curate favorite X creators into drag-and-drop category columns for your public page</td></tr>
                 <tr><td><strong>Social Feeds</strong></td><td>Connect TikTok, Instagram, and YouTube accounts</td></tr>
                 <tr><td><strong>Music</strong></td><td>Add Spotify and Apple Music tracks to your storefront</td></tr>
-                <tr><td><strong>X Communities</strong></td><td>Showcase X Communities you belong to</td></tr>
-                <tr><td><strong>X Articles</strong></td><td>Import and display your long-form X articles</td></tr>
-                <tr><td><strong>X Spaces</strong></td><td>View your live and scheduled X Spaces, promote your store</td></tr>
-                <tr><td><strong>Store</strong></td><td>Products, orders, Printful connection, and store settings</td></tr>
+                <tr><td><strong>Store</strong></td><td>Orders, shipping, accounting, Printful connection, and store settings</td></tr>
               </tbody>
             </table>
             <Callout type="info" icon="&#8505;">
