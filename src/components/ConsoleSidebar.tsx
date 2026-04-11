@@ -12,6 +12,7 @@ import { getStoreUrl } from "@/lib/store-url";
 const storeLinks: Array<{ href: Route; label: string; icon: string }> = [
   { href: "/console/page-building" as Route, label: "Page Building", icon: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" },
   { href: "/console/design-studio" as Route, label: "Grok Creator Studio", icon: "M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" },
+  { href: "/console/products" as Route, label: "Products", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" },
   { href: "/console/grok-library" as Route, label: "Grok Library", icon: "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" },
   { href: "/console/subscribers" as Route, label: "My Subscribers", icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" },
   { href: "/console/favorite-creators" as Route, label: "My Favorites", icon: "M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" },
@@ -23,7 +24,6 @@ const storeLinks: Array<{ href: Route; label: string; icon: string }> = [
 ];
 
 const storeManagementLinks: Array<{ href: Route; label: string; icon: string }> = [
-  { href: "/console/products" as Route, label: "Products", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" },
   { href: "/console/orders" as Route, label: "Orders", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
   { href: "/console/shipping" as Route, label: "Shipping", icon: "M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zm2-4V9a1 1 0 00-1-1h-2l-3-4H8L5 8H3a1 1 0 00-1 1v4m0 0h18" },
   { href: "/console/accounting" as Route, label: "Accounting", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -85,7 +85,7 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
   const [switchingStore, setSwitchingStore] = useState(false);
   const [storeOpen, setStoreOpen] = useState(() => {
     // Auto-open if currently on a store management page
-    return ["/console/products", "/console/orders", "/console/shipping", "/console/accounting", "/console/printful", "/console/settings"].some((p) => pathname.startsWith(p));
+    return ["/console/orders", "/console/shipping", "/console/accounting", "/console/printful", "/console/settings"].some((p) => pathname.startsWith(p));
   });
 
   const isActive = (href: Route) => {
