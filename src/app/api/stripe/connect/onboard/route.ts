@@ -10,11 +10,6 @@ const DRUPAL_API = process.env.DRUPAL_API_URL;
  *
  * Starts or resumes Stripe Connect Express onboarding for the authenticated creator.
  * Returns the Stripe AccountLink URL to redirect the creator to Stripe's onboarding flow.
- *
- * Flow:
- *   1. Look up the creator's x_creator_store node via the profile REST endpoint.
- *   2. If no account exists, create a Stripe Express account and save it to Drupal.
- *   3. Create and return an AccountLink for the onboarding UI.
  */
 export async function POST(req: NextRequest) {
   const token = await getToken({ req });
@@ -28,9 +23,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Get the x_creator_store node ID + existing Stripe account ID via Drupal REST.
+    // 1. Find the store via X profile → linked store relationship
     const profileRes = await fetch(
-      `${DRUPAL_API}/api/store/${encodeURIComponent(xUsername)}/profile`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
     );
 
@@ -38,9 +33,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Store profile not found" }, { status: 404 });
     }
 
-    const profile = await profileRes.json();
-    const nodeId: number = profile.nodeId;
-    let stripeAccountId: string | null = profile.stripeAccountId ?? null;
+    const profileJson = await profileRes.json();
+    const profileNode = profileJson.data?.[0];
+    if (!profileNode) {
+      return NextResponse.json({ error: "X profile not found" }, { status: 404 });
+    }
+
+    // Find the linked store in included data
+    const storeRef = profileNode.relationships?.field_linked_store?.data;
+    if (!storeRef) {
+      return NextResponse.json({ error: "No store linked to this profile" }, { status: 404 });
+    }
+
+    const store = (profileJson.included || []).find(
+      (inc: any) => inc.id === storeRef.id && inc.type?.startsWith("commerce_store")
+    );
+    if (!store) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    const storeUuid = store.id;
+    const storeInternalId = store.attributes?.drupal_internal__store_id;
+    let stripeAccountId: string | null = store.attributes?.field_stripe_account_id || null;
 
     const stripe = getStripeClient();
 
@@ -50,42 +64,36 @@ export async function POST(req: NextRequest) {
         type: "express",
         metadata: {
           x_handle: xUsername,
-          store_node_id: String(nodeId),
+          store_id: String(storeInternalId),
         },
       });
       stripeAccountId = account.id;
 
-      // Persist to Drupal via the dedicated onboarding REST resource.
+      // Save the Stripe account ID to the store via JSON:API
       const writeHeaders = await drupalWriteHeaders();
-      const saveRes = await fetch(
-        `${DRUPAL_API}/api/dashboard/stores/${nodeId}/stripe-onboarding`,
-        {
-          method: "POST",
-          headers: {
-            ...writeHeaders,
-            "Content-Type": "application/json",
-            Accept: "application/json",
+      await fetch(`${DRUPAL_API}/jsonapi/commerce_store/online/${storeUuid}`, {
+        method: "PATCH",
+        headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+        body: JSON.stringify({
+          data: {
+            type: "commerce_store--online",
+            id: storeUuid,
+            attributes: {
+              field_stripe_account_id: stripeAccountId,
+            },
           },
-          body: JSON.stringify({}),
-        }
-      );
+        }),
+      });
 
-      // If the Drupal endpoint returned its own URL, use that; otherwise proceed
-      // with the account we just created. Either way the account ID is now saved.
-      if (saveRes.ok) {
-        const saveData = await saveRes.json().catch(() => ({}));
-        if (saveData.url) {
-          return NextResponse.json({ url: saveData.url });
-        }
-      }
+      console.log(`[stripe/connect] Created Express account ${stripeAccountId} for @${xUsername}`);
     }
 
-    // 3. Generate an AccountLink so the creator can complete / update their profile.
-    const returnBase = process.env.NEXTAUTH_URL ?? "https://rareimagery.net";
+    // 3. Generate an AccountLink for the onboarding UI.
+    const returnBase = process.env.NEXTAUTH_URL ?? "https://www.rareimagery.net";
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
-      refresh_url: `${returnBase}/console?stripe_refresh=1`,
-      return_url: `${returnBase}/console?stripe_return=1`,
+      refresh_url: `${returnBase}/console/settings?stripe_refresh=1`,
+      return_url: `${returnBase}/console/settings?stripe_return=1`,
       type: "account_onboarding",
     });
 

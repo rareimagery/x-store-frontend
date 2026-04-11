@@ -26,12 +26,17 @@ async function getSellerStripeAccountId(handle: string): Promise<string | null> 
   try {
     const clean = handle.replace(/^@/, "").toLowerCase();
     const res = await fetch(
-      `${DRUPAL_API}/api/store/${encodeURIComponent(clean)}/profile`,
+      `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(clean)}&include=field_linked_store&fields[commerce_store--online]=field_stripe_account_id`,
       { headers: { ...drupalAuthHeaders() }, next: { revalidate: 60 } }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    return (data.stripeAccountId as string | null) ?? null;
+    const json = await res.json();
+    const storeRef = json.data?.[0]?.relationships?.field_linked_store?.data;
+    if (!storeRef) return null;
+    const store = (json.included || []).find(
+      (inc: any) => inc.id === storeRef.id && inc.type?.startsWith("commerce_store")
+    );
+    return store?.attributes?.field_stripe_account_id || null;
   } catch {
     return null;
   }
