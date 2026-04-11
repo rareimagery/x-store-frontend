@@ -651,39 +651,64 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <div className="g-sec-icon">{"\uD83D\uDCB3"}</div>
             <div className="g-sec-meta">
               <div className="g-sec-label">Payments &amp; fees</div>
-              <div className="g-sec-sub">How you get paid and what it costs</div>
+              <div className="g-sec-sub">How you get paid, where your money goes, and what it costs</div>
             </div>
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>RareImagery uses <strong>Stripe</strong> (and <strong>X Money</strong> when it launches) to handle all payments. When a customer buys from you, the money goes directly to your account.</p>
-
-            <h3>Getting started</h3>
-            <p>To access the platform, you need an <strong>X Creator Subscription</strong> ($4/month on X) to @RareImagery. This is the only cost to browse, build your page, and set up your store. <strong>You are never charged just for having an account.</strong></p>
-
-            <h3>Connecting Stripe</h3>
+            <h3>How payments work &mdash; full transparency</h3>
+            <p>RareImagery uses <strong>Stripe Connect</strong> to handle all payments. Here&apos;s exactly what happens when a customer buys a product from your store:</p>
             <div className="g-steps">
-              <Step n={1} title='Go to Console \u2192 Settings and click "Connect Stripe"' desc="You'll be taken to Stripe's website to set up your account." />
-              <Step n={2} title="Complete Stripe's onboarding" desc="Stripe will ask for your bank details, ID verification, and tax information." />
-              <Step n={3} title="You're connected \u2014 sales go straight to you" desc="When someone buys, Stripe deposits your cut directly to your bank. RareImagery never holds your money." />
+              <Step n={1} title="Customer clicks Buy" desc="They're taken to a Stripe-hosted checkout page. They enter their card info directly on Stripe's secure site. RareImagery never sees or stores their card number." />
+              <Step n={2} title="Stripe processes the payment" desc="Stripe collects the money and automatically splits it: your earnings go directly to YOUR Stripe account, and the small platform fee is deducted." />
+              <Step n={3} title="You get paid directly by Stripe" desc="Stripe deposits your earnings to your bank account on a rolling basis (typically 2 business days). RareImagery never holds your money — it goes straight from the customer to you via Stripe." />
+              <Step n={4} title="Printful fulfills the order" desc="For print-on-demand products, the order is automatically sent to Printful. They print it, pack it, and ship it directly to the customer. You don't handle inventory or shipping." />
             </div>
+
+            <Callout type="good" icon="&#128161;">
+              <strong>RareImagery never holds your money.</strong> When someone buys from your store, the payment goes directly to your connected Stripe account. We cannot access, withdraw, or redirect your funds. Stripe handles all payouts to your bank. You can log into your Stripe dashboard at any time to see every transaction, pending payout, and deposit.
+            </Callout>
+
+            <h3>Do I have to connect Stripe?</h3>
+            <p><strong>No.</strong> Connecting Stripe is optional. You can set up your store, design products, build your page, and do everything else without connecting Stripe. You only need Stripe when you&apos;re ready to actually receive payments from customers.</p>
+            <p>If a customer buys a product before you&apos;ve connected Stripe, the payment goes to the platform and we&apos;ll work with you to get it to you. But connecting Stripe first means everything is automatic and instant &mdash; no middleman, no delays.</p>
+
+            <h3>Connecting Stripe (takes 2&ndash;5 minutes)</h3>
+            <div className="g-steps">
+              <Step n={1} title='Go to Console \u2192 Settings' desc="Scroll to the Payments section. You'll see a 'Connect Stripe for Payouts' button." />
+              <Step n={2} title="Complete Stripe's onboarding" desc="You'll be redirected to Stripe's website. They'll ask for your name, bank account details, and verify your identity. This is Stripe's standard process — the same one used by Shopify, DoorDash, and thousands of other platforms." />
+              <Step n={3} title="You're connected" desc="Once complete, your Console Settings will show 'Payouts Active'. Every future sale will be deposited directly to your bank account." />
+            </div>
+            <p>You can update your bank details, view transactions, and manage your payouts anytime by visiting your <strong>Stripe Express Dashboard</strong> (linked from your Console Settings).</p>
+
+            <h3>What does the customer see?</h3>
+            <p>Customers never need a Stripe account. When they click Buy, they see a clean Stripe checkout page with your product name and price. They enter their card, pay, and get a confirmation. That&apos;s it.</p>
 
             <h3>Fees</h3>
             <table className="g-table">
-              <thead><tr><th>Fee</th><th>Amount</th><th>Details</th></tr></thead>
+              <thead><tr><th>Fee</th><th>Amount</th><th>When</th></tr></thead>
               <tbody>
-                <tr><td><strong>X Creator Subscription</strong></td><td><span className="g-fee">$4/month</span></td><td>Subscribe to @RareImagery on X to access the platform</td></tr>
-                <tr><td><strong>Store maintenance</strong></td><td><span className="g-fee">$2/month</span></td><td>Only charged in months where you make a sale. No sales = no fee.</td></tr>
-                <tr><td><strong>Payment processing</strong></td><td><span className="g-fee">$0.30/transaction</span></td><td>Stripe or X Money processing fee per sale</td></tr>
+                <tr><td><strong>Payment processing</strong></td><td><span className="g-fee">2.9% + $0.30</span></td><td>Per transaction &mdash; standard Stripe rate, deducted automatically</td></tr>
+                <tr><td><strong>Grok AI generations</strong></td><td><span className="g-fee">100 free/month</span></td><td>Then $0.25 per generation after the free tier</td></tr>
+                <tr><td><strong>Publish to Printful</strong></td><td><span className="g-fee">$1.00</span></td><td>Per product published to Printful for print-on-demand</td></tr>
+                <tr><td><strong>Product listings</strong></td><td><span className="g-fee">50 free</span></td><td>Then $0.05 per listing after the first 50</td></tr>
+                <tr><td><strong>Printful base cost</strong></td><td><span className="g-fee">Varies</span></td><td>Per item ordered &mdash; deducted from sale price. You keep the difference as profit.</td></tr>
               </tbody>
             </table>
 
-            <Callout type="good" icon="&#128161;">
-              <strong>You only pay when you sell</strong> If you don&apos;t make any sales in a given month, you won&apos;t be charged the $2 store maintenance fee. No sales = no fee. Users without a store are never charged anything beyond their X subscription.
+            <Callout type="tip" icon="&#10022;">
+              <strong>Example:</strong> You create a hoodie and set the price at $45. Printful&apos;s base cost is $25. When a customer buys it: Stripe collects $45, deducts the 2.9% + $0.30 fee ($1.61), and deposits $43.39 to your Stripe account. Printful charges $25 to print and ship. Your profit: <strong>$18.39</strong>.
             </Callout>
 
+            <h3>Where to check your earnings</h3>
+            <p>You can track everything in two places:</p>
+            <div className="g-steps">
+              <Step n={1} title="Console &rarr; Store &rarr; Accounting" desc="See your revenue, order count, and platform fees directly in your RareImagery dashboard." />
+              <Step n={2} title="Stripe Express Dashboard" desc="View every transaction, pending payout, and bank deposit. Stripe provides tax documents (1099s) at year end." />
+            </div>
+
             <Callout type="info" icon="&#8505;">
-              <strong>X Money &mdash; coming soon</strong> When X launches its payment system, you&apos;ll be able to accept X Money payments alongside (or instead of) Stripe. We&apos;ll handle the switch automatically.
+              <strong>X Money &mdash; coming soon</strong> When X launches its payment system, you&apos;ll be able to accept X Money payments alongside Stripe. We&apos;ll handle the switch automatically &mdash; no action needed on your part.
             </Callout>
           </div>
         </details>
