@@ -104,9 +104,18 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("[design-studio] Generate failed:", err);
+    const msg = String(err?.message || "");
+    const isUpstreamDown =
+      msg.includes("temporarily unavailable") ||
+      msg.includes("currently unavailable") ||
+      msg.includes("Internal error");
     return NextResponse.json(
-      { error: err.message || "Image generation failed" },
-      { status: 502 }
+      {
+        error: isUpstreamDown
+          ? "The AI image generator (Grok Imagine) is temporarily unavailable. Please try again in a few minutes."
+          : msg || "Image generation failed",
+      },
+      { status: 503 }
     );
   }
 }
