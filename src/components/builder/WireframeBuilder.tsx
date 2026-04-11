@@ -158,10 +158,6 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "music_url", label: "Spotify or Apple Music URL", type: "url" },
     ],
-    x_articles: [
-      { key: "heading", label: "Section Heading", type: "text" },
-      { key: "max_items", label: "Max Articles to Show", type: "number" },
-    ],
     tiktok_feed: [
       { key: "heading", label: "Section Heading", type: "text" },
     ],
@@ -175,9 +171,6 @@ function BlockInspector({
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 5)", type: "number" },
     ],
-    x_communities: [
-      { key: "heading", label: "Section Heading", type: "text" },
-    ],
     my_favorites: [
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 10)", type: "number" },
@@ -185,9 +178,6 @@ function BlockInspector({
     top_followers: [
       { key: "heading", label: "Section Heading", type: "text" },
       { key: "max_items", label: "Max to Show (up to 8)", type: "number" },
-    ],
-    x_spaces: [
-      { key: "heading", label: "Section Heading", type: "text" },
     ],
   };
 
