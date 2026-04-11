@@ -53,6 +53,21 @@ export default function DesignStudioPage() {
 
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
 
+  // Refinement state
+  const [refining, setRefining] = useState(false);
+  const [refineMode, setRefineMode] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
+
+  // Session history
+  const [sessionHistory, setSessionHistory] = useState<Array<{ prompt: string; variants: string[]; timestamp: number }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Design chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
   const [xLooking, setXLooking] = useState(false);
   const [xHandle, setXHandle] = useState("");
   const [importingPost, setImportingPost] = useState(false);
@@ -191,6 +206,8 @@ export default function DesignStudioPage() {
         setDesignVariants(urls); setDesignUrl(urls[0]);
         if (!title) setTitle(`${(topText || bottomText || p).slice(0, 30)} ${pl || ""}`);
         setStatus(`4 styles: Bold, Neon, Streetwear, Vintage`);
+        setRefineMode(false);
+        setSessionHistory(prev => [...prev, { prompt: prompt.trim(), variants: urls, timestamp: Date.now() }]);
         const now = new Date();
         for (let vi = 0; vi < urls.length; vi++) {
           fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `comp_${Date.now()}_${vi}`, url: urls[vi], prompt: p, name: `${(topText || bottomText || p).slice(0, 20)} ${styles[vi]} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
@@ -214,12 +231,40 @@ export default function DesignStudioPage() {
       if (!title) setTitle(`${prompt.trim().slice(0, 40)} ${pl || ""}`);
       if (data.generation_count != null) { setGenCount(data.generation_count); setGenRemaining(data.generations_remaining ?? null); }
       setStatus(`${urls.length} variants ready${data.used_edits ? " (edited your image)" : ""}`);
+      setRefineMode(false);
+      setSessionHistory(prev => [...prev, { prompt: prompt.trim(), variants: urls, timestamp: Date.now() }]);
       const now = new Date();
       const short = prompt.trim().slice(0, 30).replace(/\s+/g, " ").trim();
       for (let vi = 0; vi < urls.length; vi++) {
         fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `gen_${Date.now()}_${vi}`, url: urls[vi], prompt: prompt.trim(), name: `${short}${urls.length > 1 ? ` v${vi + 1}` : ""} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
       }
     } catch (err: any) { setError(err.message || "Something went wrong"); } finally { setGenerating(false); }
+  };
+
+  const handleRefine = async () => {
+    if (!designUrl || !refinePrompt.trim()) return;
+    setRefining(true); setError(null);
+    const pl = PRODUCT_TYPES.find(t => t.value === productType)?.label;
+    setStatus(`Refining ${pl} design...`);
+    try {
+      const res = await fetch("/api/design-studio/generate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: refinePrompt.trim(), product_type: productType, reference_image: designUrl, variants: 1 }),
+      });
+      let data; try { data = await res.json(); } catch { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) { setError(data.error || "Refinement failed"); return; }
+      const newUrl: string = data.image_urls?.[0] || data.image_url;
+      if (!newUrl) { setError("No image returned"); return; }
+      // Add refined variant to the grid
+      setDesignVariants(prev => [...prev, newUrl]);
+      setDesignUrl(newUrl);
+      if (data.generation_count != null) { setGenCount(data.generation_count); setGenRemaining(data.generations_remaining ?? null); }
+      setStatus("Refinement ready — compare with original");
+      setRefinePrompt("");
+      // Save to gallery
+      const now = new Date();
+      fetch("/api/gallery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", item: { id: `ref_${Date.now()}`, url: newUrl, prompt: refinePrompt.trim(), name: `Refined ${prompt.trim().slice(0, 20)} — ${now.getMonth() + 1}/${now.getDate()}`, type: "image", created_at: now.toISOString(), product_type: productType, folder: pl || "Unsorted", saved: false } }) }).catch(() => {});
+    } catch (err: any) { setError(err.message || "Refinement failed"); } finally { setRefining(false); }
   };
 
   const handlePublish = async () => {
@@ -234,6 +279,28 @@ export default function DesignStudioPage() {
       setPublished({ product_type: data.product_type, mockup_url: data.mockup_url, retail_price: data.retail_price, printful_synced: !!data.printful_product_id, publish_count: data.publish_count, publish_fee: data.publish_fee });
       setStatus(`"${title}" published!`);
     } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
+  };
+
+  const handleChatSend = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    setChatMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    setChatLoading(true);
+    try {
+      const res = await fetch("/api/design-studio/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg, context: { product_type: productType, prompt, engine, has_image: !!refPreview } }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(prev => [...prev, { role: "assistant", content: data.reply || data.message || "No response" }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: "assistant", content: "Sorry, I couldn't respond. Try again." }]);
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: "assistant", content: "Connection error. Try again." }]);
+    } finally { setChatLoading(false); }
   };
 
   const connectPrintful = useCallback(async () => {
@@ -393,17 +460,48 @@ export default function DesignStudioPage() {
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-3">
           {designVariants.length > 1 && (
             <div className="p-3 border-b border-zinc-800">
-              <div className="grid grid-cols-4 gap-2">
+              <div className={`grid gap-2 ${designVariants.length <= 4 ? "grid-cols-4" : "grid-cols-5"}`}>
                 {designVariants.map((url, i) => (
-                  <button key={i} onClick={() => setDesignUrl(url)} className={`relative rounded-lg overflow-hidden border-2 transition ${designUrl === url ? "border-purple-500 ring-1 ring-purple-500/30" : "border-zinc-700 hover:border-zinc-500"}`}>
+                  <button key={`${url}-${i}`} onClick={() => setDesignUrl(url)} className={`group/card relative rounded-lg overflow-hidden border-2 transition ${designUrl === url ? "border-purple-500 ring-1 ring-purple-500/30" : "border-zinc-700 hover:border-zinc-500"}`}>
                     <img src={url} alt={`v${i + 1}`} className="aspect-square w-full object-cover" />
                     {designUrl === url && <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center"><svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div>}
+                    <div onClick={e => { e.stopPropagation(); setDesignUrl(url); setRefineMode(true); }} className="absolute inset-x-0 bottom-0 bg-black/80 text-white text-[10px] font-medium py-1.5 text-center opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center gap-1 cursor-pointer">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                      Refine
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
           <div className="bg-zinc-800"><img src={designUrl!} alt="Design" className="w-full max-h-[350px] object-contain mx-auto" /></div>
+
+          {/* Refine Panel */}
+          {refineMode && !published && (
+            <div className="p-4 border-t border-purple-500/30 bg-purple-950/10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                  Refine this design
+                </h3>
+                <button onClick={() => setRefineMode(false)} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
+              </div>
+              <textarea value={refinePrompt} onChange={e => setRefinePrompt(e.target.value)} placeholder="What would you change? e.g. 'Make the colors warmer and add more detail'" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none resize-none" rows={2} />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {["Warmer colors", "More detail", "Bolder contrast", "Simpler/cleaner", "Darker mood", "Add texture"].map(chip => (
+                  <button key={chip} onClick={() => setRefinePrompt(chip)} className={`rounded-full border px-3 py-1 text-[11px] transition ${refinePrompt === chip ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-purple-500 hover:text-purple-300 hover:bg-purple-500/10"}`}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={handleRefine} disabled={refining || !refinePrompt.trim()} className="flex-1 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                  {refining ? <><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Refining...</> : "Refine (1 generation)"}
+                </button>
+                <button onClick={() => setRefineMode(false)} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Back</button>
+              </div>
+            </div>
+          )}
           {!published ? (
             <div className="p-3 border-t border-zinc-800 space-y-2">
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Product title..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
@@ -449,6 +547,10 @@ export default function DesignStudioPage() {
                 </div>
               )}
               <div className="flex gap-2">
+                <button onClick={() => setRefineMode(true)} className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-4 py-2.5 text-sm font-medium text-purple-400 hover:bg-purple-500/20 transition flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                  Refine
+                </button>
                 <button onClick={handlePublish} disabled={publishing || !title.trim() || (productType !== "digital_drop" && !price.trim())} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
                 <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
               </div>
@@ -511,6 +613,30 @@ export default function DesignStudioPage() {
         </div>
       )}
 
+      {/* SESSION HISTORY */}
+      {sessionHistory.length > 0 && (
+        <details className="rounded-xl border border-zinc-800 bg-zinc-900/50 mb-3" open={showHistory} onToggle={e => setShowHistory((e.target as HTMLDetailsElement).open)}>
+          <summary className="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none hover:bg-zinc-800/50 transition">
+            <span className="text-xs font-semibold text-zinc-400">This Session ({sessionHistory.length} generation{sessionHistory.length !== 1 ? "s" : ""})</span>
+            <svg className={`h-3.5 w-3.5 text-zinc-500 transition-transform ${showHistory ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </summary>
+          <div className="px-3 pb-3 space-y-3">
+            {sessionHistory.map((gen, gi) => (
+              <div key={gen.timestamp} className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-2">
+                <p className="text-[10px] text-zinc-500 mb-1.5 truncate">#{gi + 1}: &quot;{gen.prompt.slice(0, 50)}{gen.prompt.length > 50 ? "..." : ""}&quot;</p>
+                <div className="grid grid-cols-4 gap-1">
+                  {gen.variants.map((url, vi) => (
+                    <button key={vi} onClick={() => { if (!designVariants.includes(url)) setDesignVariants(prev => [...prev, url]); setDesignUrl(url); }} className="rounded overflow-hidden border border-zinc-700 hover:border-purple-500 transition">
+                      <img src={url} alt={`Gen ${gi + 1} v${vi + 1}`} className="aspect-square w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
       {storeProducts.length > 0 && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
           <h2 className="text-xs font-semibold text-white mb-2">Your Products</h2>
@@ -521,6 +647,68 @@ export default function DesignStudioPage() {
                 <p className="p-1.5 text-[10px] text-white truncate">{p.title}</p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* DESIGN CHAT — Floating button + drawer */}
+      <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 z-40 h-12 w-12 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+      </button>
+
+      {chatOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-end sm:items-center sm:justify-end" onClick={() => setChatOpen(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full sm:w-96 sm:mr-6 sm:mb-0 bg-zinc-900 border border-zinc-700 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[80vh] sm:max-h-[600px]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                Design Assistant
+              </h3>
+              <button onClick={() => setChatOpen(false)} className="text-zinc-500 hover:text-white"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chatMessages.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-sm text-zinc-500 mb-3">Ask me anything about designing merch.</p>
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {["What makes a good hoodie design?", "Suggest a prompt for streetwear", "Help me improve my design"].map(q => (
+                      <button key={q} onClick={() => { setChatInput(q); }} className="rounded-full border border-zinc-700 px-3 py-1 text-[11px] text-zinc-400 hover:border-purple-500 hover:text-purple-300 transition">{q}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${msg.role === "user" ? "bg-purple-600 text-white" : "bg-zinc-800 text-zinc-300"}`}>
+                    {msg.content.split(/\*\*(.+?)\*\*/g).map((part, pi) =>
+                      pi % 2 === 1 ? (
+                        <span key={pi}>
+                          <strong className="text-purple-300">{part}</strong>
+                          <button onClick={() => { setPrompt(part); setChatOpen(false); setStatus("Prompt loaded from Design Assistant"); }} className="ml-1.5 text-[10px] text-purple-400 hover:text-purple-200 underline">Use</button>
+                        </span>
+                      ) : <span key={pi}>{part}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start"><div className="bg-zinc-800 rounded-2xl px-4 py-2 text-sm text-zinc-500 flex items-center gap-2"><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Thinking...</div></div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-zinc-800 p-3">
+              <div className="flex gap-2">
+                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleChatSend()} placeholder="Ask about design, prompts, products..." className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none" />
+                <button onClick={handleChatSend} disabled={chatLoading || !chatInput.trim()} className="rounded-lg bg-purple-600 px-3 py-2 text-white hover:bg-purple-500 disabled:opacity-50 transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
