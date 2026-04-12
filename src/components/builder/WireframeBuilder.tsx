@@ -597,7 +597,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
       >
         {/* Dark overlay so blocks remain readable over background */}
         {pageBackground && (
-          <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+          <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         )}
         {/* Top bar */}
         <div className="mb-4 flex items-center justify-between relative z-10">
