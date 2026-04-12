@@ -6,7 +6,7 @@ type FavJWT = { storeSlug?: string; xUsername?: string | null };
 
 function resolveSlug(token: FavJWT): string | null {
   const raw = token.storeSlug || token.xUsername;
-  return raw ? raw.replace(/^@+/, "").trim().toLowerCase() : null;
+  return raw ? raw.replace(/^@+/, "").trim() : null;
 }
 
 async function resolveStoreUuid(slug: string, xUsername?: string): Promise<string | null> {
@@ -21,10 +21,11 @@ async function resolveStoreUuid(slug: string, xUsername?: string): Promise<strin
     if (uuid) return uuid;
   }
 
-  // Fallback: if slug is actually an X username (slug changed), find store via profile
-  if (xUsername && xUsername !== slug) {
+  // Fallback: find store via X profile → linked store
+  const lookupUsername = xUsername || slug;
+  if (lookupUsername) {
     const profileRes = await fetch(
-      `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store&fields[commerce_store--online]=field_my_favorites`,
+      `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(lookupUsername)}&include=field_linked_store&fields[commerce_store--online]=field_my_favorites`,
       { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
     );
     if (profileRes.ok) {
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ error: "No store" }, { status: 404 });
-  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim().toLowerCase() : undefined;
+  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim() : undefined;
   const uuid = await resolveStoreUuid(slug, xUsername);
   if (!uuid) return NextResponse.json({ favorites: [] });
   return NextResponse.json({ favorites: await getFavorites(uuid) }, {
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const slug = resolveSlug(token);
   if (!slug) return NextResponse.json({ error: "No store" }, { status: 404 });
-  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim().toLowerCase() : undefined;
+  const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim() : undefined;
   const uuid = await resolveStoreUuid(slug, xUsername);
   if (!uuid) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
