@@ -344,7 +344,7 @@ export default function DesignStudioPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="text-xl font-bold text-white mb-0.5">Grok Creator Studio</h1>
+      <h1 className="text-xl font-bold text-white mb-0.5">Grok Product Creator</h1>
       <p className="text-xs text-zinc-500 mb-4">Design merch. Generate. Publish.</p>
 
       {/* PROMPT */}

@@ -95,7 +95,7 @@ export async function runCodeAuditAgent(): Promise<CodeAuditReport> {
 
   checks.push(await timedCheck("Grok API Key", "config", async () => {
     const set = !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY);
-    return { ok: set, detail: set ? "Set" : "Missing — Grok Creator Studio disabled" };
+    return { ok: set, detail: set ? "Set" : "Missing — Grok Product Creator disabled" };
   }));
 
   checks.push(await timedCheck("CRON_SECRET configured", "config", async () => {

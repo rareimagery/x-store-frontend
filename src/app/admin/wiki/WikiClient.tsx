@@ -86,8 +86,8 @@ const DEFAULT_SECTIONS: WikiSection[] = [
     title: "Console Dashboard Pages",
     content: `<strong>Workspace:</strong>
 • Page Building — Drag-and-drop wireframe editor (Main Content + Right Sidebar)
-• Grok Creator Studio — AI design studio with Grok + Exact+Text engines, 6 product types (see below)
-• Grok Library — AI-generated designs with folders, drag-drop upload, "Use in Studio" button (closed-loop back to Creator Studio with image + prompt pre-loaded)
+• Grok Product Creator — AI design studio with Grok + Exact+Text engines, 6 product types (see below)
+• Grok Library — AI-generated designs with folders, drag-drop upload, "Use in Studio" button (closed-loop back to Product Creator with image + prompt pre-loaded)
 • My Subscribers — X Creator Subscriber dashboard: stats, search, tier management. Captures subscribers when they sign in via X OAuth.
 • Creator Collections — Drag-and-drop creator curation with @dnd-kit. Drag creators between category columns, auto-saves to Drupal.
 • Social Feeds — Connect TikTok, Instagram, YouTube accounts
@@ -96,7 +96,7 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 • X Articles — Import long-form X articles
 • X Spaces — Live and scheduled X Spaces
 
-<strong>Grok Creator Studio (/console/design-studio):</strong>
+<strong>Grok Product Creator (/console/design-studio):</strong>
 Chat-first design interface. Grok chat assistant at top (full context awareness), input tools below, then product + engine selectors.
 
 <strong>Input Tools:</strong>

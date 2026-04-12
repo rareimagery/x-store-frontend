@@ -221,7 +221,7 @@ function buildAdminWikiSections(state: Record<string, any>): WikiSection[] {
       content: `<strong>Live console pages (${state.consolePages?.length ?? 0} detected):</strong>
 ${(state.consolePages || []).map((p: string) => `• /console/${p}`).join("\n")}
 
-<strong>Workspace:</strong> Page Building, Grok Creator Studio, Grok Library, My Favorites, Social Feeds, Music, X Communities, X Articles
+<strong>Workspace:</strong> Page Building, Grok Product Creator, Grok Library, My Favorites, Social Feeds, Music, X Communities, X Articles
 <strong>Store:</strong> Products, Orders, Shipping, Accounting, Printful, Settings
 <strong>Admin:</strong> All Stores, Users, X Subscribers, Cost Dashboard, Invite Codes`,
     },

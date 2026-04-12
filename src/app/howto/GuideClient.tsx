@@ -537,10 +537,10 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
           <div className="g-body">
             <p>RareImagery gives you multiple ways to create and sell products. You can design merch with AI, import from Printful, or upload products you&apos;ve created elsewhere &mdash; all from the same store.</p>
 
-            <h3>Creating products with Grok Creator Studio</h3>
-            <p>The fastest way to go from idea to product. Grok Creator Studio uses AI to generate print-ready designs that are automatically published to Printful and imported into your store.</p>
+            <h3>Creating products with Grok Product Creator</h3>
+            <p>The fastest way to go from idea to product. Grok Product Creator uses AI to generate print-ready designs that are automatically published to Printful and imported into your store.</p>
             <div className="g-steps">
-              <Step n={1} title="Open Grok Creator Studio" desc="Go to your Dashboard and click Grok Creator Studio in the sidebar. Choose your product type: T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, or Digital Drop." />
+              <Step n={1} title="Open Grok Product Creator" desc="Go to your Dashboard and click Grok Product Creator in the sidebar. Choose your product type: T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, or Digital Drop." />
               <Step n={2} title="Describe your design" desc="Type a prompt describing what you want. For example: 'retro sunset with palm trees' or 'bold geometric wolf'. You can also upload a reference image or use your X profile picture as a starting point." />
               <Step n={3} title="Generate and pick your favorite" desc="Grok generates up to 4 design variants. Choose the one you like best. You get 100 free generations per month." />
               <Step n={4} title="Set your price and publish" desc="Enter the retail price you want to charge. Hit Publish and your design is sent to Printful, where the product is created with all size and color variants. It's automatically imported into your store." />
@@ -642,7 +642,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               <tbody>
                 <tr><td><strong>How To</strong></td><td>This guide &mdash; always accessible from your dashboard</td></tr>
                 <tr><td><strong>Page Building</strong></td><td>Drag-and-drop layout editor for your public storefront</td></tr>
-                <tr><td><strong>Grok Creator Studio</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit. Set your own price and publish directly to Printful.</td></tr>
+                <tr><td><strong>Grok Product Creator</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit. Set your own price and publish directly to Printful.</td></tr>
                 <tr><td><strong>Products</strong></td><td>View and manage all your products in one place. Three tabs: All Products (everything), Printful (synced from Printful with pricing and profit), My Uploads (products you&apos;ve added manually).</td></tr>
                 <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
                 <tr><td><strong>My Subscribers</strong></td><td>View your X Creator Subscribers who have signed in to RareImagery. See stats, manage tiers, and track growth.</td></tr>

@@ -67,9 +67,9 @@ const WIKI_SECTIONS: WikiSection[] = [
     title: "Console Dashboard",
     content: `<strong>Workspace section:</strong>
 &bull; <strong>Page Building</strong> &mdash; Drag-and-drop wireframe editor (Main Content + Right Sidebar columns)
-&bull; <strong>Grok Creator Studio</strong> &mdash; AI design tool with Refine, Design Chat, Session History, Mockup Preview (see below)
+&bull; <strong>Grok Product Creator</strong> &mdash; AI design tool with Refine, Design Chat, Session History, Mockup Preview (see below)
 &bull; <strong>Products</strong> &mdash; Drag-and-drop product grid with tabs: All Products, Printful, My Uploads. Edit/delete with modal.
-&bull; <strong>Grok Library</strong> &mdash; Saved AI-generated designs with folders. "Use in Studio" button loads design back into Creator Studio.
+&bull; <strong>Grok Library</strong> &mdash; Saved AI-generated designs with folders. "Use in Studio" button loads design back into Product Creator.
 &bull; <strong>My Subscribers</strong> &mdash; X Creator Subscriber dashboard with stats, search, tier management
 &bull; <strong>My Favorites</strong> &mdash; Drag-and-drop creator curation with @dnd-kit
 &bull; <strong>Social Feeds</strong> &mdash; Connect TikTok, Instagram, YouTube accounts
@@ -83,7 +83,7 @@ const WIKI_SECTIONS: WikiSection[] = [
   },
   {
     id: "design-studio",
-    title: "Grok Creator Studio",
+    title: "Grok Product Creator",
     content: `<strong>Purpose:</strong> AI-powered design tool for creating print-on-demand products. Creators describe their design, Grok generates it, they refine it, preview it on the product, and publish to Printful.
 
 <strong>6 Product Types:</strong> T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop

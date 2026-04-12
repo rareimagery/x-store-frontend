@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt";
 
 const XAI_API_URL = "https://api.x.ai/v1/chat/completions";
 
-const SYSTEM_PROMPT = `You are the Design Assistant inside RareImagery's Creator Studio — a multi-engine merch design tool.
+const SYSTEM_PROMPT = `You are the Design Assistant inside RareImagery's Product Creator — a multi-engine merch design tool.
 
 You help creators design T-Shirts, Hoodies, Ballcaps, and Digital Drops. You know what engine, product type, and prompt are active.
 
