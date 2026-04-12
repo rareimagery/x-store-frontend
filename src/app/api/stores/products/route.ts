@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
+import { drupalAuthHeaders, drupalWriteHeaders, drupalAbsoluteUrl } from "@/lib/drupal";
 import { getStripeClient } from "@/lib/stripe";
 import { LISTING_FEE_CENTS } from "@/lib/payments";
 import { verifyStoreOwnership, isValidUUID, isSafeImageUrl } from "@/lib/ownership";
@@ -189,11 +189,7 @@ export async function GET(req: NextRequest) {
               const uri = (
                 file.attributes?.uri as { url: string } | undefined
               )?.url;
-              imageUrl = uri
-                ? uri.startsWith("http")
-                  ? uri
-                  : `${DRUPAL_API}${uri}`
-                : null;
+              imageUrl = drupalAbsoluteUrl(uri) || null;
             }
           }
 
