@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-    gd pdo pdo_pgsql pgsql opcache zip intl mbstring
+    gd pdo pdo_pgsql pgsql opcache zip intl mbstring bcmath
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

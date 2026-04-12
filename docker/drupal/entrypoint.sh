@@ -13,10 +13,16 @@ fi
 if [ ! -f "web/sites/default/settings.local.php" ]; then
   echo "[docker] Copying Docker database settings..."
   cp /usr/local/share/settings.docker.php web/sites/default/settings.local.php
-  # Uncomment the settings.local.php include in settings.php
-  sed -i 's/^# \(.*settings\.local\.php.*\)/\1/' web/sites/default/settings.php 2>/dev/null || true
-  sed -i 's/^#\s*\(if (file_exists.*settings\.local\.php.*\)/\1/' web/sites/default/settings.php 2>/dev/null || true
-  sed -i 's/^#\s*\(include .*settings\.local\.php.*\)/  \1/' web/sites/default/settings.php 2>/dev/null || true
+fi
+# Append include for settings.local.php if not already present
+if ! grep -q "settings.local.php" web/sites/default/settings.php 2>/dev/null || grep -q "^#.*settings.local.php" web/sites/default/settings.php 2>/dev/null; then
+  if ! grep -q "^if (file_exists.*settings.local.php" web/sites/default/settings.php 2>/dev/null; then
+    echo "" >> web/sites/default/settings.php
+    echo 'if (file_exists($app_root . "/" . $site_path . "/settings.local.php")) {' >> web/sites/default/settings.php
+    echo '  include $app_root . "/" . $site_path . "/settings.local.php";' >> web/sites/default/settings.php
+    echo '}' >> web/sites/default/settings.php
+    echo "[docker] Added settings.local.php include"
+  fi
 fi
 
 # Ensure files directory exists and is writable
