@@ -662,7 +662,7 @@ export async function resolveUsernameFromSlug(slug: string): Promise<string | nu
     for (const item of included) {
       if (item.type === "node--x_user_profile") {
         const username = item.attributes?.field_x_username;
-        if (username) return username.toLowerCase();
+        if (username) return username;
       }
     }
     return null;
