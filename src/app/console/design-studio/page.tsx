@@ -62,6 +62,10 @@ export default function DesignStudioPage() {
   const [sessionHistory, setSessionHistory] = useState<Array<{ prompt: string; variants: string[]; timestamp: number }>>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Mockup preview state
+  const [mockupUrl, setMockupUrl] = useState<string | null>(null);
+  const [mockupLoading, setMockupLoading] = useState(false);
+
   // Design chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -197,7 +201,7 @@ export default function DesignStudioPage() {
           if (parts.length >= 2) { topText = parts[0].replace(/^add\s+/i, "").replace(/['"]/g, ""); bottomText = parts[1].replace(/['"]/g, ""); }
           else if (p) { bottomText = p.replace(/^(?:use|add|put)\s+.*?(?:image|photo|picture).*?(?:and|,|to)\s*/i, "").replace(/['"]/g, "") || p; }
         }
-        const styles = ["bold", "neon", "streetwear", "vintage"];
+        const styles = ["bold", "neon", "streetwear", "vintage", "clean", "fire", "ice", "purple"];
         const results = await Promise.all(styles.map(style =>
           fetch("/api/design-studio/composite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: refDataUrl || refPreview, top_text: topText || undefined, bottom_text: bottomText || undefined, style, product_type: productType }) }).then(r => r.json()).catch(() => null)
         ));
@@ -205,7 +209,7 @@ export default function DesignStudioPage() {
         if (urls.length === 0) { setError("Composite failed"); return; }
         setDesignVariants(urls); setDesignUrl(urls[0]);
         if (!title) setTitle(`${(topText || bottomText || p).slice(0, 30)} ${pl || ""}`);
-        setStatus(`4 styles: Bold, Neon, Streetwear, Vintage`);
+        setStatus(`${urls.length} styles generated`);
         setRefineMode(false);
         setSessionHistory(prev => [...prev, { prompt: prompt.trim(), variants: urls, timestamp: Date.now() }]);
         const now = new Date();
@@ -281,6 +285,23 @@ export default function DesignStudioPage() {
     } catch (err: any) { setError(err.message || "Publish failed"); } finally { setPublishing(false); }
   };
 
+  const handleMockupPreview = async () => {
+    if (!designUrl || mockupLoading) return;
+    setMockupLoading(true); setMockupUrl(null);
+    try {
+      const res = await fetch("/api/design-studio/preview-mockup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: designUrl, product_type: productType, placement }),
+      });
+      const data = await res.json();
+      if (res.ok && data.mockup_url) {
+        setMockupUrl(data.mockup_url);
+      } else {
+        setError(data.error || "Mockup preview failed");
+      }
+    } catch { setError("Mockup preview failed"); } finally { setMockupLoading(false); }
+  };
+
   const handleChatSend = async () => {
     if (!chatInput.trim() || chatLoading) return;
     const userMsg = chatInput.trim();
@@ -314,7 +335,7 @@ export default function DesignStudioPage() {
     } catch { setConnectError("Failed"); } finally { setConnecting(false); }
   }, [printfulKey, storeUuid]);
 
-  const resetDesign = () => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); setRefPreview(null); setRefDataUrl(null); setStatus(null); };
+  const resetDesign = () => { setDesignUrl(null); setDesignVariants([]); setTitle(""); setDescription(""); setPublished(null); setPrompt(""); setRefPreview(null); setRefDataUrl(null); setStatus(null); setMockupUrl(null); setRefineMode(false); setRefinePrompt(""); };
 
   if (!hasStore || !storeSlug) {
     return <div className="flex items-center justify-center py-20"><div className="text-center"><h2 className="text-xl font-bold text-white mb-2">No Store Found</h2><p className="text-sm text-zinc-500">Create a store first.</p></div></div>;
@@ -546,13 +567,27 @@ export default function DesignStudioPage() {
                   )}
                 </div>
               )}
+              {/* Mockup preview */}
+              {mockupUrl && (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/10 p-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500 mb-1.5">Preview on Product</p>
+                  <img src={mockupUrl} alt="Product mockup" className="w-full max-h-[300px] object-contain rounded-lg" />
+                </div>
+              )}
               <div className="flex gap-2">
-                <button onClick={() => setRefineMode(true)} className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-4 py-2.5 text-sm font-medium text-purple-400 hover:bg-purple-500/20 transition flex items-center gap-1.5">
+                <button onClick={() => setRefineMode(true)} className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-3 py-2.5 text-sm font-medium text-purple-400 hover:bg-purple-500/20 transition flex items-center gap-1.5">
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
                   Refine
                 </button>
+                {productType !== "digital_drop" && printfulConnected && (
+                  <button onClick={handleMockupPreview} disabled={mockupLoading || !designUrl} className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition flex items-center gap-1.5">
+                    {mockupLoading ? <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Loading...</> : <>
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      Preview</>}
+                  </button>
+                )}
                 <button onClick={handlePublish} disabled={publishing || !title.trim() || (productType !== "digital_drop" && !price.trim())} className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50 transition">{publishing ? "Publishing..." : `Publish ${selectedProduct?.emoji} to Printful`}</button>
-                <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
+                <button onClick={resetDesign} className="rounded-lg border border-zinc-700 px-3 py-2.5 text-sm text-zinc-400 hover:text-white transition">Discard</button>
               </div>
             </div>
           ) : (

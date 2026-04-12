@@ -2,37 +2,55 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { generateDesign } from "@/lib/grok-imagine";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 
+const DRUPAL_API = process.env.DRUPAL_API_URL;
 const designLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
 
 export const maxDuration = 60;
 
-// Monthly generation tracking — 100 free, $0.25 per extra
 const FREE_GENERATION_LIMIT = 100;
-const OVERAGE_FEE_CENTS = 25; // $0.25
-const monthlyGenCounts = new Map<string, { count: number; month: string }>();
 
 function getMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function getGenCount(userId: string): number {
-  const entry = monthlyGenCounts.get(userId);
-  const currentMonth = getMonthKey();
-  if (!entry || entry.month !== currentMonth) return 0;
-  return entry.count;
+async function getStoreGenCount(storeSlug: string): Promise<{ count: number; storeUuid: string | null }> {
+  if (!DRUPAL_API) return { count: 0, storeUuid: null };
+  try {
+    const res = await fetch(
+      `${DRUPAL_API}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(storeSlug)}&fields[commerce_store--online]=field_monthly_gen_count,field_gen_count_month`,
+      { headers: { ...drupalAuthHeaders() }, next: { revalidate: 0 } }
+    );
+    if (!res.ok) return { count: 0, storeUuid: null };
+    const json = await res.json();
+    const store = json.data?.[0];
+    if (!store) return { count: 0, storeUuid: null };
+    const month = store.attributes?.field_gen_count_month || "";
+    const currentMonth = getMonthKey();
+    if (month !== currentMonth) return { count: 0, storeUuid: store.id };
+    return { count: store.attributes?.field_monthly_gen_count || 0, storeUuid: store.id };
+  } catch { return { count: 0, storeUuid: null }; }
 }
 
-function incrementGenCount(userId: string): number {
-  const currentMonth = getMonthKey();
-  const entry = monthlyGenCounts.get(userId);
-  if (!entry || entry.month !== currentMonth) {
-    monthlyGenCounts.set(userId, { count: 1, month: currentMonth });
-    return 1;
-  }
-  entry.count++;
-  return entry.count;
+async function incrementStoreGenCount(storeUuid: string, currentCount: number): Promise<number> {
+  if (!DRUPAL_API || !storeUuid) return currentCount + 1;
+  const newCount = currentCount + 1;
+  try {
+    const writeHeaders = await drupalWriteHeaders();
+    await fetch(`${DRUPAL_API}/jsonapi/commerce_store/online/${storeUuid}`, {
+      method: "PATCH",
+      headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+      body: JSON.stringify({
+        data: {
+          type: "commerce_store--online", id: storeUuid,
+          attributes: { field_monthly_gen_count: newCount, field_gen_count_month: getMonthKey() },
+        },
+      }),
+    });
+  } catch (err) { console.error("[generate] Failed to update gen count:", err); }
+  return newCount;
 }
 
 export async function POST(req: NextRequest) {
@@ -57,10 +75,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Invalid product type. Use: ${validTypes.join(", ")}` }, { status: 400 });
   }
 
-  // Check monthly generation limit
-  const currentGenCount = getGenCount(userId);
+  // Check monthly generation limit (Drupal-backed)
+  const storeSlug = (token.storeSlug as string) || (token.xUsername as string) || "";
+  const { count: currentGenCount, storeUuid } = await getStoreGenCount(storeSlug);
   if (currentGenCount >= FREE_GENERATION_LIMIT) {
-    // Over limit — for now allow but flag. Block when Stripe micropayment is wired.
     console.log(`[generate] ${token.xUsername} at ${currentGenCount + 1} generations (over ${FREE_GENERATION_LIMIT} free limit, $0.25 fee applies)`);
   }
 
@@ -85,7 +103,7 @@ export async function POST(req: NextRequest) {
       numVariants
     );
 
-    const newCount = incrementGenCount(userId);
+    const newCount = await incrementStoreGenCount(storeUuid || "", currentGenCount);
     const freeRemaining = Math.max(FREE_GENERATION_LIMIT - newCount, 0);
 
     return NextResponse.json({
