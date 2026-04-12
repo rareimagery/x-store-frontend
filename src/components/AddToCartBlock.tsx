@@ -243,7 +243,13 @@ export default function AddToCartBlock({
       {/* Secondary actions */}
       <div className="flex gap-3">
         {!isDigital && (
-          <button className="flex-1 rounded-full border-2 border-zinc-900 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-900 hover:text-white">
+          <button
+            onClick={async () => {
+              await handleAddToCart();
+              window.location.href = "/cart";
+            }}
+            className="flex-1 rounded-full border-2 border-zinc-900 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-900 hover:text-white"
+          >
             Buy Now
           </button>
         )}
