@@ -255,7 +255,20 @@ const WIKI_SECTIONS: WikiSection[] = [
 ];
 
 export default function PublicWikiClient() {
+  const [sections, setSections] = useState(WIKI_SECTIONS);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  // Fetch latest content from Drupal (falls back to hardcoded defaults)
+  useEffect(() => {
+    fetch("/api/public-wiki")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.sections && Array.isArray(d.sections) && d.sections.length > 0) {
+          setSections(d.sections);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -282,7 +295,7 @@ export default function PublicWikiClient() {
           <p className="text-[10px] text-zinc-500 mt-1">Platform Wiki</p>
         </div>
         <div className="space-y-0.5">
-          {WIKI_SECTIONS.map((s) => (
+          {sections.map((s) => (
             <a
               key={s.id}
               href={`#${s.id}`}
@@ -307,7 +320,7 @@ export default function PublicWikiClient() {
           </p>
         </div>
 
-        {WIKI_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <section key={section.id} id={section.id} className="wiki-section mb-8">
             <h2 className="text-lg font-bold text-white mb-3 pb-2 border-b border-zinc-800">
               {section.title}

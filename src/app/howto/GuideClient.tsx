@@ -217,7 +217,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // Load saved overrides
+  // Load saved overrides (manual admin edits)
   useEffect(() => {
     fetch("/api/guide")
       .then((r) => r.json())
@@ -226,6 +226,19 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
+    // Load agent-generated howto updates
+    fetch("/api/public-howto")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.sections && Array.isArray(d.sections) && d.sections.length > 0) {
+          const agentOverrides: Record<string, string> = {};
+          for (const s of d.sections) {
+            if (s.id && s.content) agentOverrides[s.id] = s.content;
+          }
+          setOverrides((prev) => ({ ...agentOverrides, ...prev }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const saveEdits = useCallback(async () => {

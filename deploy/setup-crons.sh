@@ -27,11 +27,14 @@ CRON_JOBS=$(cat <<EOF
 
 # Frontend agent — every 6 hours offset (store page checks + revalidation)
 0 2,8,14,20 * * * curl -sf -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/frontend-agent > /dev/null 2>&1
+
+# Docs update — every 12 hours (Grok AI rewrites public wiki + howto)
+0 0,12 * * * curl -sf -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/docs-update > /dev/null 2>&1
 EOF
 )
 
 # Append to user's crontab (preserving existing non-rareimagery entries)
-(crontab -l 2>/dev/null | grep -v "rareimagery\|code-audit\|wiki-update\|x-money-watcher\|api-agent\|frontend-agent"; echo "$CRON_JOBS") | crontab -
+(crontab -l 2>/dev/null | grep -v "rareimagery\|code-audit\|wiki-update\|x-money-watcher\|api-agent\|frontend-agent\|docs-update"; echo "$CRON_JOBS") | crontab -
 
 echo "Cron jobs installed:"
 crontab -l | grep -A1 "RareImagery"
@@ -42,5 +45,6 @@ echo "  wiki-update:     0, 4, 8, 12, 16, 20 UTC"
 echo "  x-money-watcher: 6, 18 UTC"
 echo "  api-agent:       1, 7, 13, 19 UTC"
 echo "  frontend-agent:  2, 8, 14, 20 UTC"
+echo "  docs-update:     0, 12 UTC"
 echo ""
 echo "Done."
