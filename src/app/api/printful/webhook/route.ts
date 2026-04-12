@@ -4,13 +4,36 @@ import type { PrintfulWebhookPayload } from "@/lib/printful";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 
+// Printful webhook source IPs (from Printful docs)
+// https://developers.printful.com/docs/#section/Webhooks
+const PRINTFUL_IPS = new Set([
+  "52.23.110.209",
+  "52.4.180.57",
+  "52.204.219.111",
+]);
+
+function getRequestIP(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    ""
+  );
+}
+
 /**
  * POST /api/printful/webhook
- * Receives webhook events from Printful. No auth header — Printful
- * just POSTs to this URL. We process the event and update Drupal accordingly.
+ * Receives webhook events from Printful. Validates source IP against
+ * Printful's known IPs. Processes events and updates Drupal.
  */
 export async function POST(req: NextRequest) {
   try {
+    // Validate source — log warning if IP is unknown but don't block
+    // (Printful may add new IPs, and we're behind Cloudflare/Nginx)
+    const sourceIP = getRequestIP(req);
+    if (sourceIP && !PRINTFUL_IPS.has(sourceIP)) {
+      console.warn(`[printful-webhook] Request from unknown IP: ${sourceIP} (may be proxy/CDN)`);
+    }
+
     const payload: PrintfulWebhookPayload = await req.json();
     const { type, data } = payload;
 

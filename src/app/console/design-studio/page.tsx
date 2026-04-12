@@ -100,6 +100,9 @@ export default function DesignStudioPage() {
     if (!hasStore) return;
     fetch(`/api/printful/status?slug=${encodeURIComponent(storeSlug || "")}`)
       .then(r => r.json()).then(d => { if (d.store_uuid) setStoreUuid(d.store_uuid); if (d.connected) setPrintfulConnected(d.printful_store_id ? `Store #${d.printful_store_id}` : "Connected"); }).catch(() => {});
+    // Fetch current generation count from Drupal
+    fetch(`/api/stores/gen-count?slug=${encodeURIComponent(storeSlug || "")}`)
+      .then(r => r.json()).then(d => { if (d.count != null) { setGenCount(d.count); setGenRemaining(Math.max(100 - d.count, 0)); } }).catch(() => {});
   }, [hasStore, storeSlug]);
 
   const handleFileSelect = (file: File) => {
