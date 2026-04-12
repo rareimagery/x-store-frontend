@@ -2,7 +2,12 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
-import { getAllCreatorProfiles, CreatorProfile } from "@/lib/drupal";
+import { getAllCreatorProfiles, CreatorProfile, getCreatorProfile, getProductsByStoreSlug, DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
+import { getPublishedBuilds } from "@/lib/drupalBuilds";
+import WireframeRenderer from "@/components/builder/WireframeRenderer";
+import type { FavoriteCreator, XArticle, MusicTrack, XCommunity, GrokGalleryItem, SocialFeedAccount } from "@/components/builder/WireframeRenderer";
+import type { WireframeLayout } from "@/components/builder/WireframeBuilder";
+import StoreNav from "@/components/StoreNav";
 import AuthButton from "@/components/AuthButton";
 
 // Hero background — hardcoded from @RareImagery's X profile
@@ -141,13 +146,50 @@ export default async function LandingPage() {
   let creators: CreatorProfile[] = [];
   try {
     creators = await getAllCreatorProfiles();
-  } catch {
-    // Drupal unreachable at build time — render empty grid
-  }
+  } catch {}
 
   const approvedCreators = creators.filter(
     (c) => c.store_status === "approved"
   );
+
+  // Fetch "rare" store content to embed below the hero
+  const STORE_SLUG = "rare";
+  const [rareProfile, rareProducts, rareBuilds, rareStoreData] = await Promise.all([
+    getCreatorProfile(STORE_SLUG, { noStore: true }).catch(() => null),
+    getProductsByStoreSlug(STORE_SLUG).catch(() => []),
+    getPublishedBuilds(STORE_SLUG).catch(() => []),
+    (async () => {
+      try {
+        const res = await fetch(
+          `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${STORE_SLUG}&fields[commerce_store--online]=field_my_favorites,field_x_articles,field_music_player,field_x_communities,field_grok_gallery,field_social_feeds`,
+          { headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" }, cache: "no-store" }
+        );
+        if (!res.ok) return { favorites: [] as FavoriteCreator[], articles: [] as XArticle[], musicTracks: [] as MusicTrack[], communities: [] as XCommunity[], grokGallery: [] as GrokGalleryItem[], socialFeeds: [] as SocialFeedAccount[] };
+        const json = await res.json();
+        const attrs = json.data?.[0]?.attributes ?? {};
+        let favorites: FavoriteCreator[] = [], articles: XArticle[] = [], musicTracks: MusicTrack[] = [], communities: XCommunity[] = [], grokGallery: GrokGalleryItem[] = [], socialFeeds: SocialFeedAccount[] = [];
+        try { favorites = JSON.parse(attrs.field_my_favorites || "[]"); } catch {}
+        try { articles = JSON.parse(attrs.field_x_articles || "[]"); } catch {}
+        try { musicTracks = JSON.parse(attrs.field_music_player || "[]"); } catch {}
+        try { communities = JSON.parse(attrs.field_x_communities || "[]"); } catch {}
+        try { grokGallery = JSON.parse(attrs.field_grok_gallery || "[]"); } catch {}
+        try { socialFeeds = JSON.parse(attrs.field_social_feeds || "[]"); } catch {}
+        return { favorites, articles, musicTracks, communities, grokGallery, socialFeeds };
+      } catch { return { favorites: [] as FavoriteCreator[], articles: [] as XArticle[], musicTracks: [] as MusicTrack[], communities: [] as XCommunity[], grokGallery: [] as GrokGalleryItem[], socialFeeds: [] as SocialFeedAccount[] }; }
+    })(),
+  ]);
+
+  // Check for published wireframe
+  let rareWireframe: { layout: WireframeLayout; colorScheme?: string; pageBackground?: string } | null = null;
+  for (const build of rareBuilds) {
+    try {
+      const parsed = JSON.parse(build.code);
+      if (parsed?.schemaVersion === 1 && parsed?.type === "wireframe" && parsed?.layout) {
+        rareWireframe = { layout: parsed.layout, colorScheme: parsed.colorScheme, pageBackground: parsed.pageBackground };
+        break;
+      }
+    } catch {}
+  }
 
 
   return (
@@ -373,27 +415,78 @@ export default async function LandingPage() {
         )}
       </section>
 
-      {/* ── CTA Banner ── */}
-      <section className="border-t border-zinc-800/60">
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Ready to launch your store?
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-zinc-400">
-            Connect your X account. Grok AI analyzes your audience and builds
-            your site. You&apos;re live.
-          </p>
-          <Link
-            href="/signup"
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-500 hover:to-purple-500"
-          >
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            Start with X — it&apos;s free
-          </Link>
-        </div>
-      </section>
+      {/* ── Rare's Store Content ── */}
+      {rareProfile && (
+        <section className="border-t border-zinc-800/60">
+          <StoreNav creator={STORE_SLUG} />
+          {rareWireframe ? (
+            <div className="pt-14">
+              <WireframeRenderer
+                layout={rareWireframe.layout}
+                profile={rareProfile}
+                products={rareProducts}
+                favorites={rareStoreData.favorites}
+                articles={rareStoreData.articles}
+                musicTracks={rareStoreData.musicTracks}
+                communities={rareStoreData.communities}
+                grokGallery={rareStoreData.grokGallery}
+                socialFeeds={rareStoreData.socialFeeds}
+                colorScheme={rareWireframe.colorScheme}
+                pageBackground={rareWireframe.pageBackground}
+                basePath={STORE_SLUG}
+              />
+            </div>
+          ) : (
+            <div className="pt-14 pb-16">
+              {/* Fallback: profile header + products */}
+              <div className="relative h-48 sm:h-64 w-full bg-zinc-900 overflow-hidden">
+                {rareProfile.banner_url && (
+                  <img src={rareProfile.banner_url} alt="" className="h-full w-full object-cover" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+              </div>
+              <div className="relative mx-auto max-w-2xl px-4 sm:px-6">
+                <div className="-mt-16 sm:-mt-20 flex flex-col items-center text-center">
+                  <div className="h-28 w-28 sm:h-36 sm:w-36 rounded-full border-4 border-zinc-950 overflow-hidden bg-zinc-800">
+                    {rareProfile.profile_picture_url && (
+                      <img src={rareProfile.profile_picture_url} alt={`@${rareProfile.x_username}`} className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-white">
+                    {rareProfile.title || `@${rareProfile.x_username}`}
+                  </h2>
+                  <a href={`https://x.com/${rareProfile.x_username}`} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-indigo-400 hover:text-indigo-300">
+                    @{rareProfile.x_username}
+                  </a>
+                  {rareProfile.bio && (
+                    <p className="mt-4 max-w-md text-sm text-zinc-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: rareProfile.bio.replace(/<[^>]*>/g, "") }} />
+                  )}
+                </div>
+              </div>
+              {rareProducts.length > 0 && (
+                <div className="mx-auto max-w-4xl px-6 mt-12">
+                  <h3 className="text-xl font-bold text-white mb-6 text-center">Shop</h3>
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+                    {rareProducts.slice(0, 6).map((p) => (
+                      <Link key={p.id} href={`/products/${p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} className="group rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden transition hover:border-zinc-600">
+                        {p.image_url ? (
+                          <div className="aspect-square overflow-hidden bg-zinc-800"><img src={p.image_url} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" /></div>
+                        ) : (
+                          <div className="aspect-square flex items-center justify-center bg-zinc-800 text-zinc-700"><svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>
+                        )}
+                        <div className="p-3">
+                          <h4 className="text-sm font-medium text-white truncate">{p.title}</h4>
+                          <p className="mt-1 text-sm font-semibold text-indigo-400">${parseFloat(p.price).toFixed(2)}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Footer ── */}
       <footer className="border-t border-zinc-800 py-8 text-center text-sm text-zinc-600">
