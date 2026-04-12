@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { generateDesign, generateDesignWithContext } from "@/lib/grok-imagine";
+import { generateBackground, generateBackgroundWithContext, refineBackground } from "@/lib/grok-imagine";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
-const designLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
+const bgLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
 
 export const maxDuration = 60;
 
@@ -28,8 +28,7 @@ async function getStoreGenCount(storeSlug: string): Promise<{ count: number; sto
     const store = json.data?.[0];
     if (!store) return { count: 0, storeUuid: null };
     const month = store.attributes?.field_gen_count_month || "";
-    const currentMonth = getMonthKey();
-    if (month !== currentMonth) return { count: 0, storeUuid: store.id };
+    if (month !== getMonthKey()) return { count: 0, storeUuid: store.id };
     return { count: store.attributes?.field_monthly_gen_count || 0, storeUuid: store.id };
   } catch { return { count: 0, storeUuid: null }; }
 }
@@ -49,7 +48,7 @@ async function incrementStoreGenCount(storeUuid: string, currentCount: number): 
         },
       }),
     });
-  } catch (err) { console.error("[generate] Failed to update gen count:", err); }
+  } catch (err) { console.error("[generate-background] Failed to update gen count:", err); }
   return newCount;
 }
 
@@ -60,65 +59,46 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = (token.xId as string) || (token.sub as string) || "anon";
-  const rl = designLimit(userId);
+  const rl = bgLimit(userId);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs);
 
-  const { prompt, product_type, reference_image, variants: reqVariants, use_creator_context } = await req.json();
+  const { prompt, n: reqN, refineUrl, use_creator_context } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
     return NextResponse.json({ error: "Prompt must be at least 3 characters" }, { status: 400 });
   }
 
-  const productType = product_type || "t_shirt";
-  const validTypes = ["t_shirt", "hoodie", "ballcap", "pet_bandana", "pet_hoodie", "digital_drop"];
-  if (!validTypes.includes(productType)) {
-    return NextResponse.json({ error: `Invalid product type. Use: ${validTypes.join(", ")}` }, { status: 400 });
-  }
-
-  // Check monthly generation limit (Drupal-backed)
   const storeSlug = (token.storeSlug as string) || (token.xUsername as string) || "";
   const { count: currentGenCount, storeUuid } = await getStoreGenCount(storeSlug);
   if (currentGenCount >= FREE_GENERATION_LIMIT) {
-    console.log(`[generate] ${token.xUsername} at ${currentGenCount + 1} generations (over ${FREE_GENERATION_LIMIT} free limit, $0.25 fee applies)`);
+    console.log(`[generate-background] ${token.xUsername} at ${currentGenCount + 1} generations (over free limit)`);
   }
-
-  // Resolve reference image (data URL or HTTPS URL)
-  let referenceDataUrl: string | undefined;
-  if (reference_image && typeof reference_image === "string") {
-    if (reference_image.startsWith("data:image/") && reference_image.length <= 6 * 1024 * 1024) {
-      referenceDataUrl = reference_image;
-    } else if (reference_image.startsWith("https://")) {
-      referenceDataUrl = reference_image;
-    }
-  }
-
-  const numVariants = Math.min(Math.max(Number(reqVariants) || 4, 1), 4);
 
   try {
-    const xUsername = token.xUsername as string;
-    const result = use_creator_context
-      ? await generateDesignWithContext(prompt.trim(), productType, xUsername, referenceDataUrl, numVariants)
-      : await generateDesign(prompt.trim(), productType, xUsername, referenceDataUrl, numVariants);
+    let result;
+    if (refineUrl && typeof refineUrl === "string" && refineUrl.startsWith("https://")) {
+      result = await refineBackground(refineUrl, prompt.trim());
+    } else {
+      const numVariants = Math.min(Math.max(Number(reqN) || 4, 1), 4);
+      const xUsername = token.xUsername as string;
+      if (use_creator_context && xUsername) {
+        result = await generateBackgroundWithContext(prompt.trim(), xUsername, numVariants);
+      } else {
+        result = await generateBackground(prompt.trim(), numVariants);
+      }
+    }
 
     const newCount = await incrementStoreGenCount(storeUuid || "", currentGenCount);
     const freeRemaining = Math.max(FREE_GENERATION_LIMIT - newCount, 0);
 
     return NextResponse.json({
-      success: true,
-      image_url: result.url,
       image_urls: result.urls,
-      used_pfp: result.usedPfp,
-      used_upload: result.usedUpload,
-      used_edits: result.usedEdits,
-      pfp_username: result.pfpUsername,
-      product_type: productType,
-      original_prompt: prompt.trim(),
+      created: result.created,
       generation_count: newCount,
       generations_remaining: freeRemaining,
-      generation_fee_applies: newCount > FREE_GENERATION_LIMIT,
     });
   } catch (err: any) {
-    console.error("[design-studio] Generate failed:", err);
+    console.error("[generate-background] Failed:", err);
     const msg = String(err?.message || "");
     const isUpstreamDown =
       msg.includes("temporarily unavailable") ||
@@ -127,10 +107,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: isUpstreamDown
-          ? "The AI image generator (Grok Imagine) is temporarily unavailable. Please try again in a few minutes."
-          : msg || "Image generation failed",
+          ? "Grok Imagine is temporarily unavailable. Please try again in a few minutes."
+          : msg || "Background generation failed",
       },
-      { status: 503 }
+      { status: isUpstreamDown ? 503 : 500 }
     );
   }
 }

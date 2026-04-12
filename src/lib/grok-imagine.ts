@@ -5,7 +5,7 @@
 // Always uses grok-imagine-image-pro
 // ---------------------------------------------------------------------------
 
-import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
+import { DRUPAL_API_URL, drupalAuthHeaders, getCreatorProfile } from "@/lib/drupal";
 import { upgradeProfileImageUrl } from "@/lib/x-api/utils";
 
 const XAI_API_URL = "https://api.x.ai/v1/images/generations";
@@ -142,4 +142,193 @@ export async function generateDesign(
     usedEdits: hasReference,
     pfpUsername,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Background generation — wraps core API for page builder backgrounds
+// ---------------------------------------------------------------------------
+
+const BACKGROUND_SUFFIX =
+  "wide panoramic background image, 1920x1080 aspect ratio, no text, no logos, no people, no objects in foreground, seamless wallpaper suitable for a dark website, subtle and non-distracting";
+
+export interface BackgroundResult {
+  urls: string[];
+  created: number;
+}
+
+export async function generateBackground(prompt: string, n: number = 4): Promise<BackgroundResult> {
+  if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
+
+  const fullPrompt = `${prompt.trim()}, ${BACKGROUND_SUFFIX}`;
+
+  const body = {
+    model: "grok-imagine-image-pro",
+    prompt: fullPrompt,
+    n: Math.min(Math.max(n, 1), 4),
+    response_format: "url" as const,
+  };
+
+  console.log("[grok-imagine] background generation", { promptPreview: fullPrompt.slice(0, 100) });
+
+  const res = await fetch(XAI_API_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${XAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Grok Imagine error ${res.status}: ${err?.error?.message || JSON.stringify(err).slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const urls: string[] = (data.data ?? []).map((d: any) => d.url).filter(Boolean);
+  if (urls.length === 0) throw new Error("Grok returned no images");
+
+  return { urls, created: data.created };
+}
+
+export async function refineBackground(imageUrl: string, prompt: string): Promise<BackgroundResult> {
+  if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
+
+  const fullPrompt = `${prompt.trim()}, ${BACKGROUND_SUFFIX}`;
+
+  const body = {
+    model: "grok-imagine-image-pro",
+    prompt: fullPrompt,
+    image: { url: imageUrl, type: "image_url" },
+    n: 1,
+    response_format: "url" as const,
+  };
+
+  console.log("[grok-imagine] background refinement", { promptPreview: fullPrompt.slice(0, 100) });
+
+  const res = await fetch(XAI_EDIT_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${XAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Grok Edit error ${res.status}: ${err?.error?.message || JSON.stringify(err).slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const urls: string[] = (data.data ?? []).map((d: any) => d.url).filter(Boolean);
+  if (urls.length === 0) throw new Error("Grok returned no images");
+
+  return { urls, created: data.created };
+}
+
+// ---------------------------------------------------------------------------
+// Creator X Context — pulls stored profile data for personalized generation
+// ---------------------------------------------------------------------------
+
+export interface CreatorXContext {
+  pfpUrl: string | null;
+  bannerUrl: string | null;
+  bio: string;
+  recentPostsSummary: string;
+  topThemes: string[];
+}
+
+export async function getCreatorXContext(username: string): Promise<CreatorXContext | null> {
+  try {
+    const profile = await getCreatorProfile(username, { noStore: true });
+    if (!profile) return null;
+
+    const bio = (profile.bio || "").replace(/<[^>]*>/g, "").trim();
+    const postTexts = (profile.top_posts || [])
+      .slice(0, 8)
+      .map((p) => p.text)
+      .filter(Boolean);
+    const themes = profile.metrics?.top_themes || [];
+
+    return {
+      pfpUrl: profile.profile_picture_url,
+      bannerUrl: profile.banner_url,
+      bio,
+      recentPostsSummary: postTexts.join(" | ").slice(0, 500),
+      topThemes: themes,
+    };
+  } catch (err) {
+    console.error("[grok-imagine] Failed to fetch creator context:", err);
+    return null;
+  }
+}
+
+export async function generateBackgroundWithContext(
+  prompt: string,
+  username: string,
+  n: number = 4
+): Promise<BackgroundResult> {
+  const ctx = await getCreatorXContext(username);
+
+  let enhancedPrompt = prompt.trim();
+  if (ctx && (ctx.bio || ctx.topThemes.length > 0)) {
+    const vibeHints: string[] = [];
+    if (ctx.bio) vibeHints.push(`Creator brand: ${ctx.bio.slice(0, 150)}`);
+    if (ctx.topThemes.length > 0) vibeHints.push(`Content themes: ${ctx.topThemes.slice(0, 5).join(", ")}`);
+    enhancedPrompt = `${enhancedPrompt}. ${vibeHints.join(". ")}`;
+  }
+
+  // Use banner as reference if available (Edit API preserves composition)
+  if (ctx?.bannerUrl) {
+    const fullPrompt = `${enhancedPrompt}, ${BACKGROUND_SUFFIX}`;
+    if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
+
+    const body = {
+      model: "grok-imagine-image-pro",
+      prompt: fullPrompt,
+      image: { url: ctx.bannerUrl, type: "image_url" },
+      n: Math.min(Math.max(n, 1), 4),
+      response_format: "url" as const,
+    };
+
+    console.log("[grok-imagine] background with creator context + banner ref", {
+      username,
+      promptPreview: fullPrompt.slice(0, 100),
+    });
+
+    const res = await fetch(XAI_EDIT_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${XAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const urls: string[] = (data.data ?? []).map((d: any) => d.url).filter(Boolean);
+      if (urls.length > 0) return { urls, created: data.created };
+    }
+    // Fall through to standard generation if edit fails
+    console.warn("[grok-imagine] Banner reference edit failed, falling back to standard generation");
+  }
+
+  return generateBackground(enhancedPrompt, n);
+}
+
+export async function generateDesignWithContext(
+  prompt: string,
+  productType: string,
+  username: string,
+  referenceImageDataUrl?: string,
+  variants: number = 4
+): Promise<GrokImageResult> {
+  const ctx = await getCreatorXContext(username);
+
+  let enhancedPrompt = prompt;
+  if (ctx && (ctx.bio || ctx.topThemes.length > 0)) {
+    const vibeHints: string[] = [];
+    if (ctx.bio) vibeHints.push(`Creator brand: ${ctx.bio.slice(0, 150)}`);
+    if (ctx.topThemes.length > 0) vibeHints.push(`Themes: ${ctx.topThemes.slice(0, 5).join(", ")}`);
+    enhancedPrompt = `${prompt.trim()}. ${vibeHints.join(". ")}`;
+  }
+
+  // Use PFP as reference when no other reference provided and prompt mentions brand/style
+  const brandKeywords = /\b(my style|my brand|my vibe|my aesthetic|personal|branded)\b/i;
+  const ref = referenceImageDataUrl || (brandKeywords.test(prompt) && ctx?.pfpUrl ? ctx.pfpUrl : undefined);
+
+  return generateDesign(enhancedPrompt, productType, username, ref, variants);
 }

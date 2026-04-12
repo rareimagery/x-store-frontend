@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BlockComponentDef } from "@/app/api/blocks/route";
 import { getStoreUrl } from "@/lib/store-url";
+import BackgroundGenerator from "./BackgroundGenerator";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -255,32 +256,6 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
   // Color scheme + page background
   const [colorScheme, setColorScheme] = useState("midnight");
   const [pageBackground, setPageBackground] = useState("");
-  const [uploadingBg, setUploadingBg] = useState(false);
-  // Grok background generator
-  const [bgPrompt, setBgPrompt] = useState("");
-  const [bgGenerating, setBgGenerating] = useState(false);
-  const [bgVariants, setBgVariants] = useState<string[]>([]);
-  const [bgError, setBgError] = useState("");
-
-  const handleGenerateBg = async () => {
-    if (!bgPrompt.trim() || bgGenerating) return;
-    setBgGenerating(true); setBgError(""); setBgVariants([]);
-    try {
-      const res = await fetch("/api/design-studio/generate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: `${bgPrompt.trim()}, wide panoramic background image, 1920x1080 aspect ratio, no text, no logos, no people, no objects in foreground, seamless wallpaper suitable for a dark website, subtle and non-distracting`,
-          product_type: "digital_drop",
-          variants: 4,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setBgError(data.error || "Generation failed"); return; }
-      const urls: string[] = data.image_urls || [data.image_url];
-      setBgVariants(urls);
-      if (urls[0]) setPageBackground(urls[0]);
-    } catch { setBgError("Generation failed"); } finally { setBgGenerating(false); }
-  };
 
   // Fetch block catalog + load existing builds
   useEffect(() => {
@@ -574,6 +549,12 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
   return (
     <>
+    {/* Grok Background Generator — above the builder */}
+    <BackgroundGenerator
+      currentBackground={pageBackground}
+      onBackgroundChange={(url) => setPageBackground(url)}
+    />
+
     <div className="flex h-[calc(100vh-12rem)] bg-zinc-950 text-white">
       {/* Block Palette */}
       <div className="w-56 shrink-0 border-r border-zinc-800 bg-zinc-900/80 overflow-y-auto p-3">
@@ -606,9 +587,20 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
       </div>
 
       {/* 3-Column Wireframe Canvas */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 relative"
+        style={pageBackground ? {
+          backgroundImage: `url(${pageBackground})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        } : undefined}
+      >
+        {/* Dark overlay so blocks remain readable over background */}
+        {pageBackground && (
+          <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+        )}
         {/* Top bar */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between relative z-10">
           <div>
             <h2 className="text-sm font-semibold text-zinc-300">Page Layout</h2>
             <p className="text-xs text-zinc-600">
@@ -640,7 +632,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
 
         {/* Touch placement hint */}
         {touchPendingType && (
-          <div className="mb-3 flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-950/30 px-4 py-2">
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-950/30 px-4 py-2 relative z-10">
             <p className="text-xs text-indigo-300">
               Tap a column below to place <strong>{catalog.find((c) => c.type === touchPendingType)?.label || touchPendingType}</strong>
             </p>
@@ -654,7 +646,7 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
         )}
 
         {/* Wireframe Grid */}
-        <div className="flex gap-3 min-h-[600px]">
+        <div className="flex gap-3 min-h-[600px] relative z-10">
           {(["center", "right"] as const).map((column) => (
             <div
               key={column}
@@ -785,106 +777,6 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
       )}
     </div>
 
-    {/* Grok Background Generator — below the builder */}
-    <div className="border-t border-zinc-800 bg-zinc-900/80 px-6 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">
-        <svg className="inline h-3.5 w-3.5 mr-1 -mt-0.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-        Page Background — Grok Imagine
-      </p>
-
-      {/* Prompt input */}
-      <div className="flex gap-2 mb-2">
-        <input
-          type="text"
-          value={bgPrompt}
-          onChange={(e) => setBgPrompt(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && bgPrompt.trim() && !bgGenerating && handleGenerateBg()}
-          placeholder="Describe your background... e.g. 'dark purple nebula with stars'"
-          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
-        />
-        <button
-          onClick={handleGenerateBg}
-          disabled={bgGenerating || !bgPrompt.trim()}
-          className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition flex items-center gap-1.5"
-        >
-          {bgGenerating ? (
-            <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Generating...</>
-          ) : (
-            <><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>Generate</>
-          )}
-        </button>
-      </div>
-
-      {/* Quick presets */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {["Dark nebula", "Abstract waves", "Geometric grid", "City night bokeh", "Deep ocean", "Smoke & ember", "Minimal gradient", "Northern lights"].map((preset) => (
-          <button
-            key={preset}
-            onClick={() => setBgPrompt(preset.toLowerCase())}
-            className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-purple-300 transition"
-          >
-            {preset}
-          </button>
-        ))}
-      </div>
-
-      {bgError && <p className="text-[10px] text-red-400 mb-2">{bgError}</p>}
-
-      {/* Generated variants */}
-      {bgVariants.length > 0 && (
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          {bgVariants.map((url, i) => (
-            <button
-              key={i}
-              onClick={() => setPageBackground(url)}
-              className={`rounded-lg border overflow-hidden transition ${
-                pageBackground === url
-                  ? "border-purple-500 ring-1 ring-purple-500/50"
-                  : "border-zinc-700 hover:border-zinc-500"
-              }`}
-            >
-              <img src={url} alt={`Background ${i + 1}`} className="h-16 w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Current background + actions */}
-      <div className="flex items-center gap-2">
-        {pageBackground && (
-          <div className="flex items-center gap-2 flex-1">
-            <img src={pageBackground} alt="Current" className="h-8 w-14 rounded object-cover border border-zinc-700" />
-            <span className="text-[10px] text-zinc-500">Active background</span>
-            <button onClick={() => setPageBackground("")} className="text-[10px] text-zinc-600 hover:text-red-400 transition">Remove</button>
-          </div>
-        )}
-        <label className="rounded-lg border border-zinc-700 px-3 py-1.5 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white cursor-pointer transition flex items-center gap-1.5">
-          {uploadingBg ? (
-            <svg className="h-3 w-3 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-          ) : (
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-          )}
-          Upload
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file || file.size > 5 * 1024 * 1024) return;
-              setUploadingBg(true);
-              try {
-                const formData = new FormData();
-                formData.append("file", file);
-                const res = await fetch("/api/upload", { method: "POST", body: formData });
-                const data = await res.json();
-                if (res.ok && data.url) setPageBackground(data.url);
-              } catch {} finally { setUploadingBg(false); }
-            }}
-          />
-        </label>
-      </div>
-    </div>
     </>
   );
 }
