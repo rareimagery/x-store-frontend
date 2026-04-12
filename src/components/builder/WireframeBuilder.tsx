@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { BlockComponentDef } from "@/app/api/blocks/route";
-import { COLOR_SCHEME_OPTIONS, PAGE_BACKGROUNDS } from "@/lib/color-schemes";
 import { getStoreUrl } from "@/lib/store-url";
 
 /* ------------------------------------------------------------------ */
@@ -257,6 +256,31 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
   const [colorScheme, setColorScheme] = useState("midnight");
   const [pageBackground, setPageBackground] = useState("");
   const [uploadingBg, setUploadingBg] = useState(false);
+  // Grok background generator
+  const [bgPrompt, setBgPrompt] = useState("");
+  const [bgGenerating, setBgGenerating] = useState(false);
+  const [bgVariants, setBgVariants] = useState<string[]>([]);
+  const [bgError, setBgError] = useState("");
+
+  const handleGenerateBg = async () => {
+    if (!bgPrompt.trim() || bgGenerating) return;
+    setBgGenerating(true); setBgError(""); setBgVariants([]);
+    try {
+      const res = await fetch("/api/design-studio/generate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `${bgPrompt.trim()}, wide panoramic background image, 1920x1080 aspect ratio, no text, no logos, no people, no objects in foreground, seamless wallpaper suitable for a dark website, subtle and non-distracting`,
+          product_type: "digital_drop",
+          variants: 4,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setBgError(data.error || "Generation failed"); return; }
+      const urls: string[] = data.image_urls || [data.image_url];
+      setBgVariants(urls);
+      if (urls[0]) setPageBackground(urls[0]);
+    } catch { setBgError("Generation failed"); } finally { setBgGenerating(false); }
+  };
 
   // Fetch block catalog + load existing builds
   useEffect(() => {
@@ -761,81 +785,86 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
       )}
     </div>
 
-    {/* Color Scheme Picker — below the builder */}
+    {/* Grok Background Generator — below the builder */}
     <div className="border-t border-zinc-800 bg-zinc-900/80 px-6 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Page Color Scheme</p>
-      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-        {COLOR_SCHEME_OPTIONS.map((scheme) => (
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">
+        <svg className="inline h-3.5 w-3.5 mr-1 -mt-0.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+        Page Background — Grok Imagine
+      </p>
+
+      {/* Prompt input */}
+      <div className="flex gap-2 mb-2">
+        <input
+          type="text"
+          value={bgPrompt}
+          onChange={(e) => setBgPrompt(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && bgPrompt.trim() && !bgGenerating && handleGenerateBg()}
+          placeholder="Describe your background... e.g. 'dark purple nebula with stars'"
+          className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+        />
+        <button
+          onClick={handleGenerateBg}
+          disabled={bgGenerating || !bgPrompt.trim()}
+          className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white hover:bg-purple-500 disabled:opacity-50 transition flex items-center gap-1.5"
+        >
+          {bgGenerating ? (
+            <><svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Generating...</>
+          ) : (
+            <><svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>Generate</>
+          )}
+        </button>
+      </div>
+
+      {/* Quick presets */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {["Dark nebula", "Abstract waves", "Geometric grid", "City night bokeh", "Deep ocean", "Smoke & ember", "Minimal gradient", "Northern lights"].map((preset) => (
           <button
-            key={scheme.id}
-            onClick={() => setColorScheme(scheme.id)}
-            className={`flex-1 rounded-lg border p-2 text-center transition ${
-              colorScheme === scheme.id
-                ? "border-indigo-500 ring-1 ring-indigo-500/50"
-                : "border-zinc-700 hover:border-zinc-600"
-            }`}
+            key={preset}
+            onClick={() => setBgPrompt(preset.toLowerCase())}
+            className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-purple-300 transition"
           >
-            <div className="flex justify-center gap-1 mb-1.5">
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.bg }} />
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.accent }} />
-              <div className="h-4 w-4 rounded-full border border-zinc-600" style={{ backgroundColor: scheme.colors.text }} />
-            </div>
-            <p className="text-[9px] text-zinc-400">{scheme.label}</p>
+            {preset}
           </button>
         ))}
       </div>
 
-      {/* Page Background Picker */}
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3 mt-4">Page Background</p>
-      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-        {PAGE_BACKGROUNDS.map((bg) => (
-          <button
-            key={bg.id}
-            onClick={() => setPageBackground(bg.id === "none" ? "" : bg.url)}
-            className={`flex-1 rounded-lg border overflow-hidden transition ${
-              (bg.id === "none" && !pageBackground) || pageBackground === bg.url
-                ? "border-indigo-500 ring-1 ring-indigo-500/50"
-                : "border-zinc-700 hover:border-zinc-600"
-            }`}
-          >
-            {bg.thumbnail ? (
-              <img src={bg.thumbnail} alt={bg.label} className="h-12 w-full object-cover" />
-            ) : (
-              <div className="h-12 w-full bg-zinc-800 flex items-center justify-center">
-                <svg className="h-4 w-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                </svg>
-              </div>
-            )}
-            <p className="text-[9px] text-zinc-400 py-1 text-center">{bg.label}</p>
-          </button>
-        ))}
+      {bgError && <p className="text-[10px] text-red-400 mb-2">{bgError}</p>}
 
-        {/* Custom upload */}
-        <label
-          className={`flex-1 rounded-lg border overflow-hidden transition cursor-pointer ${
-            pageBackground && !PAGE_BACKGROUNDS.some((bg) => bg.url === pageBackground)
-              ? "border-indigo-500 ring-1 ring-indigo-500/50"
-              : "border-zinc-700 hover:border-zinc-600"
-          }`}
-        >
-          {pageBackground && !PAGE_BACKGROUNDS.some((bg) => bg.url === pageBackground) ? (
-            <img src={pageBackground} alt="Custom" className="h-12 w-full object-cover" />
+      {/* Generated variants */}
+      {bgVariants.length > 0 && (
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {bgVariants.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => setPageBackground(url)}
+              className={`rounded-lg border overflow-hidden transition ${
+                pageBackground === url
+                  ? "border-purple-500 ring-1 ring-purple-500/50"
+                  : "border-zinc-700 hover:border-zinc-500"
+              }`}
+            >
+              <img src={url} alt={`Background ${i + 1}`} className="h-16 w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Current background + actions */}
+      <div className="flex items-center gap-2">
+        {pageBackground && (
+          <div className="flex items-center gap-2 flex-1">
+            <img src={pageBackground} alt="Current" className="h-8 w-14 rounded object-cover border border-zinc-700" />
+            <span className="text-[10px] text-zinc-500">Active background</span>
+            <button onClick={() => setPageBackground("")} className="text-[10px] text-zinc-600 hover:text-red-400 transition">Remove</button>
+          </div>
+        )}
+        <label className="rounded-lg border border-zinc-700 px-3 py-1.5 text-[10px] text-zinc-400 hover:border-purple-500 hover:text-white cursor-pointer transition flex items-center gap-1.5">
+          {uploadingBg ? (
+            <svg className="h-3 w-3 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
           ) : (
-            <div className="h-12 w-full bg-zinc-800 flex items-center justify-center">
-              {uploadingBg ? (
-                <svg className="h-4 w-4 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : (
-                <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                </svg>
-              )}
-            </div>
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
           )}
-          <p className="text-[9px] text-zinc-400 py-1 text-center">Upload</p>
+          Upload
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -849,14 +878,8 @@ export default function WireframeBuilder({ storeSlug, initialLayout, onChange }:
                 formData.append("file", file);
                 const res = await fetch("/api/upload", { method: "POST", body: formData });
                 const data = await res.json();
-                if (res.ok && data.url) {
-                  setPageBackground(data.url);
-                }
-              } catch {
-                // Upload failed silently
-              } finally {
-                setUploadingBg(false);
-              }
+                if (res.ok && data.url) setPageBackground(data.url);
+              } catch {} finally { setUploadingBg(false); }
             }}
           />
         </label>
