@@ -30,3 +30,7 @@ yarn-error.log*
 .idea/
 .DS_Store
 x-store-frontend/
+
+# Docker
+docker/db-init/*.sql
+.env.docker

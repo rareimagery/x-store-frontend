@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  # PostgreSQL 16 — matches production VPS
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: drupaldb
+      POSTGRES_USER: drupal
+      POSTGRES_PASSWORD: drupal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drupal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Drupal 11 + PHP 8.3 + Nginx
+  drupal:
+    build:
+      context: ./docker/drupal
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../rareimage_back:/var/www/html
+      - drupal_files:/var/www/html/web/sites/default/files
+    environment:
+      - DRUPAL_DB_HOST=db
+      - DRUPAL_DB_PORT=5432
+      - DRUPAL_DB_NAME=drupaldb
+      - DRUPAL_DB_USER=drupal
+      - DRUPAL_DB_PASS=drupal
+
+  # Next.js 16 frontend
+  nextjs:
+    build:
+      context: .
+      dockerfile: docker/nextjs/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - drupal
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - .env.docker
+    environment:
+      - WATCHPACK_POLLING=true
+
+  # Local email testing
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  pgdata:
+  drupal_files:
