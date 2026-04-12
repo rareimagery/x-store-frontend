@@ -70,10 +70,8 @@ const WIKI_SECTIONS: WikiSection[] = [
 &bull; <strong>Grok Product Creator</strong> &mdash; AI design tool with Refine, Design Chat, Session History, Mockup Preview (see below)
 &bull; <strong>Products</strong> &mdash; Drag-and-drop product grid with tabs: All Products, Printful, My Uploads. Edit/delete with modal.
 &bull; <strong>Grok Library</strong> &mdash; Saved AI-generated designs with folders. "Use in Studio" button loads design back into Product Creator.
-&bull; <strong>My Subscribers</strong> &mdash; X Creator Subscriber dashboard with stats, search, tier management
 &bull; <strong>My Favorites</strong> &mdash; Drag-and-drop creator curation with @dnd-kit
 &bull; <strong>Social Feeds</strong> &mdash; Connect TikTok, Instagram, YouTube accounts
-&bull; <strong>Music</strong> &mdash; Spotify + Apple Music playlist builder
 
 <strong>Store section (dropdown):</strong>
 &bull; Orders, Shipping, Accounting, Printful, Settings
@@ -199,11 +197,16 @@ const WIKI_SECTIONS: WikiSection[] = [
     title: "Page Builder",
     content: `<strong>Layout:</strong> 2-column wireframe &mdash; Main Content (3/4 width) + Right Sidebar (1/4 width)
 
-<strong>Block Types (10):</strong> Product Grid, Pinned Post, Social Feed, Music Player, Grok Gallery, TikTok, Instagram, YouTube, My Favorites, Top Followers
+<strong>Block Types (9):</strong> Product Grid, Pinned Post, Social Feed, Grok Gallery, TikTok, Instagram, YouTube, My Favorites, Top Followers
 
-<strong>Color Schemes (10):</strong> Midnight, Ocean, Forest, Sunset, Royal, Cherry, Arctic, Ember, Slate, Neon
+<strong>Color Schemes (10):</strong> Midnight, Ocean, Forest, Sunset, Royal, Cherry, Arctic, Ember, Slate, Neon (controls text/accent contrast)
 
-<strong>Page Backgrounds (9):</strong> Nature, Mountain, Space, Ocean Waves, City Night, Desert, Aurora, Abstract + custom upload
+<strong>Background Generator (Grok Imagine):</strong> AI-generated backgrounds replace static presets. Creators type a prompt, Grok generates 4 variants, and the selected background fills the wireframe canvas in real time. Features:
+&bull; 6 quick presets (Dark Gradient, Nebula, Abstract Waves, Geometric, City Night, Nature Dark)
+&bull; "Match my X vibe" toggle &mdash; uses creator's X banner + bio as reference for personalized backgrounds
+&bull; Refine button &mdash; tweak selected background via Grok Edit API (costs 1 generation)
+&bull; File upload fallback for custom images
+&bull; Generation counter shown inline
 
 <strong>Storage:</strong> Layouts saved as JSON to Drupal via /api/builds. Published builds render on the public creator page at {slug}.rareimagery.net.`,
   },

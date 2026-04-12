@@ -411,7 +411,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
               {[
                 { icon: "\uD83C\uDFEA", title: "Your own storefront", desc: "Your own subdomain at yourname.rareimagery.net, styled however you want." },
                 { icon: "\uD83E\uDD16", title: "AI-assisted setup", desc: "Your X profile auto-fills your store info, bio, and product ideas." },
-                { icon: "\uD83C\uDFA8", title: "10 color schemes", desc: "Customize your look with color schemes, backgrounds, and drag-and-drop layout." },
+                { icon: "\uD83C\uDFA8", title: "AI backgrounds", desc: "Generate custom backgrounds with Grok Imagine. 10 color schemes + drag-and-drop layout." },
                 { icon: "\uD83D\uDCB8", title: "Automatic payouts", desc: "When someone buys from you, money goes directly to your account." },
                 { icon: "\uD83D\uDCE6", title: "Print-on-demand", desc: "Sell merch without keeping inventory \u2014 we handle printing and shipping." },
                 { icon: "\uD83D\uDD10", title: "Invite-only access", desc: "You need an invite code from the RareImagery team to get started." },
@@ -513,7 +513,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <h3>Step 2 &mdash; Creator profile</h3>
             <p>Your X data is already here. Review and edit your bio, check that your profile photo and banner look right. You&apos;ll also see AI-suggested product ideas based on your posts and audience.</p>
             <h3>Step 3 &mdash; Customize your look</h3>
-            <p>Pick a color scheme and page background for your storefront. You can choose from 10 color schemes and 9 background presets, or upload your own custom background image. You can always change this later from the Page Building editor.</p>
+            <p>Pick a color scheme for your storefront. You can generate a custom AI background using Grok Imagine, or upload your own image. You can always change this later from the Page Building editor.</p>
             <h3>Step 4 &mdash; Add products (optional)</h3>
             <p>You can add products now or skip this and do it later. Your store goes into review once you hit Submit &mdash; you don&apos;t need products to get approved.</p>
             <h3>Step 5 &mdash; Submitted!</h3>
@@ -585,7 +585,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <span className="g-arrow">&#9654;</span>
           </summary>
           <div className="g-body">
-            <p>Your storefront&apos;s look is controlled through the <strong>Page Building</strong> editor. You choose a color scheme, a page background, and arrange content blocks in a drag-and-drop layout.</p>
+            <p>Your storefront&apos;s look is controlled through the <strong>Page Building</strong> editor. You choose a color scheme, generate an AI background with Grok Imagine, and arrange content blocks in a drag-and-drop layout.</p>
 
             <h3>Color schemes</h3>
             <p>Choose from 10 color schemes that control all text, borders, accents, and surfaces across your page:</p>
@@ -613,10 +613,10 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             </div>
 
             <h3>Page backgrounds</h3>
-            <p>Add a background image to your storefront. Choose from 9 presets (Nature, Mountain, Space, Ocean Waves, City Night, Desert, Aurora, Abstract) or upload your own custom image.</p>
+            <p>Generate a custom background with <strong>Grok Imagine</strong>. Type a prompt (e.g. &quot;dark cosmic nebula&quot;), and Grok generates 4 background variants. Pick your favorite and it fills your storefront. You can also upload your own image. Enable &quot;Match my X vibe&quot; to use your X banner and bio as reference for personalized results.</p>
 
             <h3>How to change your look</h3>
-            <p>Go to <strong>Console &rarr; Page Building</strong>. The color scheme and background selectors are at the top of the editor. Changes save when you publish your layout.</p>
+            <p>Go to <strong>Console &rarr; Page Building</strong>. The Background Generator is at the top of the editor, color schemes control text and accent colors. Changes save when you publish your layout.</p>
 
             <Callout type="tip" icon="&#10022;">
               <strong>Drag-and-drop layout</strong> The Page Building editor lets you arrange content blocks (products, posts, galleries, music, etc.) into a two-column layout: Main Content and Right Sidebar. No coding needed.
@@ -645,10 +645,8 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
                 <tr><td><strong>Grok Product Creator</strong></td><td>AI design tool powered by Grok. Generate designs for 6 product types (T-Shirt, Hoodie, Ballcap, Pet Bandana, Pet Hoodie, Digital Drop). Upload images for Grok to edit. Set your own price and publish directly to Printful.</td></tr>
                 <tr><td><strong>Products</strong></td><td>View and manage all your products in one place. Three tabs: All Products (everything), Printful (synced from Printful with pricing and profit), My Uploads (products you&apos;ve added manually).</td></tr>
                 <tr><td><strong>Grok Library</strong></td><td>Your AI-generated designs organized in folders with save/manage</td></tr>
-                <tr><td><strong>My Subscribers</strong></td><td>View your X Creator Subscribers who have signed in to RareImagery. See stats, manage tiers, and track growth.</td></tr>
                 <tr><td><strong>My Favorites</strong></td><td>Curate favorite X creators into drag-and-drop category columns for your public page</td></tr>
                 <tr><td><strong>Social Feeds</strong></td><td>Connect TikTok, Instagram, and YouTube accounts</td></tr>
-                <tr><td><strong>Music</strong></td><td>Add Spotify and Apple Music tracks to your storefront</td></tr>
                 <tr><td><strong>Store</strong></td><td>Orders, shipping, accounting, Printful connection, and store settings</td></tr>
               </tbody>
             </table>

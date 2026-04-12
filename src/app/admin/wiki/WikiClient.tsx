@@ -88,13 +88,8 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 • Page Building — Drag-and-drop wireframe editor (Main Content + Right Sidebar)
 • Grok Product Creator — AI design studio with Grok + Exact+Text engines, 6 product types (see below)
 • Grok Library — AI-generated designs with folders, drag-drop upload, "Use in Studio" button (closed-loop back to Product Creator with image + prompt pre-loaded)
-• My Subscribers — X Creator Subscriber dashboard: stats, search, tier management. Captures subscribers when they sign in via X OAuth.
-• Creator Collections — Drag-and-drop creator curation with @dnd-kit. Drag creators between category columns, auto-saves to Drupal.
+• My Favorites — Drag-and-drop creator curation with @dnd-kit
 • Social Feeds — Connect TikTok, Instagram, YouTube accounts
-• Music — Spotify + Apple Music playlist builder
-• X Communities — Showcase X Communities
-• X Articles — Import long-form X articles
-• X Spaces — Live and scheduled X Spaces
 
 <strong>Grok Product Creator (/console/design-studio):</strong>
 Chat-first design interface. Grok chat assistant at top (full context awareness), input tools below, then product + engine selectors.
@@ -172,14 +167,14 @@ Customer pays → Platform Stripe receives → application_fee deducted → tran
     title: "Page Builder (Wireframe System)",
     content: `<strong>Layout:</strong> 2-column — Main Content (3/4 width) + Right Sidebar (1/4 width). Left sidebar removed.
 
-<strong>Block Types (13):</strong>
-Product Grid, Pinned Post, Social Feed, Music Player, X Articles, Grok Gallery, X Communities, TikTok, Instagram, YouTube, My Favorites, Top Followers, X Spaces
+<strong>Block Types (9):</strong>
+Product Grid, Pinned Post, Social Feed, Grok Gallery, TikTok, Instagram, YouTube, My Favorites, Top Followers
 
 <strong>Compact Mode:</strong> Right sidebar blocks receive compact=true — people blocks show 2-across, image blocks show 1-across.
 
 <strong>Color Schemes (10):</strong> Midnight, Ocean, Forest, Sunset, Royal, Cherry, Arctic, Ember, Slate, Neon
 
-<strong>Page Backgrounds (9):</strong> Nature, Mountain, Space, Ocean Waves, City Night, Desert, Aurora, Abstract + custom upload
+<strong>Background Generator (Grok Imagine):</strong> AI-generated backgrounds. Prompt + 4 variants + Refine. "Match my X vibe" toggle uses creator's banner + bio. Replaces static Unsplash presets.
 
 <strong>Storage:</strong> Layouts saved as JSON documents to Drupal via /api/builds. Published builds render on the public creator page.`,
   },
