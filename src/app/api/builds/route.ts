@@ -37,7 +37,7 @@ function pruneBuildsForInsert(builds: StoredBuild[], maxBuilds: number): StoredB
 
 function normalizeStoreSlug(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null;
-  const normalized = value.trim().replace(/^@+/, "").toLowerCase();
+  const normalized = value.trim().replace(/^@+/, "");
   return normalized.length > 0 ? normalized : null;
 }
 

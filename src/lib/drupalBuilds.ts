@@ -244,21 +244,37 @@ export async function getPublishedBuilds(storeSlug: string): Promise<Build[]> {
   return all.filter((b) => b.published === true);
 }
 
-/** Resolve the JSON:API UUID for a store given its slug */
+/** Resolve the JSON:API UUID for a store given its slug or X username */
 async function resolveStoreUuid(slug: string): Promise<string | null> {
+  // Try by store slug first
   const res = await fetch(
     `${DRUPAL_API_URL}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(slug)}&fields[commerce_store--online]=field_page_builds`,
     {
-      headers: {
-        ...drupalAuthHeaders(),
-        Accept: "application/vnd.api+json",
-      },
+      headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" },
       cache: "no-store",
     }
   );
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.data?.[0]?.id ?? null;
+  if (res.ok) {
+    const json = await res.json();
+    const uuid = json.data?.[0]?.id;
+    if (uuid) return uuid;
+  }
+
+  // Fallback: slug might be an X username — resolve via profile → linked store
+  const profileRes = await fetch(
+    `${DRUPAL_API_URL}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(slug)}&include=field_linked_store`,
+    {
+      headers: { ...drupalAuthHeaders(), Accept: "application/vnd.api+json" },
+      cache: "no-store",
+    }
+  );
+  if (profileRes.ok) {
+    const pJson = await profileRes.json();
+    const storeRef = pJson.data?.[0]?.relationships?.field_linked_store?.data;
+    if (storeRef?.id) return storeRef.id;
+  }
+
+  return null;
 }
 
 async function fetchRawBuildFieldByUuid(uuid: string): Promise<string | null> {
