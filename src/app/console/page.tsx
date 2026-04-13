@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useConsole } from "@/components/ConsoleContext";
-import GuideClient from "@/app/howto/GuideClient";
+import { redirect } from "next/navigation";
 
 export default function ConsoleDashboard() {
   const { hasStore, role } = useConsole();
@@ -30,9 +30,5 @@ export default function ConsoleDashboard() {
     );
   }
 
-  return (
-    <div className="-mx-4 sm:-mx-6 -mt-4">
-      <GuideClient embedded />
-    </div>
-  );
+  redirect("/console/my-page");
 }
