@@ -52,21 +52,22 @@ function StepIcon({ done }: { done: boolean }) {
 export default function MyPage() {
   const { hasStore, storeSlug, xUsername } = useConsole();
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const [favorites, setFavorites] = useState<FavoriteCreator[]>([]);
+  const [visitedStudio, setVisitedStudio] = useState(false);
+  const [hasPublishedBuild, setHasPublishedBuild] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    const slug = storeSlug || "";
+    setVisitedStudio(localStorage.getItem("ri_visited_studio") === "1");
     Promise.all([
       fetch("/api/console/insights").then(r => r.ok ? r.json() : null).catch(() => null),
-      slug ? fetch(`/api/stores/products?storeSlug=${encodeURIComponent(slug)}`).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })) : Promise.resolve({ products: [] }),
       fetch("/api/favorites").then(r => r.ok ? r.json() : { favorites: [] }).catch(() => ({ favorites: [] })),
-    ]).then(([profileData, prodData, favData]) => {
+      fetch("/api/builds").then(r => r.ok ? r.json() : { builds: [] }).catch(() => ({ builds: [] })),
+    ]).then(([profileData, favData, buildData]) => {
       if (profileData) setProfile(profileData);
-      setProducts(prodData.products || prodData || []);
       setFavorites(favData.favorites || []);
+      setHasPublishedBuild((buildData.builds || []).some((b: any) => b.published));
     }).finally(() => setLoading(false));
   }, [storeSlug]);
 
@@ -87,13 +88,16 @@ export default function MyPage() {
     );
   }
 
+  const markStudioVisited = () => { localStorage.setItem("ri_visited_studio", "1"); setVisitedStudio(true); };
+
   // Completion checks
   const step1Done = !!(profile?.profilePictureUrl && profile?.bio && profile?.topPosts?.length > 0);
   const step2Done = !!storeSlug;
-  const step3Done = Array.isArray(products) && products.length > 0;
-  const step4Done = favorites.length > 0;
-  const allDone = step1Done && step2Done && step3Done && step4Done;
-  const completedCount = [step1Done, step2Done, step3Done, step4Done].filter(Boolean).length;
+  const step3Done = favorites.length > 0;
+  const step4Done = visitedStudio;
+  const step5Done = hasPublishedBuild;
+  const allDone = step1Done && step2Done && step3Done && step4Done && step5Done;
+  const completedCount = [step1Done, step2Done, step3Done, step4Done, step5Done].filter(Boolean).length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -105,7 +109,7 @@ export default function MyPage() {
         <p className="text-xs text-zinc-500 mt-1">
           {allDone
             ? `Your store is live at ${getStoreDisplayUrl(storeSlug || "")}`
-            : `${completedCount} of 4 steps complete`}
+            : `${completedCount} of 5 steps complete`}
         </p>
       </div>
 
@@ -114,7 +118,7 @@ export default function MyPage() {
         <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-500 transition-all duration-500"
-            style={{ width: `${(completedCount / 4) * 100}%` }}
+            style={{ width: `${(completedCount / 5) * 100}%` }}
           />
         </div>
       )}
@@ -256,59 +260,14 @@ export default function MyPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* STEP 3: Create Products                                      */}
+      {/* STEP 3: Add Favorites                                        */}
       {/* ============================================================ */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-4">
           <StepIcon done={step3Done} />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-white">Step 3: Create Your First Product</p>
+            <p className="text-sm font-semibold text-white">Step 3: Add Favorite Creators</p>
             {step3Done ? (
-              <p className="text-[10px] text-zinc-500">{products.length} product{products.length !== 1 ? "s" : ""} in your store</p>
-            ) : (
-              <p className="text-[10px] text-zinc-500">Use Grok AI to design merch or upload your own products</p>
-            )}
-          </div>
-          <Link
-            href="/console/design-studio"
-            className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
-              step3Done
-                ? "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"
-                : "bg-purple-600 text-white hover:bg-purple-500"
-            }`}
-          >
-            {step3Done ? "Create More" : "Go to Grok Product Creator"}
-          </Link>
-        </div>
-
-        {/* Product thumbnails when complete */}
-        {step3Done && products.length > 0 && (
-          <div className="px-5 pb-4 flex gap-2 overflow-x-auto">
-            {products.slice(0, 6).map((p) => (
-              <div key={p.id} className="shrink-0 w-16">
-                <div className="h-16 w-16 rounded-lg bg-zinc-800 border border-zinc-700/50 overflow-hidden">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600">No img</div>
-                  )}
-                </div>
-                <p className="text-[9px] text-zinc-500 truncate mt-1">{p.title}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ============================================================ */}
-      {/* STEP 4: Add Favorites                                        */}
-      {/* ============================================================ */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-        <div className="flex items-center gap-3 px-5 py-4">
-          <StepIcon done={step4Done} />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-white">Step 4: Add Favorite Creators</p>
-            {step4Done ? (
               <p className="text-[10px] text-zinc-500">{favorites.length} creator{favorites.length !== 1 ? "s" : ""} in your favorites</p>
             ) : (
               <p className="text-[10px] text-zinc-500">Showcase creators you love on your storefront</p>
@@ -317,17 +276,16 @@ export default function MyPage() {
           <Link
             href="/console/favorite-creators"
             className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
-              step4Done
+              step3Done
                 ? "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"
                 : "bg-indigo-600 text-white hover:bg-indigo-500"
             }`}
           >
-            {step4Done ? "Manage" : "Go to My Favorites"}
+            {step3Done ? "Manage" : "Go to My Favorites"}
           </Link>
         </div>
 
-        {/* Favorite PFP row when complete */}
-        {step4Done && favorites.length > 0 && (
+        {step3Done && favorites.length > 0 && (
           <div className="px-5 pb-4 flex items-center gap-1.5">
             {favorites.slice(0, 8).map((f) => (
               <div key={f.username} className="h-8 w-8 rounded-full bg-zinc-800 border border-zinc-700/50 overflow-hidden shrink-0" title={`@${f.username}`}>
@@ -341,6 +299,82 @@ export default function MyPage() {
             {favorites.length > 8 && (
               <span className="text-[10px] text-zinc-600 ml-1">+{favorites.length - 8} more</span>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* STEP 4: Explore Grok Product Creator (not mandatory)         */}
+      {/* ============================================================ */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <StepIcon done={step4Done} />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">Step 4: Explore Grok Product Creator</p>
+            {step4Done ? (
+              <p className="text-[10px] text-zinc-500">You&apos;ve visited the Product Creator</p>
+            ) : (
+              <p className="text-[10px] text-zinc-500">See how AI designs merch and digital products for your store</p>
+            )}
+          </div>
+          <Link
+            href="/console/design-studio"
+            onClick={markStudioVisited}
+            className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+              step4Done
+                ? "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"
+                : "bg-purple-600 text-white hover:bg-purple-500"
+            }`}
+          >
+            {step4Done ? "Open Studio" : "Explore Product Creator"}
+          </Link>
+        </div>
+        {!step4Done && (
+          <div className="px-5 pb-4">
+            <div className="rounded-lg bg-zinc-800/40 border border-zinc-700/30 p-3 space-y-2">
+              <p className="text-[11px] text-zinc-400 leading-relaxed">The Grok Product Creator uses AI to generate print-ready designs. Products are optional — your store works great without them. When you&apos;re ready:</p>
+              <ul className="text-[11px] text-zinc-500 space-y-1 ml-3">
+                <li>1. Choose a product type (T-Shirt, Hoodie, Ballcap, etc.)</li>
+                <li>2. Describe your design in a prompt</li>
+                <li>3. Grok generates 4 variants — pick your favorite</li>
+                <li>4. Set your price and publish to Printful</li>
+              </ul>
+              <p className="text-[10px] text-zinc-600">100 free AI generations per month.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* STEP 5: Build Your Page                                      */}
+      {/* ============================================================ */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <StepIcon done={step5Done} />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">Step 5: Build Your Page</p>
+            {step5Done ? (
+              <p className="text-[10px] text-zinc-500">Your page layout is published at {getStoreDisplayUrl(storeSlug || "")}</p>
+            ) : (
+              <p className="text-[10px] text-zinc-500">Design your storefront with drag-and-drop blocks and AI backgrounds</p>
+            )}
+          </div>
+          <Link
+            href="/console/page-building"
+            className={`rounded-lg px-4 py-2 text-xs font-medium transition ${
+              step5Done
+                ? "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"
+                : "bg-purple-600 text-white hover:bg-purple-500"
+            }`}
+          >
+            {step5Done ? "Edit Layout" : "Go to Page Builder"}
+          </Link>
+        </div>
+        {!step5Done && (
+          <div className="px-5 pb-4">
+            <div className="rounded-lg bg-zinc-800/40 border border-zinc-700/30 p-3">
+              <p className="text-[11px] text-zinc-400 leading-relaxed">Drag content blocks into your layout, generate an AI background with Grok Imagine, and choose a color scheme. Click <strong className="text-zinc-300">Save &amp; Publish</strong> when you&apos;re happy with it.</p>
+            </div>
           </div>
         )}
       </div>
