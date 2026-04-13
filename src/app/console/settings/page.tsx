@@ -26,11 +26,6 @@ export default function SettingsPage() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [showSlugChange, setShowSlugChange] = useState(false);
-  const [newSlug, setNewSlug] = useState("");
-  const [slugChecking, setSlugChecking] = useState(false);
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
-  const [changingSlug, setChangingSlug] = useState(false);
 
   useEffect(() => {
     if (!hasStore) return;
@@ -80,26 +75,6 @@ export default function SettingsPage() {
     } catch { setError("Sync failed"); } finally { setSyncing(false); }
   }, [followers, following, postCount, verified]);
 
-  const checkSlug = useCallback(async (slug: string) => {
-    if (slug.length < 3) { setSlugAvailable(null); return; }
-    setSlugChecking(true);
-    try {
-      const res = await fetch(`/api/stores/check-slug?slug=${encodeURIComponent(slug)}`);
-      const d = await res.json();
-      setSlugAvailable(d.available);
-    } catch { setSlugAvailable(null); } finally { setSlugChecking(false); }
-  }, []);
-
-  const handleChangeSlug = useCallback(async () => {
-    if (!slugAvailable || !newSlug.trim()) return;
-    setChangingSlug(true); setError(null);
-    try {
-      const res = await fetch("/api/stores/change-slug", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newSlug: newSlug.trim().toLowerCase() }) });
-      const d = await res.json();
-      if (res.ok && d.success) { window.location.reload(); }
-      else { setError(d.error || "Change failed"); }
-    } catch { setError("Change failed"); } finally { setChangingSlug(false); }
-  }, [newSlug, slugAvailable]);
 
   if (!hasStore) return <div className="py-12 text-center text-zinc-500">Create a store first to manage settings.</div>;
   if (loading) return <div className="py-12 text-center text-zinc-500">Loading...</div>;
@@ -129,7 +104,10 @@ export default function SettingsPage() {
             <label className="block text-xs font-medium text-zinc-500 mb-1">Subdomain</label>
             <div className="flex items-center gap-2">
               <a href={getStoreUrl(storeSlug || "")} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:text-indigo-300">{getStoreDisplayUrl(storeSlug || "")}</a>
-              <button onClick={() => setShowSlugChange(!showSlugChange)} className="text-[10px] text-zinc-500 hover:text-indigo-400 transition">Change</button>
+              <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+                Permanent
+              </span>
             </div>
           </div>
           <div>
@@ -140,27 +118,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {showSlugChange && (
-          <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 p-4 space-y-3">
-            <p className="text-xs text-amber-400 font-medium">Change your subdomain</p>
-            <p className="text-[10px] text-amber-500">Warning: your old subdomain will stop working. Any shared links will break.</p>
-            <div className="flex items-center gap-0">
-              <input type="text" value={newSlug} onChange={(e) => { const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""); setNewSlug(v); setSlugAvailable(null); if (v.length >= 3) checkSlug(v); }} placeholder="new-slug" className="flex-1 rounded-l-lg border border-r-0 border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
-              <span className="rounded-r-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-500">.rareimagery.net</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                {slugChecking && <span className="text-[10px] text-zinc-500">Checking...</span>}
-                {slugAvailable === true && <span className="text-[10px] text-green-400">Available</span>}
-                {slugAvailable === false && <span className="text-[10px] text-red-400">Taken</span>}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => { setShowSlugChange(false); setNewSlug(""); }} className="text-xs text-zinc-500 hover:text-white">Cancel</button>
-                <button onClick={handleChangeSlug} disabled={changingSlug || !slugAvailable} className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-500 disabled:opacity-50 transition">{changingSlug ? "Changing..." : "Change Subdomain"}</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* X Profile */}

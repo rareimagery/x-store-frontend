@@ -399,7 +399,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
           <div className="g-body">
             <p>Your X profile does most of the work. AI analyzes your bio, posts, and aesthetic to suggest products, themes, and a store layout.</p>
             <div className="g-steps">
-              <Step n={1} title="Choose your subdomain" desc="Pick a URL slug for your store (e.g. rare.rareimagery.net). Must be 3+ characters and available." />
+              <Step n={1} title="Choose your subdomain (permanent)" desc="Pick a URL for your store (e.g. rare.rareimagery.net). This is permanent and cannot be changed later. First come, first served. Must be 3+ characters." />
               <Step n={2} title="Review your profile" desc="Your X display name, bio, and profile picture auto-fill. Edit anything you'd like to change." />
               <Step n={3} title="Pick a template" desc="Choose from 5 store templates (Modern Cart, AI Video Store, Latest Posts, Retro, Blank). You can change this later." />
               <Step n={4} title="Your store is live" desc="That's it. Your storefront is accessible at your subdomain immediately. Customize it in the Page Builder." />
