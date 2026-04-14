@@ -189,6 +189,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }
 
+    // Try to verify follow via X API before accepting claim
+    let finalClaimMethod = claimMethod;
+    let followVerified = false;
+    if (claimMethod === "self_claim" && process.env.X_API_BEARER_TOKEN) {
+      try {
+        const { fetchXProfile } = await import("@/lib/x-api");
+        const targetProfile = await fetchXProfile(creatorUsername);
+        if (targetProfile?.data?.id) {
+          const followRes = await fetch(
+            `https://api.x.com/2/users/${targetProfile.data.id}/followers?max_results=1000&user.fields=username`,
+            { headers: { Authorization: `Bearer ${process.env.X_API_BEARER_TOKEN}` }, cache: "no-store" }
+          );
+          if (followRes.ok) {
+            const followData = await followRes.json();
+            const followers = followData.data || [];
+            followVerified = followers.some(
+              (f: any) => f.username?.toLowerCase() === visitorUsername.toLowerCase()
+            );
+            if (followVerified) {
+              finalClaimMethod = "follow_verified";
+            }
+          }
+        }
+      } catch {
+        // Verification failed — still honor the claim
+      }
+    }
+
     // Claim grace period
     const claimRes = await fetch(`${DRUPAL_API_URL}/api/grace-claim`, {
       method: "POST",
@@ -196,13 +224,13 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         visitor_x_id: visitorUsername,
         creator_x_id: creatorUsername,
-        claim_method: claimMethod,
+        claim_method: finalClaimMethod,
       }),
     });
 
     if (claimRes.ok) {
       const claimData = await claimRes.json();
-      return NextResponse.json(claimData);
+      return NextResponse.json({ ...claimData, follow_verified: followVerified });
     }
 
     return NextResponse.json({ error: "Claim failed" }, { status: 502 });
