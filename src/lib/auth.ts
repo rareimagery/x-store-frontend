@@ -517,42 +517,26 @@ export const authOptions: NextAuthOptions = {
         const xUser = (appToken.xUsername || "").toLowerCase();
         appToken.role = adminXUsernames.includes(xUser) ? "admin" : "creator";
 
-        // Resolve store slug + sync X data on login
+        // Resolve store slug + sync X data on login (must await so token gets the slug)
         if (appToken.xUsername) {
           const xUser = appToken.xUsername;
-          (async () => {
-            const existing = await findProfileByUsername(xUser);
-            if (existing) {
-              await triggerDrupalSync(xUser);
-              // Resolve store slug from Drupal (try by username first, then by profile→store link)
-              try {
-                // Try slug = username
-                let slug: string | null = null;
-                const storeRes = await fetch(
-                  `${DRUPAL_API}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(xUser.toLowerCase())}&fields[commerce_store--online]=field_store_slug`,
-                  { headers: { Accept: "application/vnd.api+json" }, cache: "no-store" }
-                );
-                if (storeRes.ok) {
-                  const storeJson = await storeRes.json();
-                  slug = storeJson.data?.[0]?.attributes?.field_store_slug || null;
-                }
-                // Fallback: find store via profile link
-                if (!slug) {
-                  const profileRes = await fetch(
-                    `${DRUPAL_API}/api/creator/profile/${encodeURIComponent(xUser.toLowerCase())}`,
-                    { cache: "no-store" }
-                  );
-                  if (profileRes.ok) {
-                    const profileData = await profileRes.json();
-                    slug = profileData.store_slug || null;
-                  }
-                }
-                if (slug) appToken.storeSlug = slug;
-              } catch {}
+          try {
+            // Resolve store slug first (fast — single Drupal call)
+            const profileRes = await fetch(
+              `${DRUPAL_API}/api/creator/profile/${encodeURIComponent(xUser.toLowerCase())}`,
+              { cache: "no-store" }
+            );
+            if (profileRes.ok) {
+              const profileData = await profileRes.json();
+              if (profileData.store_slug) {
+                appToken.storeSlug = profileData.store_slug;
+              }
             }
-          })().catch((err) =>
-            console.error(`[auth] Drupal sync/slug resolve failed for @${appToken.xUsername}:`, err)
-          );
+            // Trigger sync in background (don't block login)
+            triggerDrupalSync(xUser).catch(() => {});
+          } catch (err) {
+            console.error(`[auth] Store slug resolve failed for @${xUser}:`, err);
+          }
         }
       }
       // Social providers: Facebook, TikTok, Instagram
