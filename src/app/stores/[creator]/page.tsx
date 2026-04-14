@@ -17,6 +17,7 @@ import Sidebar from "@/components/Sidebar";
 import StoreNav from "@/components/StoreNav";
 import BuilderGate from "@/components/builder/BuilderGate";
 import StoreBuildRenderer from "@/components/builder/StoreBuildRenderer";
+import XSubscribeGate from "@/components/XSubscribeGate";
 import StoreRareProjectConversations from "@/components/StoreRareProjectConversations";
 import { getTemplateDefinition } from "@/templates/registry";
 import type { TemplatePreviewProps } from "@/templates/types";
@@ -115,19 +116,21 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <MySpaceTheme
-            profile={profile}
-            products={products}
-            backgroundUrl={profile.myspace_background ?? undefined}
-            musicUrl={profile.myspace_music_url ?? undefined}
-            glitterColor={profile.myspace_glitter_color ?? undefined}
-            accentColor={profile.myspace_accent_color ?? undefined}
-            themeConfig={profile.store_theme_config ?? undefined}
-          />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <MySpaceTheme
+              profile={profile}
+              products={products}
+              backgroundUrl={profile.myspace_background ?? undefined}
+              musicUrl={profile.myspace_music_url ?? undefined}
+              glitterColor={profile.myspace_glitter_color ?? undefined}
+              accentColor={profile.myspace_accent_color ?? undefined}
+              themeConfig={profile.store_theme_config ?? undefined}
+            />
+            <StoreRareProjectConversations creator={creator} />
+            <StoreBuildRenderer builds={publishedBuilds} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -197,10 +200,12 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <StoreBuildRenderer builds={publishedBuilderBuilds} previewData={builderPreviewData} />
-          <StoreRareProjectConversations creator={creator} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <StoreBuildRenderer builds={publishedBuilderBuilds} previewData={builderPreviewData} />
+            <StoreRareProjectConversations creator={creator} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -214,11 +219,13 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <TemplateComponent {...templateProps} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <TemplateComponent {...templateProps} />
+            <StoreRareProjectConversations creator={creator} />
+            <StoreBuildRenderer builds={publishedBuilds} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -228,11 +235,13 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <MinimalTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <MinimalTheme profile={profile} products={products} />
+            <StoreRareProjectConversations creator={creator} />
+            <StoreBuildRenderer builds={publishedBuilds} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -242,11 +251,13 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <NeonTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <NeonTheme profile={profile} products={products} />
+            <StoreRareProjectConversations creator={creator} />
+            <StoreBuildRenderer builds={publishedBuilds} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -256,11 +267,13 @@ export default async function CreatorStorePage({
     return (
       <>
         <StoreNav creator={creator} />
-        <div className="pt-12">
-          <EditorialTheme profile={profile} products={products} />
-          <StoreRareProjectConversations creator={creator} />
-          <StoreBuildRenderer builds={publishedBuilds} />
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="pt-12">
+            <EditorialTheme profile={profile} products={products} />
+            <StoreRareProjectConversations creator={creator} />
+            <StoreBuildRenderer builds={publishedBuilds} />
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -270,20 +283,22 @@ export default async function CreatorStorePage({
     const data = await fetchCreatorData(normalizedCreator);
     return (
       <>
-        <div className="bg-black text-white min-h-screen flex">
-          <Sidebar
-            handle={creator}
-            recentPosts={data?.recentPosts ?? []}
-            profilePictureUrl={profile.profile_picture_url}
-            displayName={profile.title || profile.x_username}
-            productCount={products.length}
-          />
-          <main className="ml-72 flex-1">
-            <XMimicTheme profile={profile} products={products} />
-            <StoreRareProjectConversations creator={creator} />
-            <StoreBuildRenderer builds={publishedBuilds} />
-          </main>
-        </div>
+        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+          <div className="bg-black text-white min-h-screen flex">
+            <Sidebar
+              handle={creator}
+              recentPosts={data?.recentPosts ?? []}
+              profilePictureUrl={profile.profile_picture_url}
+              displayName={profile.title || profile.x_username}
+              productCount={products.length}
+            />
+            <main className="ml-72 flex-1">
+              <XMimicTheme profile={profile} products={products} />
+              <StoreRareProjectConversations creator={creator} />
+              <StoreBuildRenderer builds={publishedBuilds} />
+            </main>
+          </div>
+        </XSubscribeGate>
         <BuilderGate storeSlug={creator} theme={profile.store_theme} />
       </>
     );
@@ -294,11 +309,13 @@ export default async function CreatorStorePage({
   return (
     <>
       <StoreNav creator={creator} />
-      <div className="pt-12">
-        <Xai3Theme profile={profile} products={products} />
-        <StoreRareProjectConversations creator={creator} />
-        <StoreBuildRenderer builds={publishedBuilds} />
-      </div>
+      <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
+        <div className="pt-12">
+          <Xai3Theme profile={profile} products={products} />
+          <StoreRareProjectConversations creator={creator} />
+          <StoreBuildRenderer builds={publishedBuilds} />
+        </div>
+      </XSubscribeGate>
       <BuilderGate storeSlug={creator} theme={profile.store_theme} />
     </>
   );

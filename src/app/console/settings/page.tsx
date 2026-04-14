@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import StripeConnectPanel from "@/components/StripeConnectPanel";
+import XSubscribeGateSettings from "@/components/XSubscribeGateSettings";
 import { getStoreDisplayUrl, getStoreUrl } from "@/lib/store-url";
 
 export default function SettingsPage() {
@@ -167,6 +168,9 @@ export default function SettingsPage() {
           <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
         </div>
       </div>
+
+      {/* X Subscribe Gate */}
+      <XSubscribeGateSettings storeSlug={storeSlug || ""} xUsername={xUsername || ""} />
 
       {/* Payments */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
