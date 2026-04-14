@@ -630,7 +630,11 @@ export default function DesignStudioPage() {
               <button onClick={connectPrintful} disabled={connecting || !printfulKey.trim()} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-500 disabled:opacity-50 transition">{connecting ? "..." : "Connect"}</button>
             </div>
             {connectError && <p className="text-[10px] text-red-400">{connectError}</p>}
-            <button onClick={() => setShowTokenHelp(true)} className="text-[10px] text-indigo-400 hover:text-indigo-300">How to find your token</button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowTokenHelp(true)} className="text-[10px] text-indigo-400 hover:text-indigo-300">How to find your token</button>
+              <a href="https://www.printful.com/dashboard/developer/api" target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-300">Printful Dashboard &rarr;</a>
+              <a href="/console/printful" className="text-[10px] text-zinc-500 hover:text-zinc-300">Manage Printful &rarr;</a>
+            </div>
           </div>
         )}
       </div>
