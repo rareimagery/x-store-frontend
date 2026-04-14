@@ -187,9 +187,27 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* X DM Notifications */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-white">X DM Notifications</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Receive store alerts as X direct messages from @rareimagery</p>
+        </div>
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-zinc-300">Send notifications via X DM</label>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-900/30 px-2.5 py-0.5 text-[10px] font-semibold text-green-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+            Enabled
+          </span>
+        </div>
+        <p className="text-[10px] text-zinc-600">
+          Welcome messages, gate alerts, and sale notifications are sent as X DMs. Email backup is always active for critical notifications.
+        </p>
+      </div>
+
       {/* Notifications */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Notifications</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">Email Notifications</h2>
         <NotificationPreferences />
       </div>
     </div>

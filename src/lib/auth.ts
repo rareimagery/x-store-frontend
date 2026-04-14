@@ -252,7 +252,7 @@ export const authOptions: NextAuthOptions = {
       version: "2.0",
       authorization: {
         params: {
-          scope: "tweet.read users.read follows.read offline.access",
+          scope: "tweet.read users.read follows.read dm.write dm.read offline.access",
         },
       },
       token: {

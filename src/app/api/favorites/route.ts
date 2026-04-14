@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
+import { notifyCreator } from "@/lib/notifications";
 
 const FREE_FAVORITES_LIMIT = 50;
 
@@ -102,6 +103,13 @@ export async function POST(req: NextRequest) {
       } catch {}
 
       if (!platformSubscribed) {
+        // Send gate DM on first hit (fire-and-forget)
+        notifyCreator({
+          type: "gate_favorites",
+          xUsername,
+          storeSlug: slug || "",
+        }).catch(() => {});
+
         return NextResponse.json({
           error: "favorites_gate_locked",
           message: `You've reached the ${FREE_FAVORITES_LIMIT} free favorites limit. Subscribe to @rareimagery on X for unlimited favorites.`,

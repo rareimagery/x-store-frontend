@@ -10,6 +10,8 @@ export { fetchUserTimeline } from "./timeline";
 export { fetchPost } from "./post";
 export { fetchApiUsage } from "./usage";
 export { subscribeCreatorToWebhook, unsubscribeCreator } from "./webhook-subscriptions";
+export { sendDM, sendDMFromPlatform, resolveXId } from "./direct-messages";
+export type { DMSendResult } from "./direct-messages";
 export type {
   XUser,
   XPost,

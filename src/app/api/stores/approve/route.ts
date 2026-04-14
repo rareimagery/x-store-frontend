@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import {
   notifyStoreApproved,
   notifyStoreRejected,
+  notifyCreator,
 } from "@/lib/notifications";
 
 import { drupalAuthHeaders } from "@/lib/drupal";
@@ -91,10 +92,13 @@ export async function PATCH(req: NextRequest) {
       notifyStoreApproved(ownerEmail, storeName, storeSlug, ownerPhone).catch(
         (err) => console.error("Approval notification failed:", err)
       );
+      // Also send DM via X
+      notifyCreator({ type: "approved", xUsername: storeSlug, email: ownerEmail, storeName, storeSlug }).catch(() => {});
     } else if (status === "rejected") {
       notifyStoreRejected(ownerEmail, storeName, ownerPhone).catch((err) =>
         console.error("Rejection notification failed:", err)
       );
+      notifyCreator({ type: "rejected", xUsername: storeSlug, email: ownerEmail, storeName }).catch(() => {});
     }
   }
 

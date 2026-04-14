@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { generateDesign, generateDesignWithContext } from "@/lib/grok-imagine";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { checkAiGate, incrementLifetimeCount, FREE_LIFETIME_LIMIT } from "@/lib/ai-gate";
+import { notifyCreator } from "@/lib/notifications";
 
 const designLimit = createRateLimiter({ limit: 10, windowMs: 60 * 60 * 1000 });
 
@@ -36,6 +37,13 @@ export async function POST(req: NextRequest) {
   const gate = await checkAiGate(storeSlug, xUsername);
 
   if (!gate.canGenerate) {
+    // Send gate DM on first hit (fire-and-forget)
+    notifyCreator({
+      type: "gate_ai",
+      xUsername,
+      storeSlug,
+    }).catch(() => {});
+
     return NextResponse.json({
       error: "ai_gate_locked",
       message: `You've used all ${FREE_LIFETIME_LIMIT} free Grok Imagine designs. Subscribe to @rareimagery on X to unlock unlimited generations.`,

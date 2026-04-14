@@ -237,6 +237,93 @@ export async function notifyStoreRejected(
   }
 }
 
+// ---------------------------------------------------------------------------
+// X DM Notification Dispatcher (DM primary, email fallback)
+// ---------------------------------------------------------------------------
+
+import { sendDMFromPlatform, resolveXId } from "@/lib/x-api/direct-messages";
+
+type NotificationType = "welcome" | "gate_ai" | "gate_favorites" | "sale" | "approved" | "rejected";
+
+interface NotifyCreatorOpts {
+  type: NotificationType;
+  xUsername: string;
+  email?: string;
+  storeName?: string;
+  storeSlug?: string;
+  productName?: string;
+  amount?: string;
+  currency?: string;
+}
+
+const DM_TEMPLATES: Record<NotificationType, (opts: NotifyCreatorOpts) => string> = {
+  welcome: (o) =>
+    `Your @${o.storeSlug || o.xUsername}.rareimagery.net store is live! 🎉\n\nStart designing products with Grok Imagine in your console:\nhttps://www.rareimagery.net/console/design-studio`,
+  gate_ai: (o) =>
+    `You've used your 20 free Grok Imagine designs on @${o.storeSlug || o.xUsername}.rareimagery.net.\n\nSubscribe to @rareimagery on X to unlock unlimited AI generations:\nhttps://x.com/rareimagery/subscribe`,
+  gate_favorites: (o) =>
+    `You've reached 50 favorites on @${o.storeSlug || o.xUsername}.rareimagery.net.\n\nSubscribe to @rareimagery on X for unlimited favorites:\nhttps://x.com/rareimagery/subscribe`,
+  sale: (o) =>
+    `New sale on ${o.storeName || "your store"}! 💰\n\n${o.productName || "Product"} — ${o.currency || "$"}${o.amount || "0"}\n\nView details in your console:\nhttps://www.rareimagery.net/console/orders`,
+  approved: (o) =>
+    `Your store "${o.storeName || o.xUsername}" has been approved and is now live! ✅\n\nVisit: https://${o.storeSlug || o.xUsername}.rareimagery.net`,
+  rejected: (o) =>
+    `We were unable to approve your store "${o.storeName || o.xUsername}" at this time.\n\nReach out to @rareimagery on X if you have questions.`,
+};
+
+/**
+ * Send a notification to a creator — X DM first, email fallback.
+ * Fire-and-forget safe (never throws).
+ */
+export async function notifyCreator(opts: NotifyCreatorOpts): Promise<{ channel: "dm" | "email" | "none"; success: boolean }> {
+  const dmText = DM_TEMPLATES[opts.type]?.(opts);
+  if (!dmText) return { channel: "none", success: false };
+
+  // Try X DM first
+  try {
+    const xId = await resolveXId(opts.xUsername);
+    if (xId) {
+      const result = await sendDMFromPlatform(xId, dmText);
+      if (result.success) {
+        console.log(`[notify] DM sent to @${opts.xUsername} (${opts.type})`);
+        return { channel: "dm", success: true };
+      }
+      console.warn(`[notify] DM failed for @${opts.xUsername}: ${result.error}`);
+    }
+  } catch (err) {
+    console.warn("[notify] DM error:", err);
+  }
+
+  // Fall back to email
+  if (opts.email) {
+    try {
+      const subject = {
+        welcome: `Your store is live on RareImagery!`,
+        gate_ai: `Grok Imagine limit reached`,
+        gate_favorites: `Favorites limit reached`,
+        sale: `New sale on ${opts.storeName || "your store"}`,
+        approved: `Your store "${opts.storeName}" is approved!`,
+        rejected: `Update on your store "${opts.storeName}"`,
+      }[opts.type];
+
+      const sent = await sendEmail({
+        to: opts.email,
+        subject,
+        html: emailWrapper(subject, `<p style="color:#a1a1aa;line-height:1.6">${dmText.replace(/\n/g, "<br>")}</p>`),
+        text: dmText,
+      });
+
+      if (sent) {
+        console.log(`[notify] Email sent to ${opts.email} (${opts.type})`);
+        return { channel: "email", success: true };
+      }
+    } catch {}
+  }
+
+  console.warn(`[notify] All channels failed for @${opts.xUsername} (${opts.type})`);
+  return { channel: "none", success: false };
+}
+
 /** Notify store owner of a new sale. */
 export async function notifyNewSale(
   ownerEmail: string,

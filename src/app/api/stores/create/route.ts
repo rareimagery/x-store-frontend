@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isValidSlug } from "@/lib/slugs";
-import { notifyAdminNewStore } from "@/lib/notifications";
+import { notifyAdminNewStore, notifyCreator } from "@/lib/notifications";
 import { createRateLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 import { getStoreUrl } from "@/lib/store-url";
@@ -149,6 +149,15 @@ export async function POST(req: NextRequest) {
       xUsername,
       ownerEmail || session.user?.email || ""
     ).catch((err) => console.error("Admin notification failed:", err));
+
+    // Welcome DM to creator (fire-and-forget)
+    notifyCreator({
+      type: "welcome",
+      xUsername,
+      email: ownerEmail || session.user?.email || undefined,
+      storeName: storeName || `${xUsername}'s Store`,
+      storeSlug: data.slug || slug,
+    }).catch((err) => console.error("Welcome notification failed:", err));
 
     return NextResponse.json({
       success: true,
