@@ -22,5 +22,5 @@ export default async function BuilderPopupCompatPage({ searchParams }: PageProps
   }
 
   const query = params.toString();
-  redirect(query ? `/builder/new-tab?${query}` : "/builder/new-tab");
+  redirect("/console/page-building");
 }

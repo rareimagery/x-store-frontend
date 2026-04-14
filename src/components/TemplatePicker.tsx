@@ -80,7 +80,7 @@ export default function TemplatePicker({
             await updateTemplate(sellerHandle, selected);
             return {
               success: true,
-              builderUrl: `/builder/new-tab?handle=${encodeURIComponent(sellerHandle)}&template=${encodeURIComponent(selected)}`,
+              builderUrl: `/console/page-building`,
             } satisfies CreateThemeResult;
           })();
 
@@ -89,7 +89,7 @@ export default function TemplatePicker({
           ? null
           :
         result?.builderUrl ||
-        `/builder/new-tab?handle=${encodeURIComponent(sellerHandle)}&template=${encodeURIComponent(selected)}`;
+        `/console/page-building`;
 
       if (result?.success === false) {
         throw new Error(result.error || 'Could not create your theme. Please try again.');

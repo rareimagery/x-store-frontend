@@ -11,7 +11,7 @@ export default async function StoreThemeChatPage({
   const handle = profile?.attributes?.field_x_username?.replace(/^@+/, "");
 
   if (handle) {
-    redirect(`/builder/new-tab?handle=${encodeURIComponent(handle)}`);
+    redirect(`/console/page-building`);
   }
 
   redirect(`/console/stores/${id}`);

@@ -24,7 +24,7 @@ export default function ThemeSelector({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATE_DEFINITIONS.map((template) => {
           const href = normalizedHandle
-            ? `/builder/new-tab?handle=${encodeURIComponent(normalizedHandle)}&template=${template.id}`
+            ? `/console/page-building`
             : null;
 
           return (
