@@ -238,7 +238,6 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
     { group: "Getting started", items: [
       { id: "s-what", icon: "\u2726", label: "What is RareImagery?" },
       { id: "s-signup", icon: "\uD83D\uDD11", label: "Signing in with X" },
-      { id: "s-invite", icon: "\uD83C\uDF9F", label: "Invite codes" },
     ]},
     { group: "Building your store", items: [
       { id: "s-create", icon: "\uD83C\uDFEA", label: "Creating your store" },
@@ -303,10 +302,10 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
         <div className="g-hero">
           <div className="g-hero-eyebrow">Creator Guide</div>
           <EditableText id="hero-title" defaultText="Your store, your rules. Let&rsquo;s get you set up." overrides={overrides} editing={editing} tag="div" className="g-hero-title" />
-          <EditableText id="hero-desc" defaultText="RareImagery is an invite-only marketplace where X creators build subdomain storefronts. AI-powered setup, Grok-designed products, and Stripe payouts &mdash; all from your X profile." overrides={overrides} editing={editing} tag="div" className="g-hero-desc" />
+          <EditableText id="hero-desc" defaultText="RareImagery is a creator commerce platform where X creators build subdomain storefronts. 7-day free trial, AI-powered setup, Grok-designed products, and Stripe payouts &mdash; all from your X profile." overrides={overrides} editing={editing} tag="div" className="g-hero-desc" />
           <div className="g-hero-chips">
             <span className="g-hero-chip">No coding needed</span>
-            <span className="g-hero-chip">Invite-only platform</span>
+            <span className="g-hero-chip">7-day free trial</span>
             <span className="g-hero-chip">Powered by your X profile</span>
           </div>
         </div>
@@ -323,7 +322,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
             <span className="g-arrow">{"\u25B6"}</span>
           </summary>
           <div className="g-body">
-            <p>RareImagery is an <strong>invite-only creator commerce platform</strong> where X (Twitter) creators build subdomain storefronts at <strong>yourname.rareimagery.net</strong>. Sign in with X, and AI does the heavy lifting &mdash; generating products, designing your storefront, and handling fulfillment.</p>
+            <p>RareImagery is a <strong>creator commerce platform</strong> where X (Twitter) creators build subdomain storefronts at <strong>yourname.rareimagery.net</strong>. Sign up with X, get a 7-day free trial, and AI does the heavy lifting &mdash; generating products, designing your storefront, and handling fulfillment.</p>
             <Screenshot label="Screenshot: RareImagery homepage / landing page" />
             <div className="g-features">
               {[
@@ -332,7 +331,7 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
                 { icon: "\uD83C\uDFA8", title: "AI backgrounds", desc: "Generate custom backgrounds with Grok Imagine. Match your X vibe automatically." },
                 { icon: "\uD83D\uDCB8", title: "Direct payouts", desc: "Stripe Connect sends money straight to your account when someone buys." },
                 { icon: "\uD83D\uDC55", title: "Print on demand", desc: "Printful prints, packs, and ships products. No inventory needed." },
-                { icon: "\uD83D\uDD10", title: "Invite only", desc: "Exclusive access via invite codes. Quality over quantity." },
+                { icon: "\uD83D\uDD10", title: "Free trial", desc: "7-day free trial, no credit card required. $4/month after." },
               ].map((f) => (
                 <div className="g-feat" key={f.title}><div className="g-feat-icon">{f.icon}</div><div className="g-feat-title">{f.title}</div><div className="g-feat-desc">{f.desc}</div></div>
               ))}
@@ -365,25 +364,6 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
           </div>
         </details>
 
-        {/* Invite codes */}
-        <details className="g-section" id="s-invite">
-          <summary>
-            <div className="g-sec-icon">{"\uD83C\uDF9F"}</div>
-            <div className="g-sec-meta"><div className="g-sec-label">Invite codes</div><div className="g-sec-sub">How to get and redeem your invite</div></div>
-            <span className="g-arrow">{"\u25B6"}</span>
-          </summary>
-          <div className="g-body">
-            <p>RareImagery is invite-only. You need a code to create your store.</p>
-            <Screenshot label="Screenshot: Invite code entry screen" />
-            <div className="g-steps">
-              <Step n={1} title="Get an invite code" desc="Codes are shared by existing creators or from @RareImagery on X. They look like RARE-XXXXXXXX." />
-              <Step n={2} title="Sign in with X first" desc="You must be signed in before entering your code." />
-              <Step n={3} title="Enter your code" desc="Paste the code during store setup. It's validated instantly." />
-              <Step n={4} title="Code is redeemed" desc="Each code works once. After use, it's marked as redeemed." />
-            </div>
-            <Callout type="info" icon={"\uD83D\uDCA1"}>Follow <a href="https://x.com/RareImagery" target="_blank" rel="noopener noreferrer"><strong>@RareImagery</strong></a> on X for invite drops and announcements.</Callout>
-          </div>
-        </details>
 
         {/* ============================================================ */}
         {/* BUILDING YOUR STORE                                           */}
@@ -670,15 +650,15 @@ export default function GuideClient({ embedded = false }: { embedded?: boolean }
           </summary>
           <div className="g-body">
             {[
-              { q: "How long does approval take?", a: "During beta, stores are approved instantly with a valid invite code." },
-              { q: "Can I change my subdomain?", a: "Yes. Go to Console > Store > Settings > Change Slug. Your old URL will stop working." },
+              { q: "How long does setup take?", a: "Your store goes live immediately after signing up. The 7-day free trial starts right away." },
+              { q: "Can I change my subdomain?", a: "No. Your subdomain is permanent and set during store creation. Choose carefully — first come, first served." },
               { q: "What if a customer doesn't receive their order?", a: "Printful handles all fulfillment. Contact Printful support with the order ID, or reach out to @RareImagery for help." },
               { q: "Do I need to handle shipping myself?", a: "No. Printful prints, packs, and ships directly to the customer. You never touch inventory." },
               { q: "Can I sell things other than Printful products?", a: "Yes. Upload custom products (physical or digital) from the Products page. You handle fulfillment for those." },
               { q: "How often does my X profile sync?", a: "Automatically on every sign-in, plus periodic background syncs. Your store always shows your latest bio and photo." },
               { q: "Can I have multiple stores?", a: "Not yet. One store per X account during beta." },
               { q: "How do I cancel my store?", a: "Contact @RareImagery on X. We'll deactivate your store and subdomain." },
-              { q: "Is my store visible while under review?", a: "During beta, stores go live immediately with an invite code. No review period." },
+              { q: "What happens after my free trial?", a: "After 7 days, subscribe for $4/month to keep your store active. Your content is preserved if you don't subscribe right away." },
               { q: "How many AI generations do I get?", a: "100 free per month. After that, $0.25 per generation. The counter is visible in your Console sidebar." },
             ].map((faq, i) => (
               <div className="g-faq" key={i}><div className="g-faq-q">{faq.q}</div><div className="g-faq-a">{faq.a}</div></div>

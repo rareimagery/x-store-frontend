@@ -66,7 +66,7 @@ async function discoverPlatformState(baseUrl: string) {
     "page-building", "design-studio", "grok-library", "favorite-creators",
     "social-feeds", "music", "communities", "x-articles",
     "products", "orders", "shipping", "accounting", "printful", "settings",
-    "admin", "admin/users", "admin/subscribers", "admin/invites", "cost-dashboard",
+    "admin", "admin/users", "admin/subscribers", "cost-dashboard",
   ];
   const liveConsolePages: string[] = [];
   const consoleProbes = await Promise.all(
@@ -176,7 +176,7 @@ async function discoverPlatformState(baseUrl: string) {
     state.drupalModules = [
       "x_profile_auto_importer", "x_profile_sync",
       "rareimagery_cost_dashboard", "rareimagery_grok_creator_studio",
-      "rareimagery_printful_sync", "rareimagery_invite_gate",
+      "rareimagery_printful_sync",
     ];
   }
 
@@ -223,7 +223,7 @@ ${(state.consolePages || []).map((p: string) => `• /console/${p}`).join("\n")}
 
 <strong>Workspace:</strong> Page Building, Grok Product Creator, Products, Grok Library, My Favorites, Social Feeds
 <strong>Store:</strong> Products, Orders, Shipping, Accounting, Printful, Settings
-<strong>Admin:</strong> All Stores, Users, X Subscribers, Cost Dashboard, Invite Codes`,
+<strong>Admin:</strong> All Stores, Users, X Subscribers, Cost Dashboard`,
     },
     {
       id: "public-pages",
@@ -247,7 +247,7 @@ ${(state.apiRoutes || []).map((r: string) => `• /api/${r}`).join("\n")}
 <strong>Social:</strong> follow, followers, picks, shoutouts, seed-from-x
 <strong>Content:</strong> favorites, favorites/enrich, gallery, gallery/upload, articles, music, communities, social-feeds, blocks, builds
 <strong>Design:</strong> design-studio/generate, design-studio/publish, design-studio/enhance, design-studio/import-post
-<strong>Admin:</strong> invite/admin, guide, admin/wiki
+<strong>Admin:</strong> guide, admin/wiki
 <strong>Cron:</strong> code-audit, wiki-update, x-money-watcher`,
     },
     {
@@ -271,8 +271,7 @@ ${(state.drupalModules || []).map((m: string) => `• ${m}`).join("\n")}
 <strong>x_profile_sync:</strong> X profile lookup/sync REST endpoints
 <strong>rareimagery_cost_dashboard:</strong> Cost tracking, Cloudflare analytics, budget monitoring
 <strong>rareimagery_grok_creator_studio:</strong> Per-creator Grok Imagine usage logging
-<strong>rareimagery_printful_sync:</strong> Server-side Printful product import for all stores
-<strong>rareimagery_invite_gate:</strong> Invite code generation, validation, redemption`,
+<strong>rareimagery_printful_sync:</strong> Server-side Printful product import for all stores`,
     },
     {
       id: "cron-agents",
@@ -328,18 +327,16 @@ ${(state.cronAgents || []).map((a: any) => `• <strong>${a.name}</strong> — $
 <strong>Drupal cache cleared every 6 hours by code-audit agent.`,
     },
     {
-      id: "invites",
-      title: "Invite Code System",
-      content: `<strong>Current inventory:</strong> ${state.totalInvites ?? "?"} total codes, ${state.availableInvites ?? "?"} available, ${state.usedInvites ?? "?"} used
+      id: "subscription",
+      title: "Subscription Model",
+      content: `<strong>Model:</strong> 7-day free trial on signup (no credit card). $4/month after trial.
 
-<strong>Flow:</strong>
-1. Admin generates code at /console/admin/invites (RARE-XXXXXXXX format)
-2. Admin DMs code to X subscriber
-3. User enters code on /signup before OAuth buttons appear
-4. Code validated against Drupal, stored in sessionStorage
-5. After OAuth, code marked as used
+<strong>Plans:</strong>
+&bull; Creator ($4/mo) &mdash; 100 free AI generations/month
+&bull; Creator Pro ($19/mo) &mdash; 500 free AI generations/month
+&bull; Creator Unlimited ($49/mo) &mdash; 2,000 free AI generations/month
 
-<strong>Drupal endpoints:</strong> /api/invite/generate, /api/invite/validate, /api/invite/redeem, /api/invite/list`,
+<strong>Extra generations:</strong> $0.25 each after plan limit`,
     },
     {
       id: "sync-meta",

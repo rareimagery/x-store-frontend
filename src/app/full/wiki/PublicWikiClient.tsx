@@ -31,12 +31,11 @@ const WIKI_SECTIONS: WikiSection[] = [
 <strong>Session:</strong> JWT-based with xUsername, xId, storeSlug, role, providerType
 
 <strong>Access Gates:</strong>
-&bull; <strong>Invite Code:</strong> Signup at /signup requires a RARE-XXXXXXXX invite code validated against Drupal. Codes are single-use, redeemed after store creation.
-&bull; <strong>Subscription:</strong> X Creator Subscription to @RareImagery checked on first login.
+&bull; <strong>Free Trial:</strong> 7-day free trial on signup, no credit card required. $4/month after trial.
 &bull; <strong>Admin:</strong> X accounts listed in ADMIN_X_USERNAMES env var get full admin access.
 
 <strong>Roles:</strong>
-&bull; admin &mdash; Full console + admin panel (stores, users, invites, cost dashboard)
+&bull; admin &mdash; Full console + admin panel (stores, users, cost dashboard)
 &bull; creator &mdash; Console for their own store only
 
 <strong>Callback URL:</strong> https://www.rareimagery.net/api/auth/callback/twitter`,
@@ -46,15 +45,13 @@ const WIKI_SECTIONS: WikiSection[] = [
     title: "Creator Signup Flow",
     content: `<strong>End-to-end flow for a new creator:</strong>
 
-1. Receive invite code from RareImagery team
-2. Go to /signup &rarr; enter invite code &rarr; validated against Drupal
-3. Click "Sign up with X" &rarr; X OAuth 2.0 with PKCE
-4. Subscription check (must subscribe to @RareImagery on X)
-5. Onboarding wizard: verify X profile data, choose subdomain (real-time availability check), pick store template
-6. Store creation: POST /api/stores/create &rarr; Drupal provision endpoint creates user + X profile + Commerce store atomically
-7. Invite code redeemed automatically after store creation
-8. DNS provisioned: {slug}.rareimagery.net goes live
-9. Creator lands in Console at /console
+1. Go to /signup &rarr; click "Start Free Trial with X"
+2. X OAuth 2.0 with PKCE &rarr; authorize RareImagery
+3. Onboarding wizard: verify X profile data, choose subdomain (permanent, first come first served), pick store template
+4. Store creation: POST /api/stores/create &rarr; Drupal provision endpoint creates user + X profile + Commerce store atomically
+5. 7-day free trial starts immediately
+6. DNS provisioned: {slug}.rareimagery.net goes live
+7. Creator lands in Console at /console/my-page (guided onboarding)
 
 <strong>Drupal Provision (atomic):</strong> Single call to POST /api/creator/provision creates:
 &bull; Drupal user with x_creator role
@@ -77,7 +74,7 @@ const WIKI_SECTIONS: WikiSection[] = [
 &bull; Orders, Shipping, Accounting, Printful, Settings
 
 <strong>Platform Admin (admin only):</strong>
-&bull; All Stores, Users, X Subscribers, Cost Dashboard, Invite Codes`,
+&bull; All Stores, Users, X Subscribers, Cost Dashboard`,
   },
   {
     id: "design-studio",
@@ -173,7 +170,6 @@ const WIKI_SECTIONS: WikiSection[] = [
 &bull; <strong>rareimagery_store_provision</strong> &mdash; Atomic user + profile + store creation with audit logging
 &bull; <strong>rareimagery_x_sync</strong> &mdash; XProfileFetcher service, X API v2 data normalization, image downloads
 &bull; <strong>rareimagery_subdomain</strong> &mdash; SubdomainManager: slug availability, DNS provisioning
-&bull; <strong>rareimagery_invite_gate</strong> &mdash; Invite code generation, validation, redemption
 &bull; <strong>rareimagery_printful_sync</strong> &mdash; Server-side Printful product import
 &bull; <strong>rareimagery_grok_creator_studio</strong> &mdash; Grok usage logging per creator
 &bull; <strong>rareimagery_cost_dashboard</strong> &mdash; Cost tracking and analytics
@@ -236,8 +232,7 @@ const WIKI_SECTIONS: WikiSection[] = [
 <strong>Cart:</strong> /api/cart (GET/POST &mdash; cookie-based, add/update/remove/clear)
 <strong>Content:</strong> /api/favorites, /api/gallery, /api/articles, /api/music, /api/social-feeds, /api/blocks, /api/builds
 <strong>Social:</strong> /api/social/follow, /api/social/followers, /api/social/picks, /api/social/shoutouts
-<strong>Invite:</strong> /api/invite (POST validate, PUT redeem)
-<strong>Admin:</strong> /api/admin/wiki, /api/invite/admin`,
+<strong>Admin:</strong> /api/admin/wiki`,
   },
   {
     id: "infrastructure",

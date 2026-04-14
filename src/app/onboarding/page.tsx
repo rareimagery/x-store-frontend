@@ -97,18 +97,6 @@ export default function OnboardingWizard() {
   const handleCreateTheme = async (templateId: TemplateId) => {
     setSelectedTemplate(templateId);
     await createCreatorSite(effectiveProfile, templateId, subdomain || effectiveProfile.handle);
-    // Redeem invite code after store creation
-    try {
-      const inviteCode = sessionStorage.getItem("rareimagery_invite_code");
-      if (inviteCode) {
-        await fetch("/api/invite", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: inviteCode, used_by: effectiveProfile.handle }),
-        });
-        sessionStorage.removeItem("rareimagery_invite_code");
-      }
-    } catch {}
     return {
       builderUrl: `/builder/new-tab?handle=${encodeURIComponent(effectiveProfile.handle)}&template=${encodeURIComponent(templateId)}`,
     };

@@ -11,7 +11,7 @@ import InstagramProvider from "@/lib/auth-providers/instagram";
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { findProfileByUsername } from "@/lib/x-import";
 import { triggerDrupalSync } from "@/lib/drupal-sync";
-import { checkRequiredPaidSubscription } from "@/lib/x-subscription";
+// Free trial model — subscription check removed
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 const X_OAUTH_CLIENT_ID =
@@ -458,23 +458,8 @@ export const authOptions: NextAuthOptions = {
           return true;
         }
 
-        console.log(`[auth] Checking subscription for @${normalizedXUsername}`);
-        const check = await checkRequiredPaidSubscription({
-          buyerXId: xUserId,
-          buyerUsername: normalizedXUsername,
-        });
-
-        if (!check.subscribed) {
-          console.warn(`[auth] Subscription check failed for @${normalizedXUsername}: ${check.error}`);
-          const infraFailure = /configured|failed|missing|drupal|api|404|not found|timeout|econnrefused|enotfound|fetch/i.test(check.error || "");
-          if (infraFailure) {
-            console.warn(`[auth] Infrastructure failure detected, allowing @${normalizedXUsername} to fail-open`);
-            return true;
-          }
-          return `/signup?error=PaidSubscriptionRequired&username=${normalizedXUsername}`;
-        }
-
-        console.log(`[auth] Successful login for @${normalizedXUsername}`);
+        // Free trial model — all X users allowed, no subscription gate
+        console.log(`[auth] Successful login for @${normalizedXUsername} (free trial model)`);
         return true;
       } catch (err) {
         // Catch-all: never let signIn crash with "Something went wrong".

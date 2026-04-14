@@ -116,15 +116,9 @@ export default async function AdminSubscribersPage() {
         <div>
           <h1 className="text-2xl font-bold">Subscribers & Users</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {profiles.length} users, {usedCodes.length} invite codes redeemed, {availableCodes.length} codes available
+            {profiles.length} users
           </p>
         </div>
-        <Link
-          href="/console/admin/invites"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition"
-        >
-          Manage Invite Codes
-        </Link>
       </div>
 
       {/* Stats */}

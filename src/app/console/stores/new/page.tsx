@@ -76,18 +76,6 @@ export default function NewStorePage() {
     setResult(data);
     setStatus("success");
 
-    // Redeem invite code if stored from signup flow
-    try {
-      const inviteCode = typeof window !== "undefined" ? sessionStorage.getItem("rareimagery_invite_code") : null;
-      if (inviteCode) {
-        await fetch("/api/invite", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: inviteCode, used_by: form.xUsername || form.slug }),
-        });
-        sessionStorage.removeItem("rareimagery_invite_code");
-      }
-    } catch {}
   };
 
   if (status === "success" && result) {
