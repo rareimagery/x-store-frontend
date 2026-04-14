@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 
+const FREE_FAVORITES_LIMIT = 50;
+
 type FavJWT = { storeSlug?: string; xUsername?: string | null };
 
 function resolveSlug(token: FavJWT): string | null {
@@ -77,6 +79,38 @@ export async function POST(req: NextRequest) {
   const { favorites } = await req.json();
   if (!Array.isArray(favorites)) {
     return NextResponse.json({ error: "favorites array required" }, { status: 400 });
+  }
+
+  // Check 50-favorite limit (unless subscribed to @rareimagery or admin)
+  if (favorites.length > FREE_FAVORITES_LIMIT) {
+    const xUsername = token.xUsername ? String(token.xUsername).replace(/^@+/, "").trim() : "";
+    const adminUsernames = (process.env.ADMIN_X_USERNAMES || "rareimagery").split(",").map((u) => u.trim().toLowerCase());
+    const isAdmin = adminUsernames.includes(xUsername.toLowerCase());
+
+    if (!isAdmin) {
+      // Check if subscribed to @rareimagery via grace-claim
+      let platformSubscribed = false;
+      try {
+        const graceRes = await fetch(
+          `${DRUPAL_API_URL}/api/grace-status/rareimagery/${encodeURIComponent(xUsername)}`,
+          { headers: drupalAuthHeaders(), cache: "no-store" }
+        );
+        if (graceRes.ok) {
+          const graceData = await graceRes.json();
+          platformSubscribed = graceData.status === "claimed";
+        }
+      } catch {}
+
+      if (!platformSubscribed) {
+        return NextResponse.json({
+          error: "favorites_gate_locked",
+          message: `You've reached the ${FREE_FAVORITES_LIMIT} free favorites limit. Subscribe to @rareimagery on X for unlimited favorites.`,
+          count: favorites.length,
+          limit: FREE_FAVORITES_LIMIT,
+          subscribeUrl: "https://x.com/rareimagery/subscribe",
+        }, { status: 403 });
+      }
+    }
   }
 
   const writeHeaders = await drupalWriteHeaders();

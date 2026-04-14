@@ -240,6 +240,8 @@ function DroppableColumn({
 // ===========================================================================
 // Main page
 // ===========================================================================
+const FREE_FAVORITES_LIMIT = 50;
+
 export default function FavoriteCreatorsPage() {
   const { storeSlug, hasStore } = useConsole();
   const [favorites, setFavorites] = useState<FavoriteCreator[]>([]);
@@ -247,6 +249,7 @@ export default function FavoriteCreatorsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [gateLocked, setGateLocked] = useState(false);
 
   // Search
   const [search, setSearch] = useState("");
@@ -330,6 +333,7 @@ export default function FavoriteCreatorsPage() {
   const saveFavorites = useCallback(async (list: FavoriteCreator[]) => {
     setSaving(true);
     setSavedMsg(null);
+    setGateLocked(false);
     try {
       const res = await fetch("/api/favorites", {
         method: "POST",
@@ -339,6 +343,11 @@ export default function FavoriteCreatorsPage() {
       if (res.ok) {
         setSavedMsg("Saved!");
         setTimeout(() => setSavedMsg(null), 2000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "favorites_gate_locked") {
+          setGateLocked(true);
+        }
       }
     } catch {
     } finally {
@@ -423,12 +432,37 @@ export default function FavoriteCreatorsPage() {
   const addFavorite = useCallback(async () => {
     if (!searchResult) return;
     const updated = [...favorites, { ...searchResult, tags: selectedTags }];
+    // Optimistic update
     setFavorites(updated);
     setSearchResult(null);
     setSearch("");
     setSelectedTags([]);
-    await saveFavorites(updated);
-  }, [searchResult, selectedTags, favorites, saveFavorites]);
+
+    // Save — revert if gate blocks
+    setSaving(true);
+    setSavedMsg(null);
+    setGateLocked(false);
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ favorites: updated }),
+      });
+      if (res.ok) {
+        setSavedMsg("Saved!");
+        setTimeout(() => setSavedMsg(null), 2000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "favorites_gate_locked") {
+          setGateLocked(true);
+          // Revert — remove the just-added favorite
+          setFavorites(favorites);
+        }
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  }, [searchResult, selectedTags, favorites]);
 
   const removeFavorite = useCallback(
     async (username: string) => {
@@ -543,11 +577,51 @@ export default function FavoriteCreatorsPage() {
             </span>
           )}
           {saving && <span className="text-xs text-zinc-500">Saving...</span>}
-          <span className="text-xs text-zinc-600">
-            {favorites.length} creators
+          <span className={`text-xs font-medium ${favorites.length >= FREE_FAVORITES_LIMIT ? "text-amber-400" : "text-zinc-600"}`}>
+            {favorites.length} / {FREE_FAVORITES_LIMIT} free
           </span>
         </div>
       </div>
+
+      {/* Gate locked banner */}
+      {gateLocked && (
+        <div className="rounded-xl border border-amber-700/50 bg-zinc-900/95 p-5 mb-4">
+          <div className="flex items-start gap-4">
+            <svg className="h-8 w-8 text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white mb-1">You&apos;ve reached {FREE_FAVORITES_LIMIT} free favorites</p>
+              <p className="text-xs text-zinc-400 mb-3">Subscribe to @rareimagery on X to add unlimited favorite creators.</p>
+              <div className="flex gap-2">
+                <a
+                  href="https://x.com/rareimagery/subscribe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-zinc-200 transition"
+                >
+                  Subscribe on X
+                </a>
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch("/api/stores/grace-status", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ store: "rareimagery", claim_method: "self_claim" }),
+                      });
+                      setGateLocked(false);
+                    } catch {}
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-700 transition"
+                >
+                  I Just Subscribed &#10003;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Category bar + new category */}
       <div className="flex flex-wrap items-center gap-2 mt-4 mb-6">
