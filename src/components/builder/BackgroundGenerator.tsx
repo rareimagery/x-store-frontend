@@ -23,6 +23,7 @@ export default function BackgroundGenerator({ currentBackground, onBackgroundCha
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [aiGateLocked, setAiGateLocked] = useState(false);
   const [refineMode, setRefineMode] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState("");
   const [uploadingBg, setUploadingBg] = useState(false);
@@ -52,7 +53,10 @@ export default function BackgroundGenerator({ currentBackground, onBackgroundCha
         body: JSON.stringify({ prompt: prompt.trim(), n: 4, use_creator_context: useCreatorContext }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Generation failed"); return; }
+      if (!res.ok) {
+        if (data.error === "ai_gate_locked") { setAiGateLocked(true); setError(""); return; }
+        setError(data.error || "Generation failed"); return;
+      }
       const urls: string[] = data.image_urls || [];
       setVariants(urls);
       if (urls[0]) {
@@ -80,7 +84,10 @@ export default function BackgroundGenerator({ currentBackground, onBackgroundCha
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Refinement failed"); return; }
+      if (!res.ok) {
+        if (data.error === "ai_gate_locked") { setAiGateLocked(true); setError(""); return; }
+        setError(data.error || "Refinement failed"); return;
+      }
       const newUrl = data.image_urls?.[0];
       if (newUrl) {
         const updated = [...variants, newUrl];
@@ -183,6 +190,15 @@ export default function BackgroundGenerator({ currentBackground, onBackgroundCha
       </div>
 
       {error && <p className="text-[10px] text-red-400 mb-2">{error}</p>}
+      {aiGateLocked && (
+        <div className="rounded-lg border border-zinc-700 bg-zinc-900/95 p-4 mb-2 text-center">
+          <p className="text-xs font-semibold text-white mb-1">Free designs used up</p>
+          <p className="text-[10px] text-zinc-400 mb-2">Subscribe to @rareimagery on X to unlock unlimited AI backgrounds.</p>
+          <div className="flex gap-2 justify-center">
+            <a href="https://x.com/rareimagery/subscribe" target="_blank" rel="noopener noreferrer" className="rounded-md bg-white px-3 py-1.5 text-[10px] font-semibold text-black hover:bg-zinc-200 transition">Subscribe on X</a>
+          </div>
+        </div>
+      )}
 
       {/* Generated variants */}
       {variants.length > 0 && (
