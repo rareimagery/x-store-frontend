@@ -121,6 +121,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Stamp new entries with cached_at (preserve existing timestamps on reorder/tag changes)
+  const now = new Date().toISOString();
+  const stamped = favorites.map((f: any) => ({
+    ...f,
+    cached_at: f.cached_at || now,
+  }));
+
   const writeHeaders = await drupalWriteHeaders();
   const res = await fetch(`${DRUPAL_API_URL}/jsonapi/commerce_store/online/${uuid}`, {
     method: "PATCH",
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
       data: {
         type: "commerce_store--online",
         id: uuid,
-        attributes: { field_my_favorites: JSON.stringify(favorites) },
+        attributes: { field_my_favorites: JSON.stringify(stamped) },
       },
     }),
   });

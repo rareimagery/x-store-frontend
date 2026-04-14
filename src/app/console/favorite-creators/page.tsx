@@ -250,6 +250,7 @@ export default function FavoriteCreatorsPage() {
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [gateLocked, setGateLocked] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Search
   const [search, setSearch] = useState("");
@@ -577,6 +578,28 @@ export default function FavoriteCreatorsPage() {
             </span>
           )}
           {saving && <span className="text-xs text-zinc-500">Saving...</span>}
+          <button
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                const res = await fetch("/api/favorites/refresh", { method: "POST" });
+                if (res.ok) {
+                  // Reload favorites with fresh data
+                  const favRes = await fetch("/api/favorites");
+                  if (favRes.ok) {
+                    const d = await favRes.json();
+                    setFavorites((d.favorites ?? []).map((f: FavoriteCreator) => ({ ...f, tags: f.tags || [] })));
+                  }
+                  setSavedMsg("Profiles refreshed!");
+                  setTimeout(() => setSavedMsg(null), 2000);
+                }
+              } catch {} finally { setRefreshing(false); }
+            }}
+            disabled={refreshing || favorites.length === 0}
+            className="rounded-lg border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400 hover:text-white hover:border-zinc-500 transition disabled:opacity-50"
+          >
+            {refreshing ? "Refreshing..." : "Refresh profiles"}
+          </button>
           <span className={`text-xs font-medium ${favorites.length >= FREE_FAVORITES_LIMIT ? "text-amber-400" : "text-zinc-600"}`}>
             {favorites.length} / {FREE_FAVORITES_LIMIT} free
           </span>
