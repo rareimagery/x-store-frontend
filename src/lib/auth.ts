@@ -517,19 +517,41 @@ export const authOptions: NextAuthOptions = {
         const xUser = (appToken.xUsername || "").toLowerCase();
         appToken.role = adminXUsernames.includes(xUser) ? "admin" : "creator";
 
-        // Sync X data to Drupal if profile already exists.
-        // Profile creation is handled by the store creation wizard —
-        // we only update existing profiles here on subsequent logins.
-        // Tell Drupal to sync X data on login (Drupal owns the X API calls).
+        // Resolve store slug + sync X data on login
         if (appToken.xUsername) {
           const xUser = appToken.xUsername;
           (async () => {
             const existing = await findProfileByUsername(xUser);
             if (existing) {
               await triggerDrupalSync(xUser);
+              // Resolve store slug from Drupal (try by username first, then by profile→store link)
+              try {
+                // Try slug = username
+                let slug: string | null = null;
+                const storeRes = await fetch(
+                  `${DRUPAL_API}/jsonapi/commerce_store/online?filter[field_store_slug]=${encodeURIComponent(xUser.toLowerCase())}&fields[commerce_store--online]=field_store_slug`,
+                  { headers: { Accept: "application/vnd.api+json" }, cache: "no-store" }
+                );
+                if (storeRes.ok) {
+                  const storeJson = await storeRes.json();
+                  slug = storeJson.data?.[0]?.attributes?.field_store_slug || null;
+                }
+                // Fallback: find store via profile link
+                if (!slug) {
+                  const profileRes = await fetch(
+                    `${DRUPAL_API}/api/creator/profile/${encodeURIComponent(xUser.toLowerCase())}`,
+                    { cache: "no-store" }
+                  );
+                  if (profileRes.ok) {
+                    const profileData = await profileRes.json();
+                    slug = profileData.store_slug || null;
+                  }
+                }
+                if (slug) appToken.storeSlug = slug;
+              } catch {}
             }
           })().catch((err) =>
-            console.error(`[auth] Drupal sync trigger failed for @${appToken.xUsername}:`, err)
+            console.error(`[auth] Drupal sync/slug resolve failed for @${appToken.xUsername}:`, err)
           );
         }
       }
