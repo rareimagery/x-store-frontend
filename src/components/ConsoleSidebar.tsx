@@ -8,6 +8,7 @@ import { useConsole } from "./ConsoleContext";
 import ConsoleUserMenu from "./ConsoleUserMenu";
 import SupporterBadge from "./SupporterBadge";
 import GenerationCounter from "./GenerationCounter";
+import SidebarGrokBuilder from "./SidebarGrokBuilder";
 import { getStoreUrl } from "@/lib/store-url";
 
 const storeLinks: Array<{ href: Route; label: string; icon: string }> = [
@@ -276,6 +277,9 @@ export default function ConsoleSidebar({ className = "", onNavigate }: ConsoleSi
           </a>
         </div>
       )}
+
+      {/* Grok Builder — X DM messenger */}
+      <SidebarGrokBuilder storeSlug={storeSlug || null} xUsername={xUsername || null} />
 
       {/* Trial / Subscription Status */}
       {hasStore && <TrialBanner />}
