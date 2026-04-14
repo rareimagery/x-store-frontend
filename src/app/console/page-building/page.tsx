@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
 import WireframeBuilder from "@/components/builder/WireframeBuilder";
+import TrialGate from "@/components/TrialGate";
 import { getStoreUrl } from "@/lib/store-url";
 
 interface StoreOption {
@@ -101,7 +102,9 @@ export default function ConsolePageBuildingPage() {
       )}
 
       {currentSlug ? (
-        <WireframeBuilder key={currentSlug} storeSlug={currentSlug} />
+        <TrialGate feature="publish page changes">
+          <WireframeBuilder key={currentSlug} storeSlug={currentSlug} />
+        </TrialGate>
       ) : (
         <div className="flex items-center justify-center py-20">
           <p className="text-sm text-zinc-500">Select a store above to edit.</p>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useConsole } from "@/components/ConsoleContext";
+import TrialGate from "@/components/TrialGate";
 import { getStorePageUrl } from "@/lib/store-url";
 
 const PRODUCT_TYPES = [
@@ -343,6 +344,7 @@ export default function DesignStudioPage() {
   const hasImage = !!(refPreview || refDataUrl);
 
   return (
+    <TrialGate feature="generate designs">
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-xl font-bold text-white mb-0.5">Grok Product Creator</h1>
       <p className="text-xs text-zinc-500 mb-4">Design merch. Generate. Publish.</p>
@@ -743,5 +745,6 @@ export default function DesignStudioPage() {
         </div>
       )}
     </div>
+    </TrialGate>
   );
 }
