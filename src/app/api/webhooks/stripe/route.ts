@@ -494,6 +494,51 @@ export async function POST(req: NextRequest) {
       break;
     }
 
+    case "customer.subscription.created":
+    case "customer.subscription.updated": {
+      // Update store subscription status when a creator subscribes or changes plan
+      const sub = event.data.object;
+      const xUsername = sub.metadata?.xUsername;
+      const plan = sub.metadata?.plan;
+      if (!xUsername) break;
+
+      try {
+        // Find store via X profile
+        const profileRes = await fetch(
+          `${DRUPAL_API}/jsonapi/node/x_user_profile?filter[field_x_username]=${encodeURIComponent(xUsername)}&include=field_linked_store`,
+          { headers: { ...drupalAuthHeaders() }, cache: "no-store" }
+        );
+        if (!profileRes.ok) break;
+        const pJson = await profileRes.json();
+        const storeRef = pJson.data?.[0]?.relationships?.field_linked_store?.data;
+        if (!storeRef?.id) break;
+
+        const status = sub.status === "active" ? "active" : sub.status === "trialing" ? "trialing" : sub.status === "past_due" ? "past_due" : "canceled";
+
+        const writeHeaders = await drupalWriteHeaders();
+        await fetch(`${DRUPAL_API}/jsonapi/commerce_store/online/${storeRef.id}`, {
+          method: "PATCH",
+          headers: { ...writeHeaders, "Content-Type": "application/vnd.api+json" },
+          body: JSON.stringify({
+            data: {
+              type: "commerce_store--online",
+              id: storeRef.id,
+              attributes: {
+                field_subscription_status: status,
+                field_subscription_id: sub.id,
+                field_subscription_plan: plan || "creator_basic",
+              },
+            },
+          }),
+        });
+
+        console.log(`[webhook] Subscription ${event.type} for @${xUsername}: status=${status}, plan=${plan}`);
+      } catch (err: any) {
+        console.error(`[webhook] Failed to update subscription status for @${xUsername}:`, err.message);
+      }
+      break;
+    }
+
     default:
       // Unhandled event type — ignore
       break;

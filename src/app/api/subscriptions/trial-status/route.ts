@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DRUPAL_API_URL, drupalAuthHeaders } from "@/lib/drupal";
 
-const TRIAL_DAYS = 7;
+const TRIAL_DAYS = 3;
 
 /**
  * GET /api/subscriptions/trial-status

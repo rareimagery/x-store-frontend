@@ -76,7 +76,7 @@ const DEFAULT_SECTIONS: WikiSection[] = [
 • admin — X accounts in ADMIN_X_USERNAMES env var. Full console + admin panel.
 • creator — Any X login. Console for their own store only.
 
-<strong>Free Trial:</strong> 7-day free trial on signup, no credit card required. $4/month after trial to keep store active.`,
+<strong>Free Trial:</strong> 3-day free trial on signup, no credit card required. $4/month after trial to keep store active.`,
   },
   {
     id: "console-pages",

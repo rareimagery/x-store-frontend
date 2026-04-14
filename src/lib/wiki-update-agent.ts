@@ -329,7 +329,7 @@ ${(state.cronAgents || []).map((a: any) => `• <strong>${a.name}</strong> — $
     {
       id: "subscription",
       title: "Subscription Model",
-      content: `<strong>Model:</strong> 7-day free trial on signup (no credit card). $4/month after trial.
+      content: `<strong>Model:</strong> 3-day free trial on signup (no credit card). $4/month after trial.
 
 <strong>Plans:</strong>
 &bull; Creator ($4/mo) &mdash; 100 free AI generations/month

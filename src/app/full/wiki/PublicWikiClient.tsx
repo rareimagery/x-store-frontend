@@ -31,7 +31,7 @@ const WIKI_SECTIONS: WikiSection[] = [
 <strong>Session:</strong> JWT-based with xUsername, xId, storeSlug, role, providerType
 
 <strong>Access Gates:</strong>
-&bull; <strong>Free Trial:</strong> 7-day free trial on signup, no credit card required. $4/month after trial.
+&bull; <strong>Free Trial:</strong> 3-day free trial on signup, no credit card required. $4/month after trial.
 &bull; <strong>Admin:</strong> X accounts listed in ADMIN_X_USERNAMES env var get full admin access.
 
 <strong>Roles:</strong>
@@ -49,7 +49,7 @@ const WIKI_SECTIONS: WikiSection[] = [
 2. X OAuth 2.0 with PKCE &rarr; authorize RareImagery
 3. Onboarding wizard: verify X profile data, choose subdomain (permanent, first come first served), pick store template
 4. Store creation: POST /api/stores/create &rarr; Drupal provision endpoint creates user + X profile + Commerce store atomically
-5. 7-day free trial starts immediately
+5. 3-day free trial starts immediately
 6. DNS provisioned: {slug}.rareimagery.net goes live
 7. Creator lands in Console at /console/my-page (guided onboarding)
 

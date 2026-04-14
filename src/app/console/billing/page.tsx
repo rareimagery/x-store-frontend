@@ -46,6 +46,7 @@ export default function BillingPage() {
   const { hasStore } = useConsole();
   const [trial, setTrial] = useState<TrialStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscribing, setSubscribing] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/subscriptions/trial-status")
@@ -86,10 +87,20 @@ export default function BillingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-semibold text-green-300">Active Subscription</p>
-                <p className="text-xs text-green-400/70">Plan: {trial?.plan === "creator_pro" ? "Creator Pro" : trial?.plan === "creator_unlimited" ? "Creator Unlimited" : "Creator"} — $4/month</p>
+                <p className="text-xs text-green-400/70">Plan: {trial?.plan === "creator_pro" ? "Creator Pro" : trial?.plan === "creator_unlimited" ? "Creator Unlimited" : "Creator"}</p>
               </div>
+              <button
+                onClick={async () => {
+                  const res = await fetch("/api/subscriptions/manage", { method: "POST" });
+                  const data = await res.json();
+                  if (data.portalUrl) window.location.href = data.portalUrl;
+                }}
+                className="rounded-lg border border-green-700/50 px-3 py-1.5 text-xs text-green-300 hover:bg-green-900/30 transition"
+              >
+                Manage Billing
+              </button>
             </>
           ) : isExpired ? (
             <>
@@ -153,7 +164,28 @@ export default function BillingPage() {
               ))}
             </ul>
             <button
-              disabled={isActive && trial?.plan === plan.id}
+              disabled={(isActive && trial?.plan === plan.id) || subscribing === plan.id}
+              onClick={async () => {
+                if (isActive && trial?.plan === plan.id) return;
+                setSubscribing(plan.id);
+                try {
+                  const res = await fetch("/api/subscriptions/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: plan.id }),
+                  });
+                  const data = await res.json();
+                  if (data.checkoutUrl) {
+                    window.location.href = data.checkoutUrl;
+                  } else {
+                    alert(data.error || "Failed to start checkout");
+                  }
+                } catch {
+                  alert("Checkout failed — try again");
+                } finally {
+                  setSubscribing(null);
+                }
+              }}
               className={`w-full rounded-lg py-2.5 text-xs font-semibold transition ${
                 isActive && trial?.plan === plan.id
                   ? "bg-zinc-800 text-zinc-500 cursor-default"
@@ -162,7 +194,7 @@ export default function BillingPage() {
                     : "bg-zinc-800 text-white hover:bg-zinc-700"
               }`}
             >
-              {isActive && trial?.plan === plan.id ? "Current Plan" : "Subscribe"}
+              {isActive && trial?.plan === plan.id ? "Current Plan" : subscribing === plan.id ? "Loading..." : "Subscribe"}
             </button>
           </div>
         ))}

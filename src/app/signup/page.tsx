@@ -22,7 +22,7 @@ function SignupContent() {
             Create your store in minutes
           </p>
           <p className="mt-1 text-xs text-zinc-600">
-            7-day free trial. No credit card required.
+            3-day free trial. No credit card required.
           </p>
         </div>
 
