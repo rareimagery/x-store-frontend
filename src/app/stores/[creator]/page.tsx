@@ -7,7 +7,6 @@ import {
   fetchCreatorData,
 } from "@/lib/drupal";
 import { getPublishedBuilds } from "@/lib/drupalBuilds";
-import MySpaceTheme from "@/components/themes/MySpaceTheme";
 import MinimalTheme from "@/components/themes/MinimalTheme";
 import NeonTheme from "@/components/themes/NeonTheme";
 import EditorialTheme from "@/components/themes/EditorialTheme";
@@ -112,29 +111,7 @@ export default async function CreatorStorePage({
     );
   }
 
-  if (profile.store_theme === "myspace") {
-    return (
-      <>
-        <StoreNav creator={creator} />
-        <XSubscribeGate storeSlug={normalizedCreator} creatorUsername={profile.x_username}>
-          <div className="pt-12">
-            <MySpaceTheme
-              profile={profile}
-              products={products}
-              backgroundUrl={profile.myspace_background ?? undefined}
-              musicUrl={profile.myspace_music_url ?? undefined}
-              glitterColor={profile.myspace_glitter_color ?? undefined}
-              accentColor={profile.myspace_accent_color ?? undefined}
-              themeConfig={profile.store_theme_config ?? undefined}
-            />
-            <StoreRareProjectConversations creator={creator} />
-            <StoreBuildRenderer builds={publishedBuilds} />
-          </div>
-        </XSubscribeGate>
-        <BuilderGate storeSlug={creator} theme={profile.store_theme} />
-      </>
-    );
-  }
+  // Retro/myspace stores now use the wireframe builder — no separate theme rendering
 
   const templateId =
     typeof profile.store_theme_config?.templateId === "string"

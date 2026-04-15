@@ -55,7 +55,7 @@ export async function GET() {
       });
 
       // 4. Check theme is valid
-      const validThemes = ["default", "xai3", "myspace", "minimal", "neon", "editorial", "xmimic"];
+      const validThemes = ["default", "xai3", "retro", "minimal", "neon", "editorial", "xmimic"];
       const themeValid = validThemes.includes(profile?.store_theme || "default");
       checks.push({
         name: "theme_valid",

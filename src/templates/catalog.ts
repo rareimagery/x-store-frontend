@@ -9,7 +9,7 @@ export type TemplateQuickBuildOption = {
 export const DEFAULT_TEMPLATE_ID: TemplateId = 'modern-cart';
 
 export const TEMPLATE_TO_THEME: Record<TemplateId, string> = {
-  retro: 'myspace',
+  retro: 'retro',
   'modern-cart': 'xai3',
   'ai-video-store': 'editorial',
   'latest-posts': 'xmimic',
