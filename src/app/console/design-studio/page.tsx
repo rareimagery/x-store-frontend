@@ -13,6 +13,11 @@ const PRODUCT_TYPES = [
   { value: "pet_bandana", label: "Pet Bandana", emoji: "🐕" },
   { value: "pet_hoodie", label: "Pet Hoodie", emoji: "🐾" },
   { value: "digital_drop", label: "Digital Drop", emoji: "⚡" },
+  { value: "skateboard_deck", label: "Skateboard Deck", emoji: "🛹" },
+  { value: "vintage_poster", label: "Retro Poster", emoji: "🎨" },
+  { value: "sticker_pack", label: "Sticker Pack", emoji: "✨" },
+  { value: "canvas_art", label: "Canvas Art", emoji: "🖼️" },
+  { value: "tote_bag", label: "Tote Bag", emoji: "👜" },
 ];
 
 type Engine = "grok" | "composite";

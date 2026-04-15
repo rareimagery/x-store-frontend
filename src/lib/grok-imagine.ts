@@ -29,6 +29,11 @@ const PRODUCT_PROMPTS: Record<string, string> = {
   pet_bandana: "isolated print-ready graphic on transparent background, high resolution, compact centered artwork suitable for triangular bandana print area, bold simple design, POD optimized, no mockup, no bandana body, just the design",
   pet_hoodie: "isolated print-ready graphic on transparent background, high resolution, centered compact artwork for small pet garment, bold clean design, POD optimized, no mockup, no clothing body, no model, just the design",
   digital_drop: "high-resolution digital artwork on transparent background, centered, vibrant, clean edges, social media + print ready, no background",
+  skateboard_deck: "isolated print-ready skateboard deck artwork, landscape orientation 8.3x31.9 inch template, full bleed retro design, vibrant colors, bold graphics, POD optimized, transparent background, high resolution 4500x5400px",
+  vintage_poster: "retro poster artwork in 24x36 inch dimensions, nostalgic 70s/80s/90s aesthetic with period-appropriate typography and color palette, high-resolution print-ready, transparent background",
+  sticker_pack: "retro sticker sheet design with 6-8 individual die-cut stickers, vintage logos, retro badges, 80s/90s aesthetic, bold outlines, transparent background, print-ready",
+  canvas_art: "vintage-style canvas artwork, retro illustration or photography aesthetic, rich textures, warm analog tones, print-ready high resolution, transparent background",
+  tote_bag: "retro tote bag centered graphic design, vintage aesthetic, bold retro typography, isolated artwork on transparent background, POD optimized, no mockup, no bag body",
 };
 
 // Edit endpoint prompt — preserves uploaded image exactly, outputs flat artwork

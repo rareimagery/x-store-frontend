@@ -10,6 +10,12 @@ const QUICK_PRESETS = [
   { name: "Geometric", prompt: "dark minimal geometric pattern with thin glowing grid lines" },
   { name: "City Night", prompt: "blurred city skyline at night with bokeh lights, very dark" },
   { name: "Nature Dark", prompt: "dark forest canopy with moonlight filtering through, moody atmosphere" },
+  { name: "80s Neon Grid", prompt: "retro 80s neon grid lines on dark background, synthwave aesthetic, hot pink and electric blue laser beams, chrome horizon" },
+  { name: "90s Grunge", prompt: "90s grunge aesthetic, distressed concrete texture, faded flannel plaid pattern, muted earth tones, worn paper overlay" },
+  { name: "70s Disco", prompt: "70s disco era, gold and brown gradients, geometric sunburst pattern, warm orange glow, retro dance floor lights" },
+  { name: "Y2K Chrome", prompt: "Y2K aesthetic, chrome metallic reflections, iridescent purple and silver gradients, bubbly 3D shapes, futuristic millennium" },
+  { name: "VHS Static", prompt: "VHS tape static and tracking lines effect, nostalgic glitch aesthetic, warm analog tones, CRT scanlines, retro TV noise" },
+  { name: "Arcade Cabinet", prompt: "retro arcade cabinet side art style, pixel-influenced dark background, bold primary colors, 80s gaming aesthetic, starfield" },
 ];
 
 interface BackgroundGeneratorProps {

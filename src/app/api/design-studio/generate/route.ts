@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   const productType = product_type || "t_shirt";
-  const validTypes = ["t_shirt", "hoodie", "ballcap", "pet_bandana", "pet_hoodie", "digital_drop"];
+  const validTypes = ["t_shirt", "hoodie", "ballcap", "pet_bandana", "pet_hoodie", "digital_drop", "skateboard_deck", "vintage_poster", "sticker_pack", "canvas_art", "tote_bag"];
   if (!validTypes.includes(productType)) {
     return NextResponse.json({ error: `Invalid product type. Use: ${validTypes.join(", ")}` }, { status: 400 });
   }
