@@ -444,6 +444,33 @@ function CreateProductModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Shipping
+  const [weightLbs, setWeightLbs] = useState("");
+  const [weightOz, setWeightOz] = useState("");
+  const [pkgLength, setPkgLength] = useState("");
+  const [pkgWidth, setPkgWidth] = useState("");
+  const [pkgHeight, setPkgHeight] = useState("");
+  const [handlingFee, setHandlingFee] = useState("");
+  const [packagePreset, setPackagePreset] = useState("");
+
+  const PACKAGE_PRESETS: Record<string, { l: string; w: string; h: string; label: string }> = {
+    letter: { l: "12", w: "9", h: "0.5", label: "Letter / Flat" },
+    small: { l: "12", w: "8", h: "6", label: "Small Box (shoebox)" },
+    medium: { l: "18", w: "14", h: "10", label: "Medium Box (monitor)" },
+    large: { l: "24", w: "18", h: "14", label: "Large Box" },
+    xlarge: { l: "48", w: "24", h: "18", label: "Extra Large (bike/board)" },
+  };
+
+  const applyPreset = (key: string) => {
+    setPackagePreset(key);
+    const preset = PACKAGE_PRESETS[key];
+    if (preset) {
+      setPkgLength(preset.l);
+      setPkgWidth(preset.w);
+      setPkgHeight(preset.h);
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -466,6 +493,14 @@ function CreateProductModal({
       fd.append("price", price);
       fd.append("productType", productType);
       if (imageFile) fd.append("imageFile", imageFile);
+      if (productType !== "digital_download") {
+        if (weightLbs) fd.append("weightLbs", weightLbs);
+        if (weightOz) fd.append("weightOz", weightOz);
+        if (pkgLength) fd.append("pkgLength", pkgLength);
+        if (pkgWidth) fd.append("pkgWidth", pkgWidth);
+        if (pkgHeight) fd.append("pkgHeight", pkgHeight);
+        if (handlingFee) fd.append("handlingFee", handlingFee);
+      }
 
       const res = await fetch("/api/stores/products", { method: "POST", body: fd });
       if (!res.ok) {
@@ -542,6 +577,62 @@ function CreateProductModal({
             <label className="mb-1 block text-xs text-zinc-400">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe your product..." className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none resize-none" />
           </div>
+
+          {/* Shipping Details (physical products only) */}
+          {productType !== "digital_download" && (
+            <div className="border-t border-zinc-800 pt-4 space-y-3">
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Shipping Details</p>
+
+              {/* Package Preset */}
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400">Package Size</label>
+                <select value={packagePreset} onChange={(e) => applyPreset(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                  <option value="">Select a preset or enter manually</option>
+                  {Object.entries(PACKAGE_PRESETS).map(([key, p]) => (
+                    <option key={key} value={key}>{p.label} ({p.l}&quot;x{p.w}&quot;x{p.h}&quot;)</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Weight */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Weight (lbs)</label>
+                  <input type="number" min="0" step="0.1" value={weightLbs} onChange={(e) => setWeightLbs(e.target.value)} placeholder="0" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">+ oz</label>
+                  <input type="number" min="0" max="15" step="1" value={weightOz} onChange={(e) => setWeightOz(e.target.value)} placeholder="0" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+              </div>
+
+              {/* Dimensions */}
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Length (in)</label>
+                  <input type="number" min="0" step="0.5" value={pkgLength} onChange={(e) => setPkgLength(e.target.value)} placeholder="L" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Width (in)</label>
+                  <input type="number" min="0" step="0.5" value={pkgWidth} onChange={(e) => setPkgWidth(e.target.value)} placeholder="W" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Height (in)</label>
+                  <input type="number" min="0" step="0.5" value={pkgHeight} onChange={(e) => setPkgHeight(e.target.value)} placeholder="H" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+              </div>
+
+              {/* Handling Fee */}
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400">Handling Fee (optional)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">$</span>
+                  <input type="number" min="0" step="0.50" value={handlingFee} onChange={(e) => setHandlingFee(e.target.value)} placeholder="0.00" className="w-full rounded-lg border border-zinc-700 bg-zinc-800 pl-7 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <p className="text-[10px] text-zinc-600 mt-0.5">Added to calculated shipping cost</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
