@@ -20,6 +20,7 @@ export default function NewStorePage() {
     slug: "",
     xUsername: "",
     ownerEmail: "",
+    password: "",
   });
   const [slugEdited, setSlugEdited] = useState(false);
   const [status, setStatus] = useState<
@@ -56,7 +57,7 @@ export default function NewStorePage() {
     const res = await fetch("/api/stores/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, agreedToTerms: true }),
     });
 
     const data = await res.json();
@@ -112,6 +113,7 @@ export default function NewStorePage() {
                 slug: "",
                 xUsername: "",
                 ownerEmail: "",
+                password: "",
               });
               setSlugEdited(false);
             }}
@@ -158,16 +160,20 @@ export default function NewStorePage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-zinc-400">X Username</label>
+          <label className="mb-1 block text-sm text-zinc-400">
+            X Username <span className="text-zinc-600">(optional)</span>
+          </label>
           <input
             value={form.xUsername}
             onChange={(e) =>
               setForm((f) => ({ ...f, xUsername: e.target.value }))
             }
             placeholder="@rareimagery"
-            required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
           />
+          <p className="mt-1 text-xs text-zinc-600">
+            Leave blank if the store owner doesn&apos;t have an X account
+          </p>
         </div>
 
         <div>
@@ -184,6 +190,25 @@ export default function NewStorePage() {
             required
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-zinc-400">
+            Owner Password
+          </label>
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, password: e.target.value }))
+            }
+            placeholder="Set a login password"
+            required
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+          />
+          <p className="mt-1 text-xs text-zinc-600">
+            The store owner will use this email + password to log in
+          </p>
         </div>
 
         {error && (

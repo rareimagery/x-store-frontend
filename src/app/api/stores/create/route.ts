@@ -57,9 +57,13 @@ export async function POST(req: NextRequest) {
   const sessionMeta = session as typeof session & {
     xUsername?: string | null;
     xId?: string | null;
+    role?: string | null;
   };
 
-  if (!sessionMeta.xUsername || !sessionMeta.xId) {
+  const isAdmin = sessionMeta.role === "admin";
+
+  // Non-admin users must authenticate via X
+  if (!isAdmin && (!sessionMeta.xUsername || !sessionMeta.xId)) {
     return NextResponse.json(
       { error: "Store creation requires X authentication. Sign in with X to continue." },
       { status: 403 }
@@ -75,14 +79,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
   }
 
-  const { storeName, slug: bodySlug, ownerEmail, agreedToTerms } = body;
+  const { storeName, slug: bodySlug, ownerEmail, agreedToTerms, password } = body;
 
-  // xUsername: accept from body or derive from session
-  const xUsername = body.xUsername
-    ? String(body.xUsername)
-    : String(sessionMeta.xUsername);
+  // xUsername: admin can set any value (or leave empty); non-admin must match session
+  const xUsername = isAdmin
+    ? (body.xUsername ? String(body.xUsername) : "")
+    : (body.xUsername ? String(body.xUsername) : String(sessionMeta.xUsername));
 
-  if (body.xUsername && String(body.xUsername).toLowerCase() !== String(sessionMeta.xUsername).toLowerCase()) {
+  if (!isAdmin && body.xUsername && String(body.xUsername).toLowerCase() !== String(sessionMeta.xUsername).toLowerCase()) {
     return NextResponse.json(
       { error: "xUsername must match your authenticated X account." },
       { status: 403 }
@@ -96,8 +100,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Slug: use provided or default to lowercase username
-  const slug = bodySlug || xUsername.replace(/^@+/, "").trim().toLowerCase();
+  // Slug: use provided, or default to lowercase username, or require explicit for non-X
+  const slug = bodySlug
+    || (xUsername ? xUsername.replace(/^@+/, "").trim().toLowerCase() : "");
 
   if (!isValidSlug(slug)) {
     return NextResponse.json(
@@ -107,14 +112,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const provisionPayload: Record<string, string> = {
+      x_username: xUsername,
+      slug: slug.trim().toLowerCase(),
+      store_name: storeName || (xUsername ? `${xUsername}'s Store` : `${slug}'s Store`),
+    };
+    // Admin-created stores: pass email + password so Drupal creates a credentials-based user
+    if (ownerEmail) provisionPayload.email = ownerEmail;
+    if (password) provisionPayload.password = password;
+
     const res = await fetch(`${DRUPAL_API_URL}/api/creator/provision`, {
       method: "POST",
       headers: { ...drupalAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        x_username: xUsername,
-        slug: slug.trim().toLowerCase(),
-        store_name: storeName || `${xUsername}'s Store`,
-      }),
+      body: JSON.stringify(provisionPayload),
       cache: "no-store",
     });
 
@@ -142,20 +152,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const displayName = storeName || (xUsername ? `${xUsername}'s Store` : `${slug}'s Store`);
+
     // Notify admin of new store (fire-and-forget)
     notifyAdminNewStore(
-      storeName || `${xUsername}'s Store`,
+      displayName,
       slug,
-      xUsername,
+      xUsername || "(no X account)",
       ownerEmail || session.user?.email || ""
     ).catch((err) => console.error("Admin notification failed:", err));
 
-    // Welcome DM to creator (fire-and-forget)
+    // Welcome notification to creator (fire-and-forget)
+    // DM only works if xUsername is set; email fallback otherwise
     notifyCreator({
       type: "welcome",
-      xUsername,
+      xUsername: xUsername || undefined,
       email: ownerEmail || session.user?.email || undefined,
-      storeName: storeName || `${xUsername}'s Store`,
+      storeName: displayName,
       storeSlug: data.slug || slug,
     }).catch((err) => console.error("Welcome notification failed:", err));
 
