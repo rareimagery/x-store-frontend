@@ -247,7 +247,7 @@ type NotificationType = "welcome" | "gate_ai" | "gate_favorites" | "sale" | "app
 
 interface NotifyCreatorOpts {
   type: NotificationType;
-  xUsername: string;
+  xUsername?: string;
   email?: string;
   storeName?: string;
   storeSlug?: string;
@@ -279,9 +279,9 @@ export async function notifyCreator(opts: NotifyCreatorOpts): Promise<{ channel:
   const dmText = DM_TEMPLATES[opts.type]?.(opts);
   if (!dmText) return { channel: "none", success: false };
 
-  // Try X DM first
+  // Try X DM first (only if xUsername provided)
   try {
-    const xId = await resolveXId(opts.xUsername);
+    const xId = opts.xUsername ? await resolveXId(opts.xUsername) : null;
     if (xId) {
       const result = await sendDMFromPlatform(xId, dmText);
       if (result.success) {
