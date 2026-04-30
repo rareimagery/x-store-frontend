@@ -243,7 +243,7 @@ export async function notifyStoreRejected(
 
 import { sendDMFromPlatform, resolveXId } from "@/lib/x-api/direct-messages";
 
-type NotificationType = "welcome" | "gate_ai" | "gate_favorites" | "sale" | "approved" | "rejected";
+type NotificationType = "welcome" | "gate_ai" | "gate_favorites" | "sale" | "approved" | "rejected" | "purchase_complete";
 
 interface NotifyCreatorOpts {
   type: NotificationType;
@@ -254,6 +254,7 @@ interface NotifyCreatorOpts {
   productName?: string;
   amount?: string;
   currency?: string;
+  downloadUrl?: string;
 }
 
 const DM_TEMPLATES: Record<NotificationType, (opts: NotifyCreatorOpts) => string> = {
@@ -269,6 +270,8 @@ const DM_TEMPLATES: Record<NotificationType, (opts: NotifyCreatorOpts) => string
     `Your store "${o.storeName || o.xUsername}" has been approved and is now live! ✅\n\nVisit: https://${o.storeSlug || o.xUsername}.rareimagery.net`,
   rejected: (o) =>
     `We were unable to approve your store "${o.storeName || o.xUsername}" at this time.\n\nReach out to @rareimagery on X if you have questions.`,
+  purchase_complete: (o) =>
+    `Your download is ready! 🎉\n\n${o.productName || "Your purchase"}\n\n${o.downloadUrl ? `Download: ${o.downloadUrl}\n\n(Link expires in 24h)` : "Check your email for the download link."}`,
 };
 
 /**
@@ -304,6 +307,7 @@ export async function notifyCreator(opts: NotifyCreatorOpts): Promise<{ channel:
         sale: `New sale on ${opts.storeName || "your store"}`,
         approved: `Your store "${opts.storeName}" is approved!`,
         rejected: `Update on your store "${opts.storeName}"`,
+        purchase_complete: `Your download is ready: ${opts.productName || "your purchase"}`,
       }[opts.type];
 
       const sent = await sendEmail({

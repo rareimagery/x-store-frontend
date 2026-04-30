@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe";
 import { drupalAuthHeaders, drupalWriteHeaders } from "@/lib/drupal";
 import { createProductFromMetadata } from "@/app/api/stores/products/route";
+import { fulfillDigitalOrder } from "@/lib/digital-fulfillment";
 
 const DRUPAL_API = process.env.DRUPAL_API_URL;
 
@@ -254,12 +255,36 @@ export async function POST(req: NextRequest) {
           });
 
           let drupalOrderId: string | null = null;
+          let drupalOrderUuid: string | null = null;
           if (orderRes.ok) {
             const orderData = await orderRes.json();
-            drupalOrderId = orderData.data?.attributes?.drupal_internal__order_id || orderData.data?.id;
+            drupalOrderUuid = orderData.data?.id || null;
+            drupalOrderId = orderData.data?.attributes?.drupal_internal__order_id || drupalOrderUuid;
             console.log("[webhook] Drupal order created:", drupalOrderId);
           } else {
             console.error("[webhook] Drupal order creation failed:", await orderRes.text().catch(() => ""));
+          }
+
+          // Digital download fulfillment — fire-and-forget, never block the webhook
+          if (drupalOrderUuid && items.length > 0) {
+            const baseUrl = process.env.NEXTAUTH_URL || "https://www.rareimagery.net";
+            fulfillDigitalOrder({
+              drupalOrderUuid,
+              buyerEmail: customerEmail,
+              items,
+              baseUrl,
+            })
+              .then((res) => {
+                if (res.fulfilled > 0) {
+                  console.log(
+                    `[webhook] Digital fulfilled: ${res.fulfilled}, skipped: ${res.skipped}`,
+                  );
+                }
+                if (res.errors.length) {
+                  console.error("[webhook] Digital fulfillment errors:", res.errors);
+                }
+              })
+              .catch((err) => console.error("[webhook] Digital fulfillment failed:", err));
           }
 
           // 3. Submit to Printful for fulfillment (if store has Printful key)
